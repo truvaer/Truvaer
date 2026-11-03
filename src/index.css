@@ -1,0 +1,742 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
+/* =============================================================================
+   TRUVAER LUXURY AVIATION PALETTE (Curated User Specification)
+   - Primary Aviation Blue:  #3B82F6 (Electric Cobalt / Action Core)
+   - Sky Cerulean Accent:    #60A5FA (Luminous Sky / Hover / Ring)
+   - Deep Aerospace Slate:   #1F2937 (Foundation Charcoal / Cards & Panels)
+   - Frosted Ice Blue:       #F0F9FF (Luminous Canvas / Crisp High-Contrast Text)
+   - Executive Wisteria:     #C8B8D8 (Luxury Velvet Accent / VIP Elite Sheen)
+   ============================================================================= */
+
+@theme {
+  --color-brand-blue: #3B82F6;
+  --color-brand-sky: #60A5FA;
+  --color-brand-charcoal: #1F2937;
+  --color-brand-ice: #F0F9FF;
+  --color-brand-wisteria: #C8B8D8;
+
+  --color-midnight-blue: #111827;
+  --color-slate-navy: #1F2937;
+  --color-sky-blue: #3B82F6;
+  --color-cloud-white: #F5FFFA;
+  --color-muted-gray: #9CA3AF;
+  --color-aviation-amber: #F59E0B;
+  --color-safety-green: #10B981;
+}
+
+/* =============================================================================
+   DYNAMIC THEME CSS VARIABLES (DARK / LIGHT CONTRAST SWAP)
+   ============================================================================= */
+:root {
+  color-scheme: dark;
+
+  /* Semantic Theme CSS Variables */
+  --theme-bg: #111827;
+  --theme-surface: #1F2937;
+  --theme-surface-subtle: #192231;
+  --theme-border: #283548;
+  --theme-border-contrast: #374151;
+  --theme-text-primary: #F0F9FF;
+  --theme-text-secondary: #9CA3AF;
+  --theme-text-muted: #6B7280;
+  --theme-text-header: #FFFFFF;
+  --theme-input-bg: #1F2937;
+  --theme-input-text: #F0F9FF;
+
+  /* Palette Tokens */
+  --brand-blue: #3B82F6;
+  --brand-sky: #60A5FA;
+  --brand-charcoal: #1F2937;
+  --brand-ice: #F0F9FF;
+  --brand-wisteria: #C8B8D8;
+
+  /* Base & Structural Containers */
+  --color-slate-950: #111827; /* Deep Obsidian Base */
+  --color-slate-900: #1F2937; /* Primary Surface / Cards / Modals (#1F2937) */
+  --color-slate-850: #192231; /* Subtle Inset Elevation */
+  --color-slate-800: #283548; /* Surface Borders & Active Tabs */
+  --color-slate-750: #374151; /* Contrast Separators */
+  --color-slate-700: #4B5563; /* Subtle Outlines */
+
+  /* Typography & Neutrals */
+  --color-slate-600: #6B7280;
+  --color-slate-500: #9CA3AF;
+  --color-slate-400: #C8B8D8; /* Soft Wisteria Muted Elegance */
+  --color-slate-300: #D1D5DB;
+  --color-slate-200: #E5E7EB;
+  --color-slate-100: #F0F9FF; /* Crisp Frosted Ice Typography */
+  --color-slate-50: #FFFFFF;
+  --color-white: #FFFFFF;
+
+  /* Electric Blue & Sky Cerulean (#3B82F6 & #60A5FA) */
+  --color-blue-700: #1D4ED8;
+  --color-blue-600: #3B82F6; /* Core Action Blue */
+  --color-blue-500: #3B82F6;
+  --color-blue-400: #60A5FA; /* Sky Accent */
+  --color-blue-300: #93C5FD;
+  --color-sky-700: #1D4ED8;
+  --color-sky-600: #2563EB;
+  --color-sky-500: #3B82F6;
+  --color-sky-400: #60A5FA;
+  --color-sky-300: #93C5FD;
+
+  /* Executive Wisteria / Velvet Lilac (#C8B8D8) */
+  --color-purple-400: #C8B8D8;
+  --color-purple-300: #DDD3E8;
+  --color-violet-400: #C8B8D8;
+  --color-indigo-400: #C8B8D8;
+
+  /* Functional Accents */
+  --color-amber-600: #D97706;
+  --color-amber-500: #F59E0B;
+  --color-amber-400: #FBBF24;
+  --color-amber-300: #FDE68A;
+
+  --color-emerald-600: #059669;
+  --color-emerald-500: #10B981;
+  --color-emerald-400: #34D399;
+  --color-emerald-300: #6EE7B7;
+
+  /* Custom Role-Based Accents */
+  --marketing-primary: #3B82F6;
+  --marketing-primary-hover: #2563EB;
+  --marketing-accent: #60A5FA;
+  --business-accent: #3B82F6;
+  --business-accent-hover: #2563EB;
+  --verified-accent: #10B981;
+
+  background-color: #111827;
+  color: #F0F9FF;
+}
+
+/* =============================================================================
+   LIGHT MODE (Eye-Friendly Non-Glare #E5EDF5 Base with Soothing #F0F9FF Cards)
+   Designed specifically to eliminate glare, eye-strain and harsh high-contrast pure white.
+   ============================================================================= */
+html.light,
+:root[data-theme="light"],
+.light {
+  color-scheme: light;
+
+  /* Semantic Theme CSS Variables in Light Mode */
+  --theme-bg: #E5EDF5;
+  --theme-surface: #F0F9FF;
+  --theme-surface-subtle: #E2EBF5;
+  --theme-border: #CBD5E1;
+  --theme-border-contrast: #94A3B8;
+  --theme-text-primary: #1F2937;
+  --theme-text-secondary: #475569;
+  --theme-text-muted: #64748B;
+  --theme-text-header: #0F172A;
+  --theme-input-bg: #FFFFFF;
+  --theme-input-text: #1F2937;
+
+  /* Palette Tokens */
+  --brand-blue: #3B82F6;
+  --brand-sky: #60A5FA;
+  --brand-charcoal: #1F2937;
+  --brand-ice: #F0F9FF;
+  --brand-wisteria: #C8B8D8;
+
+  /* Soft, Soothing Eye-Friendly Base & Surfaces */
+  --color-slate-950: #E5EDF5; /* Gentle muted cool ice-slate, eliminates eye glare */
+  --color-slate-900: #F0F9FF; /* User specified #F0F9FF soft ice-sky card surface (zero harsh white) */
+  --color-slate-850: #E2EBF5; /* Subtle secondary inset */
+  --color-slate-800: #CBD5E1; /* Soft, restful borders */
+  --color-slate-750: #B8C7DA;
+  --color-slate-700: #8FA2BA;
+
+  /* Inverted Typography with Relaxing Contrast */
+  --color-slate-600: #64748B;
+  --color-slate-500: #475569;
+  --color-slate-400: #475569;
+  --color-slate-300: #334155;
+  --color-slate-200: #1E293B;
+  --color-slate-100: #1F2937; /* User specified #1F2937 clean, restful charcoal slate text */
+  --color-slate-50: #0F172A;
+  --color-white: #FFFFFF; /* Pure crisp white for text on dark/colored buttons */
+
+  /* Electric Blue & Sky in Light Mode */
+  --color-blue-700: #1D4ED8;
+  --color-blue-600: #3B82F6;
+  --color-blue-500: #3B82F6;
+  --color-blue-400: #2563EB;
+  --color-blue-300: #60A5FA;
+  --color-sky-600: #2563EB;
+  --color-sky-500: #3B82F6;
+  --color-sky-400: #2563EB;
+  --color-sky-300: #60A5FA;
+
+  /* Executive Wisteria in Light Mode */
+  --color-purple-400: #6B21A8;
+  --color-purple-300: #581C87;
+  --color-violet-400: #6B21A8;
+  --color-indigo-400: #4338CA;
+  --color-indigo-300: #3730A3;
+
+  /* High-Contrast Accents for Light Mode on Light Card Surfaces */
+  --color-amber-600: #B45309;
+  --color-amber-500: #D97706;
+  --color-amber-400: #B45309;
+  --color-amber-300: #92400E; /* Deep Bronze/Amber for crisp readability on light card */
+
+  --color-emerald-600: #047857;
+  --color-emerald-500: #059669;
+  --color-emerald-400: #047857;
+  --color-emerald-300: #065F46; /* Deep Emerald for crisp readability on light card */
+
+  --color-rose-600: #BE123C;
+  --color-rose-500: #E11D48;
+  --color-rose-400: #BE123C;
+  --color-rose-300: #9F1239; /* Deep Rose for crisp readability */
+
+  --color-cyan-600: #0E7490;
+  --color-cyan-500: #06B6D4;
+  --color-cyan-400: #0E7490;
+  --color-cyan-300: #155E75; /* Deep Cyan */
+
+  /* Custom Role-Based Accents in Light Mode */
+  --marketing-primary: #3B82F6;
+  --marketing-primary-hover: #2563EB;
+  --marketing-accent: #2563EB;
+  --business-accent: #3B82F6;
+  --business-accent-hover: #2563EB;
+  --verified-accent: #047857;
+
+  background-color: #E5EDF5;
+  color: #1F2937;
+}
+
+/* =============================================================================
+   AUTOMATIC HIGH-CONTRAST TEXT & SURFACE ENFORCEMENT
+   Ensures text automatically contrasts with backgrounds in active theme.
+   ============================================================================= */
+html.light body,
+:root[data-theme="light"] body {
+  background-color: var(--theme-bg);
+  color: var(--theme-text-primary);
+}
+
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6 {
+  color: var(--theme-text-header);
+}
+
+/* High-contrast text on light surfaces */
+html.light .text-slate-100 {
+  color: #1F2937 !important;
+}
+html.light .text-slate-200 {
+  color: #1E293B !important;
+}
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+/* Light mode text contrast overrides:
+   On light card surfaces (.bg-slate-900, .bg-slate-950, .bg-slate-850), text-white switches to charcoal,
+   EXCEPT on solid colored buttons, dark badge pills, or dark cards. */
+html.light .text-white:not(
+  .badge-solid,
+  .badge-solid *,
+  .listing-card-middle,
+  .listing-card-middle *,
+  .listing-card-right,
+  .listing-card-right *,
+  .bg-blue-600,
+  .bg-blue-600 *,
+  .bg-blue-700,
+  .bg-blue-700 *,
+  .bg-blue-500,
+  .bg-blue-500 *,
+  .bg-sky-600,
+  .bg-sky-600 *,
+  .bg-emerald-600,
+  .bg-emerald-600 *,
+  .bg-rose-600,
+  .bg-rose-600 *,
+  .bg-purple-600,
+  .bg-purple-600 *,
+  .bg-indigo-600,
+  .bg-indigo-600 *,
+  .bg-black,
+  .bg-black *,
+  [class*="bg-blue-600"],
+  [class*="bg-blue-600"] *,
+  [class*="bg-sky-600"],
+  [class*="bg-sky-600"] *,
+  [class*="bg-emerald-600"],
+  [class*="bg-emerald-600"] *,
+  [class*="bg-rose-600"],
+  [class*="bg-rose-600"] *,
+  [class*="bg-purple-600"],
+  [class*="bg-purple-600"] *
+) {
+  color: #0F172A !important;
+}
+
+/* Light mode label contrast: labels always display in crisp charcoal */
+html.light label {
+  color: #0F172A !important;
+}
+
+/* Light mode neutral buttons contrast: neutral buttons on light cards have crisp charcoal text */
+html.light button.bg-slate-800,
+html.light button.bg-slate-900,
+html.light button.bg-slate-750,
+html.light button.bg-slate-700,
+html.light button.bg-slate-850,
+html.light button.border-slate-700,
+html.light button.border-slate-800,
+html.light button.bg-slate-800 *,
+html.light button.bg-slate-900 *,
+html.light button.bg-slate-750 *,
+html.light button.bg-slate-700 *,
+html.light button.bg-slate-850 * {
+  color: #0F172A !important;
+}
+
+/* Hover on neutral buttons in light mode retains dark text */
+html.light button.bg-slate-800:hover,
+html.light button.bg-slate-900:hover,
+html.light button.bg-slate-750:hover,
+html.light button.bg-slate-700:hover,
+html.light button.bg-slate-850:hover {
+  color: #0F172A !important;
+  background-color: #E2EBF5 !important;
+}
+
+/* Solid colored buttons & badges retain crisp white text (both normal & hover states) */
+html.light .bg-blue-600,
+html.light .bg-blue-700,
+html.light .bg-blue-500,
+html.light .bg-sky-600,
+html.light .bg-emerald-600,
+html.light .bg-rose-600,
+html.light .bg-purple-600,
+html.light .bg-indigo-600,
+html.light button.bg-blue-600,
+html.light button.bg-blue-700,
+html.light button.bg-blue-500,
+html.light button.bg-sky-600,
+html.light button.bg-emerald-600,
+html.light button.bg-rose-600,
+html.light button.bg-purple-600,
+html.light button.bg-indigo-600,
+html.light .bg-blue-600 *,
+html.light .bg-blue-700 *,
+html.light .bg-blue-500 *,
+html.light .bg-sky-600 *,
+html.light .bg-emerald-600 *,
+html.light .bg-rose-600 *,
+html.light .bg-purple-600 *,
+html.light .bg-indigo-600 *,
+html.light button.bg-blue-600 *,
+html.light button.bg-blue-700 *,
+html.light button.bg-blue-500 *,
+html.light button.bg-sky-600 *,
+html.light button.bg-emerald-600 *,
+html.light button.bg-rose-600 *,
+html.light button.bg-purple-600 *,
+html.light button.bg-indigo-600 * {
+  color: #FFFFFF !important;
+}
+
+html.light button.bg-blue-600:hover,
+html.light button.bg-blue-700:hover,
+html.light button.bg-blue-500:hover,
+html.light button.bg-sky-600:hover,
+html.light button.bg-emerald-600:hover,
+html.light button.bg-rose-600:hover,
+html.light button.bg-purple-600:hover,
+html.light button.bg-indigo-600:hover,
+html.light button.bg-blue-600:hover *,
+html.light button.bg-blue-700:hover *,
+html.light button.bg-blue-500:hover *,
+html.light button.bg-sky-600:hover *,
+html.light button.bg-emerald-600:hover *,
+html.light button.bg-rose-600:hover *,
+html.light button.bg-purple-600:hover *,
+html.light button.bg-indigo-600:hover * {
+  color: #FFFFFF !important;
+}
+
+/* Active Amber buttons retain high-contrast slate-950 text */
+html.light .bg-amber-500,
+html.light .bg-amber-400,
+html.light button.bg-amber-500,
+html.light button.bg-amber-400 {
+  background-color: #F59E0B !important;
+  color: #0F172A !important;
+}
+html.light .bg-amber-500 *,
+html.light .bg-amber-400 *,
+html.light button.bg-amber-500 *,
+html.light button.bg-amber-400 * {
+  color: #0F172A !important;
+}
+
+/* =============================================================================
+   BUTTONS & INTERACTIVE ELEMENTS (#3B82F6, #60A5FA, #C8B8D8)
+   ============================================================================= */
+
+/* Active / Primary Aviation Blue Buttons */
+.bg-blue-600,
+.bg-blue-500 {
+  background-color: #3B82F6 !important;
+  color: #F0F9FF !important;
+  border-color: #60A5FA !important;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.35);
+}
+.bg-blue-600:hover,
+.bg-blue-500:hover {
+  background-color: #2563EB !important;
+  box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.45);
+}
+
+html.light .bg-blue-600,
+html.light .bg-blue-500 {
+  background-color: #3B82F6 !important;
+  color: #FFFFFF !important;
+}
+html.light .bg-blue-600:hover,
+html.light .bg-blue-500:hover {
+  background-color: #2563EB !important;
+}
+
+/* Apply Filter and search buttons */
+.bg-\[\#5c8bb5\] {
+  background-color: #3B82F6 !important;
+  color: #F0F9FF !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+.bg-\[\#5c8bb5\]:hover {
+  background-color: #2563EB !important;
+}
+html.light .bg-\[\#5c8bb5\] {
+  background-color: #3B82F6 !important;
+}
+html.light .bg-\[\#5c8bb5\]:hover {
+  background-color: #2563EB !important;
+}
+
+/* Ensure white text inside primary buttons */
+.bg-blue-600 *,
+.bg-blue-500 *,
+html.light .bg-blue-600 *,
+html.light .bg-blue-500 * {
+  --color-white: #FFFFFF;
+}
+
+/* =============================================================================
+   CARDS & DATA PANELS (Deep Charcoal #1F2937 with Sky #60A5FA & Wisteria #C8B8D8)
+   ============================================================================= */
+
+/* Directory Listing Middle Card Section */
+.listing-card-middle,
+.bg-\[\#476c8f\] {
+  background: linear-gradient(135deg, #1F2937 0%, #283548 100%) !important;
+  color: #F0F9FF !important;
+  border-color: #374151 !important;
+}
+
+html.light .listing-card-middle,
+html.light .bg-\[\#476c8f\] {
+  background: linear-gradient(135deg, #1F2937 0%, #283548 100%) !important;
+  color: #FFFFFF !important;
+}
+
+/* Directory Listing Right Card Section */
+.listing-card-right,
+.bg-\[\#5f97bf\] {
+  background: linear-gradient(135deg, #182230 0%, #1F2937 100%) !important;
+  color: #F0F9FF !important;
+  border-color: #374151 !important;
+}
+
+html.light .listing-card-right,
+html.light .bg-\[\#5f97bf\] {
+  background: linear-gradient(135deg, #182230 0%, #1F2937 100%) !important;
+  color: #FFFFFF !important;
+}
+
+/* Overlapping Text in Cards */
+.listing-card-middle *,
+.listing-card-right *,
+.bg-\[\#476c8f\] *,
+.bg-\[\#5f97bf\] *,
+html.light .listing-card-middle *,
+html.light .listing-card-right *,
+html.light .bg-\[\#476c8f\] *,
+html.light .bg-\[\#5f97bf\] * {
+  --color-white: #FFFFFF !important;
+}
+
+.listing-card-middle .text-white,
+.listing-card-right .text-white,
+html.light .listing-card-middle .text-white,
+html.light .listing-card-right .text-white {
+  color: #F0F9FF !important;
+}
+
+/* Left Branding Column */
+.listing-card-left {
+  background-color: #192231 !important;
+  border-color: #283548 !important;
+}
+
+html.light .listing-card-left {
+  background-color: #F0F9FF !important;
+  border-color: #CBD5E1 !important;
+  color: #1F2937 !important;
+}
+html.light .listing-card-left .text-slate-600 {
+  color: #475569 !important;
+}
+html.light .listing-card-left .text-slate-400 {
+  color: #64748B !important;
+}
+
+/* =============================================================================
+   TRANSLUCENT BADGES & METRIC TAGS (#3B82F6, #60A5FA, #C8B8D8, #F0F9FF)
+   ============================================================================= */
+
+/* Sky Cerulean & Cobalt Badges */
+.bg-blue-500\/10,
+.bg-blue-500\/20,
+.bg-sky-500\/10,
+.bg-sky-500\/20 {
+  background-color: rgba(59, 130, 246, 0.14) !important;
+  border-color: rgba(96, 165, 250, 0.35) !important;
+  color: #60A5FA !important;
+}
+
+html.light .bg-blue-500\/10,
+html.light .bg-blue-500\/20,
+html.light .bg-sky-500\/10,
+html.light .bg-sky-500\/20 {
+  background-color: #F0F9FF !important;
+  border-color: #BAE6FD !important;
+  color: #2563EB !important;
+}
+
+/* Translucent Amber, Emerald, Rose, Purple, and Cyan Badges in Light Mode */
+html.light .bg-amber-500\/10,
+html.light .bg-amber-500\/20,
+html.light .bg-amber-400\/20 {
+  background-color: #FEF3C7 !important;
+  border-color: #FCD34D !important;
+  color: #92400E !important;
+}
+
+html.light .bg-emerald-500\/10,
+html.light .bg-emerald-500\/20,
+html.light .bg-emerald-400\/20 {
+  background-color: #D1FAE5 !important;
+  border-color: #6EE7B7 !important;
+  color: #065F46 !important;
+}
+
+html.light .bg-rose-500\/10,
+html.light .bg-rose-500\/20,
+html.light .bg-red-500\/10,
+html.light .bg-red-500\/20 {
+  background-color: #FFE4E6 !important;
+  border-color: #FDA4AF !important;
+  color: #9F1239 !important;
+}
+
+html.light .bg-purple-500\/10,
+html.light .bg-purple-500\/20,
+html.light .bg-purple-400\/20 {
+  background-color: #F3E8FF !important;
+  border-color: #D8B4FE !important;
+  color: #581C87 !important;
+}
+
+html.light .bg-cyan-500\/10,
+html.light .bg-cyan-500\/20,
+html.light .bg-cyan-400\/20 {
+  background-color: #CFFAFE !important;
+  border-color: #67E8F9 !important;
+  color: #155E75 !important;
+}
+
+/* Deep Containers with Glass Tint */
+.bg-blue-950\/30,
+.bg-blue-950\/40,
+.bg-blue-950\/60,
+.bg-blue-950\/70 {
+  background-color: rgba(31, 41, 55, 0.85) !important;
+  border-color: rgba(96, 165, 250, 0.28) !important;
+}
+
+html.light .bg-blue-950\/30,
+html.light .bg-blue-950\/40,
+html.light .bg-blue-950\/60,
+html.light .bg-blue-950\/70 {
+  background-color: #F0F9FF !important;
+  border-color: #BAE6FD !important;
+  color: #1F2937 !important;
+}
+html.light .bg-blue-950\/30 span,
+html.light .bg-blue-950\/30 p,
+html.light .bg-blue-950\/30 strong {
+  color: #1F2937 !important;
+}
+
+/* =============================================================================
+   INPUTS, SELECTS, & TEXTAREAS (Dark #1F2937 & Light #FFFFFF)
+   ============================================================================= */
+
+/* Dark Mode Inputs */
+input,
+select,
+textarea {
+  background-color: #1F2937 !important;
+  color: #F0F9FF !important;
+  border-color: #374151 !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #60A5FA !important;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9CA3AF !important;
+}
+
+select option {
+  background-color: #1F2937 !important;
+  color: #F0F9FF !important;
+}
+
+/* Light Mode Inputs & Form Controls */
+html.light input,
+html.light select,
+html.light textarea {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  border-color: #3B82F6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+  color: #0F172A !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #64748B !important;
+}
+
+html.light select option {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+/* Custom Legacy Navy Table Headers to Slate Charcoal */
+.bg-\[\#244369\],
+.bg-\[\#335577\] {
+  background-color: #1F2937 !important;
+  color: #F0F9FF !important;
+}
+
+html.light .bg-\[\#244369\],
+html.light .bg-\[\#335577\] {
+  background-color: #1F2937 !important;
+  color: #FFFFFF !important;
+}
+
+/* Subtle elevation for cards in Light Mode - Eye Friendly Soft Ice-Sky #F0F9FF */
+html.light .bg-slate-900,
+html.light .bg-white {
+  background-color: #F0F9FF !important;
+  border-color: #CBD5E1 !important;
+  box-shadow: 0 2px 8px -1px rgba(31, 41, 55, 0.05), 0 1px 3px -1px rgba(31, 41, 55, 0.03);
+}
+
+html.light .bg-slate-950 {
+  background-color: #E5EDF5 !important;
+}
+
+html.light header {
+  background-color: rgba(240, 249, 255, 0.98) !important;
+  border-color: #CBD5E1 !important;
+  box-shadow: 0 2px 8px -2px rgba(31, 41, 55, 0.05);
+}
+
+/* Live Market Ticker in Light Mode */
+html.light #live-market-ticker {
+  background-color: #F0F9FF !important;
+  border-color: #CBD5E1 !important;
+  box-shadow: 0 2px 4px rgba(31, 41, 55, 0.04);
+}
+html.light #live-market-ticker .text-slate-300 {
+  color: #334155;
+}
+html.light #live-market-ticker .bg-slate-800 {
+  background-color: #E2EBF5;
+  color: #1F2937;
+}
+
+/* Selection Highlight */
+::selection {
+  background-color: #3B82F6;
+  color: #F0F9FF;
+}
+
+html.light ::selection {
+  background-color: #3B82F6;
+  color: #FFFFFF;
+}
+
+/* =============================================================================
+   CUSTOM UTILITY ACCENTS (Colors #3B82F6, #60A5FA, #1F2937, #F0F9FF, #C8B8D8)
+   ============================================================================= */
+
+.text-brand-blue { color: #3B82F6 !important; }
+.bg-brand-blue { background-color: #3B82F6 !important; }
+.border-brand-blue { border-color: #3B82F6 !important; }
+
+.text-brand-sky { color: #60A5FA !important; }
+.bg-brand-sky { background-color: #60A5FA !important; }
+.border-brand-sky { border-color: #60A5FA !important; }
+
+.text-brand-charcoal { color: #1F2937 !important; }
+.bg-brand-charcoal { background-color: #1F2937 !important; }
+.border-brand-charcoal { border-color: #1F2937 !important; }
+
+.text-brand-ice { color: #F0F9FF !important; }
+.bg-brand-ice { background-color: #F0F9FF !important; }
+.border-brand-ice { border-color: #F0F9FF !important; }
+
+.text-brand-wisteria { color: #C8B8D8 !important; }
+.bg-brand-wisteria { background-color: #C8B8D8 !important; }
+.border-brand-wisteria { border-color: #C8B8D8 !important; }
+
+/* Subtle Executive Velvet Card & Glow */
+.executive-luxury-glow {
+  box-shadow: 0 0 25px -5px rgba(200, 184, 216, 0.15), 0 0 10px -2px rgba(96, 165, 250, 0.12);
+}
+
+.executive-gradient-border {
+  border-image: linear-gradient(to right, #3B82F6, #60A5FA, #C8B8D8) 1;
+}

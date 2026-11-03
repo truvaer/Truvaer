@@ -1,0 +1,254 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Regular user account profile and credentials",
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "description": "Unique identifier for user",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "username": {
+          "type": "string",
+          "description": "Display username",
+          "minLength": 3,
+          "maxLength": 50
+        },
+        "email": {
+          "type": "string",
+          "description": "Verified user email address",
+          "maxLength": 150
+        },
+        "role": {
+          "type": "string",
+          "description": "User permission role",
+          "enum": ["STANDARD_USER", "BUSINESS_USER", "ADMIN", "SUPER_ADMIN", "MANAGER"]
+        },
+        "created_at": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        }
+      },
+      "required": ["user_id", "username", "email", "role"]
+    },
+    "Business": {
+      "title": "Business",
+      "description": "Registered enterprise or aviation vendor profile",
+      "type": "object",
+      "properties": {
+        "business_id": {
+          "type": "string",
+          "description": "Unique business UUID",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "organization_name": {
+          "type": "string",
+          "description": "Legal business organization name",
+          "minLength": 2,
+          "maxLength": 150
+        },
+        "owner_name": {
+          "type": "string",
+          "description": "Owner / Authorized contact name",
+          "maxLength": 100
+        },
+        "business_email": {
+          "type": "string",
+          "description": "Primary corporate email",
+          "maxLength": 150
+        },
+        "verification_status": {
+          "type": "string",
+          "description": "Admin verification status",
+          "enum": ["HARD_LOCKED", "IN_REVIEW", "VERIFIED", "REJECTED"]
+        },
+        "category": {
+          "type": "string",
+          "description": "Industry service category",
+          "maxLength": 80
+        },
+        "subCategory": {
+          "type": "string",
+          "description": "Industry service sub-category",
+          "maxLength": 80
+        }
+      },
+      "required": ["business_id", "organization_name", "business_email", "verification_status"]
+    },
+    "ServiceListing": {
+      "title": "ServiceListing",
+      "description": "Commercial service or equipment listing in marketing portal",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Listing ID",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "business_id": {
+          "type": "string",
+          "description": "Vendor business ID owner",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Service title",
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "description": "Aviation service category",
+          "maxLength": 80
+        },
+        "subCategory": {
+          "type": "string",
+          "description": "Aviation sub-category",
+          "maxLength": 80
+        },
+        "price": {
+          "type": "number",
+          "description": "Price in base currency"
+        },
+        "publication_status": {
+          "type": "string",
+          "description": "Moderation status",
+          "enum": ["PUBLISHED", "PENDING_REVIEW", "DRAFT", "ARCHIVED"]
+        }
+      },
+      "required": ["id", "business_id", "title", "category", "price", "publication_status"]
+    },
+    "CustomCategoryRequest": {
+      "title": "CustomCategoryRequest",
+      "description": "Request for adding custom categories and subcategories requiring admin approval",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Request ID",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "business_id": {
+          "type": "string",
+          "description": "Requesting business ID",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "business_name": {
+          "type": "string",
+          "description": "Requesting business name",
+          "maxLength": 150
+        },
+        "category_name": {
+          "type": "string",
+          "description": "Requested category name",
+          "maxLength": 80
+        },
+        "sub_category_name": {
+          "type": "string",
+          "description": "Requested subcategory name",
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "description": "Justification details",
+          "maxLength": 500
+        },
+        "status": {
+          "type": "string",
+          "description": "Approval status",
+          "enum": ["PENDING_APPROVAL", "APPROVED", "REJECTED"]
+        },
+        "requested_by": {
+          "type": "string",
+          "description": "Requester ID",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "requested_at": {
+          "type": "string",
+          "description": "ISO timestamp of request"
+        }
+      },
+      "required": ["id", "business_id", "category_name", "sub_category_name", "status", "requested_by"]
+    },
+    "Quotation": {
+      "title": "Quotation",
+      "description": "Direct quotation and commercial bid proposal",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Quotation unique ID",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "business_id": {
+          "type": "string",
+          "description": "Issuing business ID",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "client_id": {
+          "type": "string",
+          "description": "Client user or company ID",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Quotation title",
+          "maxLength": 150
+        },
+        "total_amount": {
+          "type": "number",
+          "description": "Total quote amount"
+        },
+        "status": {
+          "type": "string",
+          "description": "Workflow status",
+          "enum": ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED"]
+        }
+      },
+      "required": ["id", "business_id", "client_id", "title", "total_amount", "status"]
+    },
+    "TestConnection": {
+      "title": "TestConnection",
+      "description": "Diagnostic heartbeat document for testing Firestore connectivity",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "timestamp": {
+          "type": "string",
+          "maxLength": 100
+        }
+      },
+      "required": ["status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Individual registered user profile records"
+    },
+    "/businesses/{businessId}": {
+      "schema": { "$ref": "#/entities/Business" },
+      "description": "Commercial business directory and credentials"
+    },
+    "/services/{serviceId}": {
+      "schema": { "$ref": "#/entities/ServiceListing" },
+      "description": "Marketplace service and equipment listings"
+    },
+    "/customCategoryRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/CustomCategoryRequest" },
+      "description": "Requests for custom 'Other' categories and subcategories awaiting admin approval"
+    },
+    "/quotations/{quotationId}": {
+      "schema": { "$ref": "#/entities/Quotation" },
+      "description": "Commercial quotations exchanged between businesses and clients"
+    },
+    "/test/{docId}": {
+      "schema": { "$ref": "#/entities/TestConnection" },
+      "description": "Health check diagnostic ping endpoint"
+    }
+  }
+}

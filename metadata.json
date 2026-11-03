@@ -1,0 +1,6 @@
+{
+  "name": "Truvaer.com",
+  "description": "Truvaer Marketing Portal & Marketplace – Global Aviation Service Directory, Airport Terminals, FBO Facilities, and Verified Media Showcase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

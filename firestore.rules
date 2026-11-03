@@ -1,0 +1,184 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------
+    // GLOBAL CATCH-ALL SAFETY NET (DEFAULT-DENY)
+    // -------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------
+    // HARDENED SECURITY PRIMITIVES & HELPERS
+    // -------------------------------------------------------------
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token != null && request.auth.token.email != null && (
+          request.auth.token.email.matches('.*@truvaer\\.com$') ||
+          request.auth.token.email == 'aditya@yarifly.com'
+        ))
+      );
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // -------------------------------------------------------------
+    // ENTITY VALIDATION BLUEPRINTS
+    // -------------------------------------------------------------
+    function isValidUser(data) {
+      return data.keys().hasAll(['user_id', 'username', 'email', 'role']) &&
+        data.user_id is string && isValidId(data.user_id) &&
+        data.username is string && data.username.size() >= 2 && data.username.size() <= 60 &&
+        data.email is string && data.email.size() <= 150 &&
+        data.role in ['STANDARD_USER', 'BUSINESS_USER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER'];
+    }
+
+    function isValidBusiness(data) {
+      return data.keys().hasAll(['business_id', 'organization_name', 'business_email', 'verification_status']) &&
+        data.business_id is string && isValidId(data.business_id) &&
+        data.organization_name is string && data.organization_name.size() >= 2 && data.organization_name.size() <= 150 &&
+        data.business_email is string && data.business_email.size() <= 150 &&
+        data.verification_status in ['HARD_LOCKED', 'IN_REVIEW', 'VERIFIED', 'REJECTED'];
+    }
+
+    function isValidService(data) {
+      return data.keys().hasAll(['id', 'business_id', 'title', 'category', 'price', 'publication_status']) &&
+        data.id is string && isValidId(data.id) &&
+        data.business_id is string && isValidId(data.business_id) &&
+        data.title is string && data.title.size() <= 150 &&
+        data.category is string && data.category.size() <= 100 &&
+        data.price is number && data.price >= 0 &&
+        data.publication_status in ['PUBLISHED', 'PENDING_REVIEW', 'DRAFT', 'ARCHIVED'];
+    }
+
+    function isValidCategoryRequest(data) {
+      return data.keys().hasAll(['id', 'business_id', 'category_name', 'sub_category_name', 'status', 'requested_by']) &&
+        data.id is string && isValidId(data.id) &&
+        data.business_id is string && isValidId(data.business_id) &&
+        data.category_name is string && data.category_name.size() > 0 && data.category_name.size() <= 100 &&
+        data.sub_category_name is string && data.sub_category_name.size() > 0 && data.sub_category_name.size() <= 100 &&
+        data.status in ['PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
+    }
+
+    function isValidQuotation(data) {
+      return data.keys().hasAll(['id', 'business_id', 'client_id', 'title', 'total_amount', 'status']) &&
+        data.id is string && isValidId(data.id) &&
+        data.business_id is string && isValidId(data.business_id) &&
+        data.client_id is string && isValidId(data.client_id) &&
+        data.title is string && data.title.size() <= 150 &&
+        data.total_amount is number && data.total_amount >= 0 &&
+        data.status in ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED'];
+    }
+
+    // -------------------------------------------------------------
+    // COLLECTION: DIAGNOSTIC / TEST CONNECTION
+    // -------------------------------------------------------------
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // -------------------------------------------------------------
+    // COLLECTION: USERS
+    // -------------------------------------------------------------
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() &&
+                    request.auth.uid == userId &&
+                    isValidId(userId) &&
+                    isValidUser(incoming()) &&
+                    incoming().role in ['STANDARD_USER', 'BUSINESS_USER'];
+      allow update: if isSignedIn() &&
+                    isValidId(userId) &&
+                    (isAdmin() || (
+                      request.auth.uid == userId &&
+                      isValidUser(incoming()) &&
+                      incoming().role == existing().role
+                    ));
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------
+    // COLLECTION: BUSINESSES
+    // -------------------------------------------------------------
+    match /businesses/{businessId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() &&
+                    isValidId(businessId) &&
+                    isValidBusiness(incoming());
+      allow update: if isSignedIn() &&
+                    isValidId(businessId) &&
+                    isValidBusiness(incoming()) &&
+                    (isAdmin() || request.auth.uid == businessId || request.auth.uid == existing().owner_id);
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------
+    // COLLECTION: SERVICES
+    // -------------------------------------------------------------
+    match /services/{serviceId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() &&
+                    isValidId(serviceId) &&
+                    isValidService(incoming()) &&
+                    (isAdmin() || request.auth.uid == incoming().business_id);
+      allow update: if isSignedIn() &&
+                    isValidId(serviceId) &&
+                    isValidService(incoming()) &&
+                    (isAdmin() || request.auth.uid == existing().business_id);
+      allow delete: if isSignedIn() &&
+                    (isAdmin() || request.auth.uid == existing().business_id);
+    }
+
+    // -------------------------------------------------------------
+    // COLLECTION: CUSTOM CATEGORY & SUBCATEGORY REQUESTS
+    // -------------------------------------------------------------
+    match /customCategoryRequests/{requestId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() &&
+                    isValidId(requestId) &&
+                    isValidCategoryRequest(incoming());
+      allow update: if isSignedIn() &&
+                    isValidId(requestId) &&
+                    (isAdmin() || request.auth.uid == existing().business_id || request.auth.uid == existing().requested_by);
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------
+    // COLLECTION: QUOTATIONS
+    // -------------------------------------------------------------
+    match /quotations/{quotationId} {
+      allow get, list: if isSignedIn() &&
+                       (isAdmin() || resource == null || resource.data.client_id == request.auth.uid || resource.data.business_id == request.auth.uid);
+      allow create: if isSignedIn() &&
+                    isValidId(quotationId) &&
+                    isValidQuotation(incoming()) &&
+                    (isAdmin() || request.auth.uid == incoming().business_id);
+      allow update: if isSignedIn() &&
+                    isValidId(quotationId) &&
+                    isValidQuotation(incoming()) &&
+                    (isAdmin() || request.auth.uid == existing().business_id || request.auth.uid == existing().client_id);
+      allow delete: if isAdmin();
+    }
+  }
+}
