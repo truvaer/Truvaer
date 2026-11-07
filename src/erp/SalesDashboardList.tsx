@@ -2289,7 +2289,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
               <option value="Bank Transfer">Bank Transfer / NEFT</option>
               <option value="Credit Card">Credit Card / POS Terminal</option>
               <option value="Corporate Wallet">Corporate Wallet Deduction</option>
-              <option value="Cash">Cash at FBO Counter</option>
+              <option value="Cash">Cash at Operations Desk</option>
               <option value="UPI">UPI Instant Pay</option>
               <option value="Cheque">Corporate Bank Cheque</option>
             </select>

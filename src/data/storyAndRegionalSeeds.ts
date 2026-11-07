@@ -1,0 +1,217 @@
+import { StoryCategory, RegionalAuthorityZone, RegionCountryMapping } from '../types';
+
+export const STORY_CATEGORIES_KEY = 'truvaer_story_categories_v1';
+export const REGIONAL_ZONES_KEY = 'truvaer_regional_zones_v1';
+export const COUNTRY_MAPPINGS_KEY = 'truvaer_country_mappings_v1';
+
+export const initialStoryCategories: StoryCategory[] = [
+  {
+    id: 'scat_01',
+    name: 'Pilot Training & Academies',
+    slug: 'pilot-training-academies',
+    description: 'Commercial pilot licenses (CPL), multi-engine ratings, flight simulator type ratings & airline cadet intakes.',
+    story_count: 14,
+    status: 'ACTIVE',
+    colorBadge: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    created_at: '2026-01-10T08:00:00Z',
+    updated_at: '2026-09-01T10:00:00Z',
+  },
+  {
+    id: 'scat_02',
+    name: 'Private Air Charter',
+    slug: 'private-air-charter',
+    description: 'Executive jet charters, corporate fleet flights, empty legs, VIP sky suites, and bespoke passenger solutions.',
+    story_count: 22,
+    status: 'ACTIVE',
+    colorBadge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    created_at: '2026-01-12T08:00:00Z',
+    updated_at: '2026-09-01T10:00:00Z',
+  },
+  {
+    id: 'scat_03',
+    name: 'Airport & Ground Handling',
+    slug: 'airport-ground-handling',
+    description: 'Apron ramp clearance, GPU ground power hookup, VIP terminal lounges, baggage logistics, and de-icing operations.',
+    story_count: 9,
+    status: 'ACTIVE',
+    colorBadge: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    created_at: '2026-01-15T08:00:00Z',
+    updated_at: '2026-09-01T10:00:00Z',
+  },
+  {
+    id: 'scat_04',
+    name: 'MRO & Aircraft Engineering',
+    slug: 'mro-aircraft-engineering',
+    description: 'Base maintenance, C-checks, turbine engine overhauls, avionics glass cockpit retrofits, and spare parts procurement.',
+    story_count: 18,
+    status: 'ACTIVE',
+    colorBadge: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    created_at: '2026-02-01T08:00:00Z',
+    updated_at: '2026-09-01T10:00:00Z',
+  },
+  {
+    id: 'scat_05',
+    name: 'Air Cargo & Freight Logistics',
+    slug: 'air-cargo-freight-logistics',
+    description: 'Freighter charters, pallet load corridors, dangerous goods compliance, and temperature-controlled air freight routing.',
+    story_count: 11,
+    status: 'ACTIVE',
+    colorBadge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+    created_at: '2026-02-10T08:00:00Z',
+    updated_at: '2026-09-01T10:00:00Z',
+  },
+  {
+    id: 'scat_06',
+    name: 'Aircraft Sales & Acquisitions',
+    slug: 'aircraft-sales-acquisitions',
+    description: 'Pre-purchase inspections, aircraft market valuations, closing escrow custody, and pre-owned jet brokerage.',
+    story_count: 7,
+    status: 'ACTIVE',
+    colorBadge: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+    created_at: '2026-03-01T08:00:00Z',
+    updated_at: '2026-09-01T10:00:00Z',
+  },
+  {
+    id: 'scat_07',
+    name: 'Aviation Technology & Software',
+    slug: 'aviation-technology-software',
+    description: 'Flight planning systems, Electronic Flight Bags (EFB), crew duty schedulers, ADS-B telemetry, and dispatch software.',
+    story_count: 15,
+    status: 'ACTIVE',
+    colorBadge: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+    created_at: '2026-03-15T08:00:00Z',
+    updated_at: '2026-09-01T10:00:00Z',
+  },
+  {
+    id: 'scat_08',
+    name: 'Regulatory & Civil Aviation Directives',
+    slug: 'regulatory-civil-aviation-directives',
+    description: 'DGCA, FAA, EASA, GCAA regulatory circulars, airworthiness directives (AD), and safety audit compliance notices.',
+    story_count: 26,
+    status: 'ACTIVE',
+    colorBadge: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+    created_at: '2026-04-01T08:00:00Z',
+    updated_at: '2026-09-01T10:00:00Z',
+  },
+];
+
+export const initialRegionalZones: RegionalAuthorityZone[] = [
+  {
+    id: 'zone_apac',
+    code: 'APAC',
+    name: 'Asia-Pacific (APAC)',
+    description: 'East Asia, South Asia & Southeast Asia high-density commercial & charter flight corridors.',
+    headquarters: 'Singapore (Changi) / New Delhi (IGI)',
+    primaryAuthority: 'DGCA / CAAS / JCAB / CAAC',
+    isSystem: true,
+  },
+  {
+    id: 'zone_emea',
+    code: 'EMEA',
+    name: 'Europe, Middle East & Africa (EMEA)',
+    description: 'Trans-European, Mediterranean, Arabian Gulf & African continental air corridors.',
+    headquarters: 'London (Heathrow) / Dubai (DWC) / Frankfurt',
+    primaryAuthority: 'EASA / UK CAA / GCAA',
+    isSystem: true,
+  },
+  {
+    id: 'zone_na',
+    code: 'NA',
+    name: 'North America (NA)',
+    description: 'United States, Canada & Mexico federal airspace and trans-border general aviation corridors.',
+    headquarters: 'Washington, D.C. / Dallas / Montreal',
+    primaryAuthority: 'FAA / Transport Canada',
+    isSystem: true,
+  },
+  {
+    id: 'zone_latam',
+    code: 'LATAM',
+    name: 'Latin America & Caribbean (LATAM)',
+    description: 'Central & South America, Andean airspace, and Caribbean oceanic flight sectors.',
+    headquarters: 'São Paulo (Guarulhos) / Panama City / Bogotá',
+    primaryAuthority: 'ANAC / AFAC / Aerocivil',
+    isSystem: true,
+  },
+  {
+    id: 'zone_anz',
+    code: 'ANZ',
+    name: 'Australia, New Zealand & Oceania (ANZ)',
+    description: 'Australasia, Tasman Sea corridors & South Pacific oceanic airspace routing.',
+    headquarters: 'Sydney (Kingsford Smith) / Auckland',
+    primaryAuthority: 'CASA / CAA NZ',
+    isSystem: true,
+  },
+  {
+    id: 'zone_cis',
+    code: 'CIS',
+    name: 'Commonwealth of Independent States & Central Asia (CIS)',
+    description: 'Eurasian cross-continental transit routes and Central Asian air hubs.',
+    headquarters: 'Almaty / Tashkent / Astana',
+    primaryAuthority: 'IAC / CAC',
+    isSystem: true,
+  },
+  {
+    id: 'zone_mena',
+    code: 'MENA',
+    name: 'Middle East & North Africa (MENA)',
+    description: 'Gulf Cooperation Council (GCC), Levant, and North African high-traffic sectors.',
+    headquarters: 'Riyadh / Doha / Abu Dhabi',
+    primaryAuthority: 'GACA / QCAA / GCAA',
+    isSystem: false,
+  },
+];
+
+export const initialCountryMappings: RegionCountryMapping[] = [
+  // APAC Zone
+  { id: 'cmap_01', code: 'IN', name: 'India', regionCode: 'APAC', regionalAuthorityAgency: 'DGCA (Directorate General of Civil Aviation)', currency: 'INR', status: 'ACTIVE' },
+  { id: 'cmap_02', code: 'SG', name: 'Singapore', regionCode: 'APAC', regionalAuthorityAgency: 'CAAS (Civil Aviation Authority of Singapore)', currency: 'SGD', status: 'ACTIVE' },
+  { id: 'cmap_03', code: 'JP', name: 'Japan', regionCode: 'APAC', regionalAuthorityAgency: 'JCAB (Japan Civil Aviation Bureau)', currency: 'JPY', status: 'ACTIVE' },
+  { id: 'cmap_04', code: 'MY', name: 'Malaysia', regionCode: 'APAC', regionalAuthorityAgency: 'CAAM (Civil Aviation Authority of Malaysia)', currency: 'MYR', status: 'ACTIVE' },
+  { id: 'cmap_05', code: 'TH', name: 'Thailand', regionCode: 'APAC', regionalAuthorityAgency: 'CAAT (Civil Aviation Authority of Thailand)', currency: 'THB', status: 'ACTIVE' },
+  { id: 'cmap_06', code: 'ID', name: 'Indonesia', regionCode: 'APAC', regionalAuthorityAgency: 'DGCA Indonesia', currency: 'IDR', status: 'ACTIVE' },
+  { id: 'cmap_07', code: 'KR', name: 'South Korea', regionCode: 'APAC', regionalAuthorityAgency: 'MOLIT (Ministry of Land, Infrastructure and Transport)', currency: 'KRW', status: 'ACTIVE' },
+  { id: 'cmap_08', code: 'PH', name: 'Philippines', regionCode: 'APAC', regionalAuthorityAgency: 'CAAP (Civil Aviation Authority of the Philippines)', currency: 'PHP', status: 'ACTIVE' },
+  { id: 'cmap_09', code: 'VN', name: 'Vietnam', regionCode: 'APAC', regionalAuthorityAgency: 'CAAV (Civil Aviation Authority of Vietnam)', currency: 'VND', status: 'ACTIVE' },
+
+  // EMEA Zone
+  { id: 'cmap_10', code: 'GB', name: 'United Kingdom', regionCode: 'EMEA', regionalAuthorityAgency: 'UK CAA (Civil Aviation Authority)', currency: 'GBP', status: 'ACTIVE' },
+  { id: 'cmap_11', code: 'FR', name: 'France', regionCode: 'EMEA', regionalAuthorityAgency: 'DGAC / EASA', currency: 'EUR', status: 'ACTIVE' },
+  { id: 'cmap_12', code: 'DE', name: 'Germany', regionCode: 'EMEA', regionalAuthorityAgency: 'LBA (Luftfahrt-Bundesamt) / EASA', currency: 'EUR', status: 'ACTIVE' },
+  { id: 'cmap_13', code: 'AE', name: 'United Arab Emirates', regionCode: 'EMEA', regionalAuthorityAgency: 'GCAA (General Civil Aviation Authority)', currency: 'AED', status: 'ACTIVE' },
+  { id: 'cmap_14', code: 'IT', name: 'Italy', regionCode: 'EMEA', regionalAuthorityAgency: 'ENAC / EASA', currency: 'EUR', status: 'ACTIVE' },
+  { id: 'cmap_15', code: 'CH', name: 'Switzerland', regionCode: 'EMEA', regionalAuthorityAgency: 'FOCA (Federal Office of Civil Aviation)', currency: 'CHF', status: 'ACTIVE' },
+  { id: 'cmap_16', code: 'SA', name: 'Saudi Arabia', regionCode: 'EMEA', regionalAuthorityAgency: 'GACA (General Authority of Civil Aviation)', currency: 'SAR', status: 'ACTIVE' },
+  { id: 'cmap_17', code: 'ZA', name: 'South Africa', regionCode: 'EMEA', regionalAuthorityAgency: 'SACAA (South African Civil Aviation Authority)', currency: 'ZAR', status: 'ACTIVE' },
+  { id: 'cmap_18', code: 'ES', name: 'Spain', regionCode: 'EMEA', regionalAuthorityAgency: 'AESA / EASA', currency: 'EUR', status: 'ACTIVE' },
+  { id: 'cmap_19', code: 'NL', name: 'Netherlands', regionCode: 'EMEA', regionalAuthorityAgency: 'ILT / EASA', currency: 'EUR', status: 'ACTIVE' },
+
+  // NA Zone
+  { id: 'cmap_20', code: 'US', name: 'United States', regionCode: 'NA', regionalAuthorityAgency: 'FAA (Federal Aviation Administration)', currency: 'USD', status: 'ACTIVE' },
+  { id: 'cmap_21', code: 'CA', name: 'Canada', regionCode: 'NA', regionalAuthorityAgency: 'Transport Canada Civil Aviation (TCCA)', currency: 'CAD', status: 'ACTIVE' },
+  { id: 'cmap_22', code: 'MX', name: 'Mexico', regionCode: 'NA', regionalAuthorityAgency: 'AFAC (Agencia Federal de Aviación Civil)', currency: 'MXN', status: 'ACTIVE' },
+
+  // LATAM Zone
+  { id: 'cmap_23', code: 'BR', name: 'Brazil', regionCode: 'LATAM', regionalAuthorityAgency: 'ANAC (Agência Nacional de Aviação Civil)', currency: 'BRL', status: 'ACTIVE' },
+  { id: 'cmap_24', code: 'CO', name: 'Colombia', regionCode: 'LATAM', regionalAuthorityAgency: 'Aerocivil (Aeronáutica Civil)', currency: 'COP', status: 'ACTIVE' },
+  { id: 'cmap_25', code: 'CL', name: 'Chile', regionCode: 'LATAM', regionalAuthorityAgency: 'DGAC Chile', currency: 'CLP', status: 'ACTIVE' },
+  { id: 'cmap_26', code: 'AR', name: 'Argentina', regionCode: 'LATAM', regionalAuthorityAgency: 'ANAC Argentina', currency: 'ARS', status: 'ACTIVE' },
+  { id: 'cmap_27', code: 'PA', name: 'Panama', regionCode: 'LATAM', regionalAuthorityAgency: 'AAC (Autoridad Aeronáutica Civil)', currency: 'PAB', status: 'ACTIVE' },
+
+  // ANZ Zone
+  { id: 'cmap_28', code: 'AU', name: 'Australia', regionCode: 'ANZ', regionalAuthorityAgency: 'CASA (Civil Aviation Safety Authority)', currency: 'AUD', status: 'ACTIVE' },
+  { id: 'cmap_29', code: 'NZ', name: 'New Zealand', regionCode: 'ANZ', regionalAuthorityAgency: 'CAA NZ (Civil Aviation Authority of New Zealand)', currency: 'NZD', status: 'ACTIVE' },
+  { id: 'cmap_30', code: 'FJ', name: 'Fiji', regionCode: 'ANZ', regionalAuthorityAgency: 'CAAF (Civil Aviation Authority of Fiji)', currency: 'FJD', status: 'ACTIVE' },
+
+  // CIS Zone
+  { id: 'cmap_31', code: 'KZ', name: 'Kazakhstan', regionCode: 'CIS', regionalAuthorityAgency: 'CAC Kazakhstan (Civil Aviation Committee)', currency: 'KZT', status: 'ACTIVE' },
+  { id: 'cmap_32', code: 'UZ', name: 'Uzbekistan', regionCode: 'CIS', regionalAuthorityAgency: 'Uzaviatsiya', currency: 'UZS', status: 'ACTIVE' },
+  { id: 'cmap_33', code: 'AZ', name: 'Azerbaijan', regionCode: 'CIS', regionalAuthorityAgency: 'SCAA Azerbaijan', currency: 'AZN', status: 'ACTIVE' },
+  { id: 'cmap_34', code: 'AM', name: 'Armenia', regionCode: 'CIS', regionalAuthorityAgency: 'GDCA Armenia', currency: 'AMD', status: 'ACTIVE' },
+
+  // MENA Zone
+  { id: 'cmap_35', code: 'QA', name: 'Qatar', regionCode: 'MENA', regionalAuthorityAgency: 'QCAA (Qatar Civil Aviation Authority)', currency: 'QAR', status: 'ACTIVE' },
+  { id: 'cmap_36', code: 'BH', name: 'Bahrain', regionCode: 'MENA', regionalAuthorityAgency: 'BCAA (Bahrain Civil Aviation Affairs)', currency: 'BHD', status: 'ACTIVE' },
+  { id: 'cmap_37', code: 'KW', name: 'Kuwait', regionCode: 'MENA', regionalAuthorityAgency: 'DGCA Kuwait', currency: 'KWD', status: 'ACTIVE' },
+  { id: 'cmap_38', code: 'OM', name: 'Oman', regionCode: 'MENA', regionalAuthorityAgency: 'CAA Oman', currency: 'OMR', status: 'ACTIVE' },
+  { id: 'cmap_39', code: 'EG', name: 'Egypt', regionCode: 'MENA', regionalAuthorityAgency: 'ECAA (Egyptian Civil Aviation Authority)', currency: 'EGP', status: 'ACTIVE' },
+];

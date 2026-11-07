@@ -118,7 +118,7 @@ const SELF_HELP_ARTICLES: SelfHelpArticle[] = [
       'Navigate to your User Profile via the top right navigation avatar.',
       'Upload valid regulatory credentials (Air Operator Certificate, Pilot License, or Government ID).',
       'Set your 4-digit biometric MPIN for multi-device session verification.',
-      'Once verified, your profile displays the verified Aviator or FBO shield across all marketplace queries.',
+      'Once verified, your profile displays the verified Aviator or Operator shield across all marketplace queries.',
     ],
     actionLabel: 'Open Profile Settings',
     actionType: 'profile',
@@ -179,7 +179,7 @@ const SELF_HELP_ARTICLES: SelfHelpArticle[] = [
     steps: [
       'Submit CAMO work orders via the Commercial Sales / Operations portal.',
       'Verify EASA Form 1 / FAA 8130-3 airworthiness release certificates for all installed spares.',
-      'Request airport ramp access badges and FBO VIP passenger lounge clearances in advance.',
+      'Request airport ramp access badges and VIP executive passenger lounge clearances in advance.',
       'For emergency AOG (Aircraft On Ground) support, initiate an urgent Live Support ticket.',
     ],
     actionLabel: 'Commercial Sales & Operations',
@@ -266,7 +266,7 @@ export const ConnectWithCustomerCareModal: React.FC<ConnectWithCustomerCareModal
   // Automatic Context Metadata
   const appVersion = 'v2.4.1 (TruvAer Live Build)';
   const recentAction = 'Browsing ServiceScout Aviation Directory & Operations';
-  const businessRole = currentBusiness?.verification_status === 'VERIFIED' ? 'VERIFIED_FBO_PARTNER' : 'CORPORATE_AIR_CHARTER_OPERATOR';
+  const businessRole = currentBusiness?.verification_status === 'VERIFIED' ? 'VERIFIED_OPERATOR_PARTNER' : 'CORPORATE_AIR_CHARTER_OPERATOR';
   const subscriptionTier = currentBusiness?.corporate_wallet?.tier || 'Enterprise Platinum';
 
   const contextPayload: CustomerCareContextPayload = isBusiness

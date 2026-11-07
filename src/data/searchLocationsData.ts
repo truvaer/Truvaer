@@ -111,7 +111,7 @@ export const COMPREHENSIVE_LOCATIONS: LocationItem[] = [
     countryCode: 'IN',
     display: 'Mumbai, Maharashtra, India',
     airportCode: 'BOM / VABB',
-    hubType: 'Chhatrapati Shivaji Maharaj International (FBO / VIP)',
+    hubType: 'Chhatrapati Shivaji Maharaj International (VIP Terminal)',
   },
   {
     id: 'loc_in_delhi',
@@ -141,7 +141,7 @@ export const COMPREHENSIVE_LOCATIONS: LocationItem[] = [
     countryCode: 'IN',
     display: 'RGOA (Manohar Int\'l Mopa), Goa, India',
     airportCode: 'GOX / VOGA',
-    hubType: 'Mopa International FBO Terminal',
+    hubType: 'Mopa International VIP Executive Terminal',
   },
   {
     id: 'loc_in_hyderabad',
@@ -223,7 +223,7 @@ export const COMPREHENSIVE_LOCATIONS: LocationItem[] = [
     countryCode: 'AE',
     display: 'Dubai, Dubai Emirate, United Arab Emirates',
     airportCode: 'DXB / OMDB',
-    hubType: 'Dubai International & DWC Al Maktoum VIP FBO',
+    hubType: 'Dubai International & DWC Al Maktoum VIP Executive Terminal',
   },
   {
     id: 'loc_ae_abudhabi',
@@ -372,7 +372,7 @@ export const COMPREHENSIVE_LOCATIONS: LocationItem[] = [
     country: 'France',
     countryCode: 'FR',
     display: 'Toulouse, Occitanie, France',
-    airportCode: 'TLS / LFBO',
+    airportCode: 'TLS',
     hubType: 'Toulouse-Blagnac (Airbus Aerospace Capital)',
   },
 ];

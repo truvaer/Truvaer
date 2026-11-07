@@ -6,7 +6,7 @@ This document describes the user interface architecture, listing card layout spe
 
 ## 1. ServiceScout Marketplace Directory Overview
 
-The **ServiceScout Marketplace** connects aircraft operators, MRO facilities, FBO terminals, charter providers, and aviation academies worldwide with corporate aviation procurers and pilots.
+The **ServiceScout Marketplace** connects aircraft operators, MRO facilities, VIP executive terminals, charter providers, and aviation academies worldwide with corporate aviation procurers and pilots.
 
 Key Components:
 - **`MarketingPortal.tsx`**: Central orchestrator for the directory view, filter drawer, and listings layout.

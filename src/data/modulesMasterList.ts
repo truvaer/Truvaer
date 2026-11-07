@@ -38,7 +38,7 @@ export const MASTER_APP_MODULES: AppPlatformModule[] = [
     name: 'Direct Aviator Chat & Support',
     category: 'COMMUNICATION',
     categoryLabel: 'Communication',
-    description: 'Direct messaging with charter operators, FBO reps and ground support',
+    description: 'Direct messaging with charter operators, executive reps and ground support',
     isStandardAllowed: true,
   },
   {

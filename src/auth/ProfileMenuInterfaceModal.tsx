@@ -274,7 +274,7 @@ export const ProfileMenuInterfaceModal: React.FC<ProfileMenuInterfaceModalProps>
       category: 'ERP',
       categoryLabel: 'ERP',
       icon: <PhoneCall className="w-5 h-5 text-emerald-400" />,
-      description: 'FBO client meetings, aircraft viewing schedules, and flight briefings',
+      description: 'VIP client meetings, aircraft viewing schedules, and flight briefings',
       action: () => {
         onOpenCommunications();
         onClose();
@@ -308,7 +308,7 @@ export const ProfileMenuInterfaceModal: React.FC<ProfileMenuInterfaceModalProps>
     },
     {
       id: 'fin_store',
-      name: 'School Store / FBO',
+      name: 'Aviation Store & Supplies',
       category: 'FINANCE',
       categoryLabel: 'Finance',
       icon: <Store className="w-5 h-5 text-amber-400" />,

@@ -38,6 +38,7 @@ import {
   Check,
   Edit3,
   X,
+  PauseCircle,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
 import {
@@ -630,8 +631,8 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      {/* Header Banner with Restored Status Bar */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2.5">
             <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shrink-0">
@@ -653,35 +654,40 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
           </div>
         </div>
 
-        {/* Capacity Status Pill & Business Wallet Indicator */}
-        <div className="flex items-center space-x-3 shrink-0">
-          {!isBusiness ? (
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs font-mono">
-              <div className="text-[10px] text-slate-400 uppercase">Active Queue Capacity</div>
-              <div className="text-amber-400 font-bold flex items-center space-x-1.5">
-                <span>{activeItems.length} / {config.max_active_limit} Published</span>
-                {activeItems.length >= config.max_active_limit && (
-                  <span className="text-[9px] bg-rose-500/20 text-rose-300 px-1.5 py-0.2 rounded border border-rose-500/30">
-                    FIFO Active
-                  </span>
-                )}
-              </div>
+        {/* Status Bar Indicators & Controls */}
+        <div className="flex items-center space-x-2.5 flex-wrap gap-y-2 shrink-0">
+          {/* Active Queue Capacity Pill */}
+          <div className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center space-x-2 text-xs font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-slate-400">Queue:</span>
+            <span className="text-white font-bold">{activeItems.length} / {config.max_active_limit || 10}</span>
+          </div>
+
+          {/* Corporate Wallet or Debit Cost */}
+          {isBusiness ? (
+            <div className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-amber-500/30 flex items-center space-x-2 text-xs font-mono">
+              <Wallet className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-slate-400">Wallet:</span>
+              <span className="text-amber-300 font-bold">{businessWalletBalance.toLocaleString()} Cr</span>
             </div>
           ) : (
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs font-mono">
-              <div className="text-[10px] text-slate-400 uppercase">Corporate Wallet Balance</div>
-              <div className="text-emerald-400 font-bold flex items-center space-x-1.5">
-                <Wallet className="w-3.5 h-3.5" />
-                <span>{businessWalletBalance.toLocaleString()} Credits</span>
-              </div>
+            <div className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center space-x-2 text-xs font-mono">
+              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+              <span className="text-slate-400">Rate:</span>
+              <span className="text-sky-300 font-bold">{config.business_publish_credit_cost || 50} Cr/post</span>
             </div>
           )}
+
+          {/* System Health */}
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center space-x-1.5">
+            <span className="font-bold">FIFO Engine Active</span>
+          </div>
 
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold cursor-pointer transition-colors"
             >
               Close Desk
             </button>
@@ -689,12 +695,12 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs: Business Users restricted exclusively to FlashNews Desk and Queue */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-1 bg-slate-900/60 p-2 rounded-2xl border border-slate-800">
+      {/* Navigation Sub-Tabs: Single Row with Status Bar */}
+      <div className="flex items-center gap-2 bg-slate-900/60 p-2 rounded-2xl border border-slate-800 w-full overflow-x-auto whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <button
           type="button"
           onClick={() => setViewTab('publish')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
             viewTab === 'publish'
               ? 'bg-amber-500 text-slate-950 shadow-md font-black'
               : 'text-amber-300 hover:text-white hover:bg-slate-800'
@@ -708,7 +714,7 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
           <button
             type="button"
             onClick={() => setViewTab('verification_queue')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
               viewTab === 'verification_queue'
                 ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                 : 'text-amber-300 hover:text-white hover:bg-slate-800'
@@ -727,7 +733,7 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
         <button
           type="button"
           onClick={() => setViewTab('active_queue')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
             viewTab === 'active_queue'
               ? 'bg-amber-500 text-slate-950 shadow-md font-black'
               : 'text-amber-300 hover:text-white hover:bg-slate-800'
@@ -742,7 +748,7 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
             <button
               type="button"
               onClick={() => setViewTab('pricing_matrix')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
                 viewTab === 'pricing_matrix'
                   ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                   : 'text-amber-300 hover:text-white hover:bg-slate-800'
@@ -755,7 +761,7 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
             <button
               type="button"
               onClick={() => setViewTab('business_permissions')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
                 viewTab === 'business_permissions'
                   ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                   : 'text-amber-300 hover:text-white hover:bg-slate-800'
@@ -768,7 +774,7 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
             <button
               type="button"
               onClick={() => setViewTab('archived')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
                 viewTab === 'archived'
                   ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                   : 'text-amber-300 hover:text-white hover:bg-slate-800'
@@ -781,7 +787,7 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
             <button
               type="button"
               onClick={() => setViewTab('capacity_settings')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
                 viewTab === 'capacity_settings'
                   ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                   : 'text-amber-300 hover:text-white hover:bg-slate-800'
@@ -1515,167 +1521,202 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-slate-400 font-mono text-[10px] uppercase border-b border-slate-800">
-                  <tr>
-                    <th className="px-3.5 py-3 font-semibold">Status</th>
-                    <th className="px-3.5 py-3 font-semibold">Headline &amp; Content</th>
-                    <th className="px-3.5 py-3 font-semibold">Category &amp; Timing</th>
-                    <th className="px-3.5 py-3 font-semibold">Words</th>
-                    <th className="px-3.5 py-3 font-semibold">Credits</th>
-                    <th className="px-3.5 py-3 font-semibold">Published</th>
-                    <th className="px-3.5 py-3 font-semibold">Publisher</th>
-                    <th className="px-3.5 py-3 font-semibold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {queueItemsForViewer.map((item, idx) => (
-                    <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="px-3.5 py-3 whitespace-nowrap">
-                        {item.status === 'ACTIVE' && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1 w-fit">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            <span>Live Active</span>
-                          </span>
-                        )}
-                        {item.status === 'PENDING_LEVEL_1' && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center space-x-1 w-fit">
-                            <Clock className="w-3 h-3 text-amber-400" />
-                            <span>Step 1 Review</span>
-                          </span>
-                        )}
-                        {item.status === 'PENDING_LEVEL_2' && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 flex items-center space-x-1 w-fit">
-                            <ShieldCheck className="w-3 h-3 text-orange-400" />
-                            <span>Step 2 Signoff</span>
-                          </span>
-                        )}
-                        {item.status === 'ARCHIVED' && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center space-x-1 w-fit">
-                            <Archive className="w-3 h-3 text-slate-400" />
-                            <span>Archived</span>
-                          </span>
-                        )}
-                        {item.status === 'REJECTED' && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center space-x-1 w-fit">
-                            <XCircle className="w-3 h-3 text-rose-400" />
-                            <span>Rejected</span>
-                          </span>
-                        )}
-                      </td>
+            <div className="w-full space-y-3">
+              {queueItemsForViewer.map((item, idx) => (
+                <div
+                  key={item.id}
+                  className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 hover:border-slate-700/80 transition-all shadow-md space-y-3"
+                >
+                  {/* Top Bar: Status Badge, Headline, Category, Timing, Words & Credits */}
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+                    <div className="flex items-center space-x-2 flex-wrap gap-y-1.5">
+                      {item.status === 'ACTIVE' && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1 shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>Live Active</span>
+                        </span>
+                      )}
+                      {item.status === 'INACTIVE' && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 flex items-center space-x-1 shrink-0">
+                          <PauseCircle className="w-3 h-3 text-slate-400" />
+                          <span>Inactive / Paused</span>
+                        </span>
+                      )}
+                      {item.status === 'PENDING_LEVEL_1' && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center space-x-1 shrink-0">
+                          <Clock className="w-3 h-3 text-amber-400" />
+                          <span>Step 1 Review</span>
+                        </span>
+                      )}
+                      {item.status === 'PENDING_LEVEL_2' && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 flex items-center space-x-1 shrink-0">
+                          <ShieldCheck className="w-3 h-3 text-orange-400" />
+                          <span>Step 2 Signoff</span>
+                        </span>
+                      )}
+                      {item.status === 'ARCHIVED' && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center space-x-1 shrink-0">
+                          <Archive className="w-3 h-3 text-slate-400" />
+                          <span>Archived</span>
+                        </span>
+                      )}
+                      {item.status === 'REJECTED' && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center space-x-1 shrink-0">
+                          <XCircle className="w-3 h-3 text-rose-400" />
+                          <span>Rejected</span>
+                        </span>
+                      )}
 
-                      <td className="px-3.5 py-3 max-w-sm">
-                        <div className="font-bold text-white text-xs">{item.headline}</div>
-                        <div className="text-[11px] text-slate-300 line-clamp-2 mt-0.5 leading-relaxed">
-                          {item.content}
-                        </div>
-                        {item.status === 'REJECTED' && (
-                          <div className="mt-1.5 p-2 rounded-xl bg-rose-950/80 border border-rose-500/30 text-[10px] text-rose-200 space-y-0.5">
-                            <div>
-                              <strong>Reason:</strong> {item.rejection_reason || 'Compliance guideline policy'}
-                            </div>
-                            <div className="text-emerald-300 font-mono">
-                              ✓ Auto-Refunded: {item.credits_debited || 0} Credits credited back to wallet
-                            </div>
-                          </div>
-                        )}
-                      </td>
+                      <span className="font-bold text-white text-sm tracking-wide">{item.headline}</span>
 
-                      <td className="px-3.5 py-3 whitespace-nowrap">
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border bg-slate-950 text-sky-300 border-sky-500/30 uppercase block w-fit">
-                            {item.category.replace(/_/g, ' ')}
-                          </span>
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            {item.blink_interval_sec || 5}s • {item.slot_position || 'STANDARD'}
-                          </div>
-                        </div>
-                      </td>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border bg-slate-900 text-sky-300 border-sky-500/30 uppercase">
+                        {item.category.replace(/_/g, ' ')}
+                      </span>
 
-                      <td className="px-3.5 py-3 font-mono text-slate-400 whitespace-nowrap">
-                        <span className="text-white font-bold">{item.word_count}</span> / 200
-                      </td>
+                      <span className="text-[10px] text-slate-400 font-mono bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
+                        {item.blink_interval_sec || 5}s • {item.slot_position || 'STANDARD'}
+                      </span>
+                    </div>
 
-                      <td className="px-3.5 py-3 font-mono text-amber-400 font-bold whitespace-nowrap">
+                    {/* Quick Stats: Words, Credits & Published Timestamp */}
+                    <div className="flex items-center space-x-3 text-xs font-mono text-slate-400 shrink-0">
+                      <span>
+                        Words: <strong className="text-white">{item.word_count}</strong>/200
+                      </span>
+                      <span className="text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                         {item.credits_debited ? `${item.credits_debited} Cr` : '0 Cr'}
-                      </td>
+                      </span>
+                      <span className="text-slate-400 text-[11px]">
+                        {new Date(item.published_at).toLocaleDateString()}{' '}
+                        {new Date(item.published_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
 
-                      <td className="px-3.5 py-3 text-[10px] font-mono text-slate-400 whitespace-nowrap">
-                        <div>{new Date(item.published_at).toLocaleDateString()}</div>
-                        <div className="text-slate-500">{new Date(item.published_at).toLocaleTimeString()}</div>
-                      </td>
+                  {/* Broadcast Content Message */}
+                  <div className="text-xs text-slate-300 leading-relaxed pl-0.5">
+                    {item.content}
+                  </div>
 
-                      <td className="px-3.5 py-3 text-[11px] text-slate-300 whitespace-nowrap">
-                        <div className="font-semibold">{item.published_by_name}</div>
-                        <div className="text-[9px] text-slate-500 font-mono">{item.published_by_org || item.published_by_role}</div>
-                      </td>
+                  {/* Rejection Notice if rejected */}
+                  {item.status === 'REJECTED' && (
+                    <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/30 text-xs text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <div>
+                        <strong>Reason:</strong> {item.rejection_reason || 'Compliance guideline policy'}
+                      </div>
+                      <div className="text-emerald-300 font-mono text-[11px]">
+                        ✓ Auto-Refunded: {item.credits_debited || 0} Credits credited back to wallet
+                      </div>
+                    </div>
+                  )}
 
-                      <td className="px-3.5 py-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end space-x-1.5">
-                          {canEditFlashItem(item) && (
-                            <button
-                              type="button"
-                              onClick={() => handleStartEditFlash(item)}
-                              className="px-2.5 py-1 bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-slate-950 rounded-lg text-[10px] font-bold transition-colors cursor-pointer flex items-center space-x-1"
-                              title="Edit this flashnews broadcast"
-                            >
-                              <Edit3 className="w-3 h-3" />
-                              <span>Edit</span>
-                            </button>
+                  {/* Bottom Bar: Publisher on left, Actions (Status & Controls) right UNDER IT */}
+                  <div className="pt-2.5 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="text-xs text-slate-400 flex items-center space-x-1.5 flex-wrap">
+                      <span className="text-slate-500 text-[11px] font-mono">Publisher:</span>
+                      <span className="font-semibold text-slate-200">{item.published_by_name}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        ({item.published_by_org || item.published_by_role})
+                      </span>
+                    </div>
+
+                    {/* Action ( Status & Controls ): Pause Status, Edit, Archive, Restore, Delete */}
+                    <div className="flex items-center space-x-2 flex-wrap gap-y-1.5 shrink-0">
+                      {/* 1. Status Toggle Button */}
+                      {!isBusiness && (item.status === 'ACTIVE' || item.status === 'INACTIVE') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const res = db.toggleFlashNewsStatus(item.id, publisherName);
+                            refreshData();
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm ${
+                            item.status === 'ACTIVE'
+                              ? 'bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/40'
+                              : 'bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 border border-emerald-500/40'
+                          }`}
+                          title={item.status === 'ACTIVE' ? 'Pause broadcast (Set Inactive)' : 'Set broadcast Live (Activate)'}
+                        >
+                          {item.status === 'ACTIVE' ? (
+                            <>
+                              <PauseCircle className="w-3.5 h-3.5" />
+                              <span>Pause Status</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>Activate Live</span>
+                            </>
                           )}
+                        </button>
+                      )}
 
-                          {!isBusiness && item.status === 'ACTIVE' && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                db.archiveFlashNews(item.id);
-                                refreshData();
-                              }}
-                              className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 rounded-lg text-[10px] font-bold transition-colors cursor-pointer flex items-center space-x-1"
-                              title="Move to archive"
-                            >
-                              <Archive className="w-3 h-3" />
-                              <span>Archive</span>
-                            </button>
-                          )}
+                      {/* 2. Edit Button */}
+                      {canEditFlashItem(item) && (
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditFlash(item)}
+                          className="px-3 py-1.5 bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-slate-950 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 border border-sky-500/40 shadow-sm"
+                          title="Edit this flashnews broadcast"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
+                      )}
 
-                          {!isBusiness && item.status === 'ARCHIVED' && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                db.unarchiveFlashNews(item.id);
-                                refreshData();
-                              }}
-                              className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 rounded-lg text-[10px] font-bold transition-colors cursor-pointer flex items-center space-x-1"
-                              title="Restore to active live feed"
-                            >
-                              <RotateCcw className="w-3 h-3" />
-                              <span>Restore</span>
-                            </button>
-                          )}
+                      {/* 3. Archive Button */}
+                      {!isBusiness && item.status === 'ACTIVE' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            db.archiveFlashNews(item.id);
+                            refreshData();
+                          }}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 border border-slate-700 shadow-sm"
+                          title="Move to archive"
+                        >
+                          <Archive className="w-3.5 h-3.5" />
+                          <span>Archive</span>
+                        </button>
+                      )}
 
-                          {!isBusiness && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (confirm('Permanently delete this flashnews item?')) {
-                                  db.deleteFlashNews(item.id);
-                                  refreshData();
-                                }
-                              }}
-                              className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      {/* 4. Restore Button */}
+                      {!isBusiness && (item.status === 'ARCHIVED' || item.status === 'INACTIVE') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            db.unarchiveFlashNews(item.id);
+                            refreshData();
+                          }}
+                          className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 border border-emerald-500/40 shadow-sm"
+                          title="Restore to active live feed"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Restore</span>
+                        </button>
+                      )}
+
+                      {/* 5. Delete Button */}
+                      {!isBusiness && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm('Permanently delete this flashnews item?')) {
+                              db.deleteFlashNews(item.id);
+                              refreshData();
+                            }
+                          }}
+                          className="px-3 py-1.5 text-rose-300 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-xl text-xs font-bold transition-colors cursor-pointer border border-rose-500/30 flex items-center space-x-1.5 shadow-sm"
+                          title="Permanently Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -2086,7 +2127,7 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
               </div>
             </div>
 
-            <div className="overflow-x-auto max-h-[48vh] overflow-y-auto pr-1">
+            <div className="overflow-x-auto max-h-[48vh] overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-950 text-slate-400 font-mono text-[10px] uppercase border-b border-slate-800 sticky top-0 z-10">
                   <tr>

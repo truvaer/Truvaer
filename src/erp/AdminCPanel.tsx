@@ -23,6 +23,7 @@ import {
   Headphones,
   Download,
   FileSpreadsheet,
+  RotateCcw,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
 import {
@@ -46,8 +47,13 @@ import { ReportGeneratorDesk } from './ReportGeneratorDesk';
 import { AdminSupportActivityDesk } from './AdminSupportActivityDesk';
 import { AdminModularLaunchpad } from './AdminModularLaunchpad';
 import { CategoryHierarchyManager } from './CategoryHierarchyManager';
+import { StoryCategoryManager } from './StoryCategoryManager';
+import { RegionalAuthorityMappingDesk } from './RegionalAuthorityMappingDesk';
 import { FlashNewsPublicationDesk } from './FlashNewsPublicationDesk';
-import { TrendingUp, Sliders, Layers, Tags, Zap } from 'lucide-react';
+import { EmployeeAccountLifecycleDesk } from './EmployeeAccountLifecycleDesk';
+import { AdminApplicationResetDesk } from './AdminApplicationResetDesk';
+import { CRMPortal } from './CRMPortal';
+import { TrendingUp, Sliders, Layers, Tags, Zap, Globe, MapPin, UserX, Coins } from 'lucide-react';
 
 interface AdminCPanelProps {
   onRefreshAll: () => void;
@@ -60,6 +66,7 @@ interface AdminCPanelProps {
   onNavigateToModule?: (target: 'marketing') => void;
   currentUser?: RegularUser | null;
   activeAdminUser?: AdminUser | null;
+  onMasterReset?: () => void;
 }
 
 export const AdminCPanel: React.FC<AdminCPanelProps> = ({
@@ -73,94 +80,127 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
   onNavigateToModule,
   currentUser,
   activeAdminUser,
+  onMasterReset,
 }) => {
+  const isSuperAdmin =
+    currentUser?.role === 'SUPER_ADMIN' ||
+    currentUser?.email === 'aditya@yarifly.com' ||
+    currentUser?.user_id === 'usr_super_admin' ||
+    activeAdminUser?.role === 'SUPER_ADMIN' ||
+    activeAdminUser?.level === 8;
+
+  const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
+
   const [activeTab, setActiveTab] = useState<
-    | 'categories'
     | 'erp'
     | 'pms'
     | 'cash_flow'
+    | 'services_desk'
     | 'rbac'
-    | 'report_generator'
     | 'human_resource'
     | 'biz_desk'
     | 'matrix'
+    | 'flashnews'
+    | 'commission_desk'
+    | 'report_generator'
     | 'roles'
     | 'support_desk'
   >(
-    initialTab === 'categories' || initialTab === 'taxonomy'
-      ? 'categories'
-      : initialTab === 'support_desk'
-      ? 'support_desk'
-      : initialTab === 'human_resource'
-      ? 'human_resource'
-      : initialTab === 'pms'
+    initialTab === 'pms'
       ? 'pms'
       : initialTab === 'cash_flow'
       ? 'cash_flow'
-      : initialTab === 'rbac'
+      : initialTab === 'services_desk' || initialTab === 'services'
+      ? 'services_desk'
+      : initialTab === 'rbac' || initialTab === 'security'
       ? 'rbac'
       : initialTab === 'report_generator'
       ? 'report_generator'
-      : initialTab === 'biz_desk'
+      : initialTab === 'human_resource'
+      ? 'human_resource'
+      : initialTab === 'biz_desk' || initialTab === 'verification'
       ? 'biz_desk'
-      : initialTab === 'matrix'
+      : initialTab === 'matrix' || initialTab === 'pricing'
       ? 'matrix'
+      : initialTab === 'flashnews' || initialTab === 'flash_news'
+      ? 'flashnews'
+      : initialTab === 'commission_desk' || initialTab === 'commissions'
+      ? 'commission_desk'
       : initialTab === 'roles'
       ? 'roles'
-      : initialTab === 'erp' ||
-        initialTab === 'content_desk' ||
-        initialTab === 'audit' ||
-        initialTab === 'services_approval' ||
-        initialTab === 'module_directory' ||
-        initialTab === 'launch_matrix'
-      ? 'erp'
-      : 'categories'
+      : initialTab === 'support_desk'
+      ? 'support_desk'
+      : 'erp'
   );
 
   const [erpSubTab, setErpSubTab] = useState<
-    'overview' | 'content_desk' | 'audit' | 'services_approval' | 'module_directory' | 'launch_matrix' | 'flashnews'
+    | 'overview'
+    | 'report_generator'
+    | 'lifecycle_governance'
+    | 'content_desk'
+    | 'services_approval'
+    | 'launch_matrix'
+    | 'roles'
+    | 'flashnews_desk'
+    | 'categories'
+    | 'story_categories'
+    | 'regional_mapping'
+    | 'audit'
+    | 'module_directory'
+    | 'system_reset'
   >(
-    initialTab === 'content_desk' ||
-      initialTab === 'audit' ||
-      initialTab === 'services_approval' ||
-      initialTab === 'module_directory' ||
-      initialTab === 'launch_matrix' ||
-      initialTab === 'flashnews'
-      ? (initialTab as any)
+    initialTab === 'report_generator'
+      ? 'report_generator'
+      : initialTab === 'lifecycle_governance' || initialTab === 'safeguard' || initialTab === 'employee_lifecycle'
+      ? 'lifecycle_governance'
+      : initialTab === 'content_desk'
+      ? 'content_desk'
+      : initialTab === 'services_approval'
+      ? 'services_approval'
+      : initialTab === 'launch_matrix'
+      ? 'launch_matrix'
+      : initialTab === 'roles'
+      ? 'roles'
+      : initialTab === 'flashnews_desk' || initialTab === 'flashnews'
+      ? 'flashnews_desk'
       : 'overview'
   );
 
   const [rbacSubTab, setRbacSubTab] = useState<'matrix' | 'permission_page' | 'module_image' | 'roles' | 'regional_governance' | 'das'>('matrix');
 
   useEffect(() => {
-    if (initialTab === 'categories' || initialTab === 'taxonomy') {
-      setActiveTab('categories');
+    if (initialTab === 'services_desk' || initialTab === 'services') {
+      setActiveTab('services_desk');
+    } else if (initialTab === 'flashnews' || initialTab === 'flash_news') {
+      setActiveTab('flashnews');
+    } else if (initialTab === 'commission_desk' || initialTab === 'commissions') {
+      setActiveTab('commission_desk');
     } else if (initialTab === 'human_resource') {
       setActiveTab('human_resource');
     } else if (initialTab === 'pms') {
       setActiveTab('pms');
     } else if (initialTab === 'cash_flow') {
       setActiveTab('cash_flow');
-    } else if (initialTab === 'rbac') {
+    } else if (initialTab === 'rbac' || initialTab === 'security') {
       setActiveTab('rbac');
     } else if (initialTab === 'report_generator') {
       setActiveTab('report_generator');
-    } else if (initialTab === 'biz_desk') {
+    } else if (initialTab === 'biz_desk' || initialTab === 'verification') {
       setActiveTab('biz_desk');
-    } else if (initialTab === 'matrix') {
+    } else if (initialTab === 'matrix' || initialTab === 'pricing') {
       setActiveTab('matrix');
     } else if (initialTab === 'roles') {
       setActiveTab('roles');
     } else if (initialTab === 'support_desk') {
       setActiveTab('support_desk');
+    } else if (initialTab === 'lifecycle_governance' || initialTab === 'safeguard' || initialTab === 'employee_lifecycle') {
+      setActiveTab('erp');
+      setErpSubTab('lifecycle_governance');
     } else if (
       initialTab === 'erp' ||
       initialTab === 'content_desk' ||
-      initialTab === 'audit' ||
       initialTab === 'services_approval' ||
-      initialTab === 'module_directory' ||
-      initialTab === 'launch_matrix' ||
-      initialTab === 'flashnews'
+      initialTab === 'launch_matrix'
     ) {
       setActiveTab('erp');
       if (initialTab !== 'erp') {
@@ -262,105 +302,95 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           </p>
         </div>
 
-        {/* Global Company Quick Search across all C-Panel modules */}
-        <div className="relative w-full lg:w-96">
-          <div className="relative">
-            <Search className="w-4 h-4 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={cpanelCompanySearch}
-              onChange={(e) => setCpanelCompanySearch(e.target.value)}
-              placeholder="Search company name across all modules..."
-              className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl text-xs text-white placeholder-slate-500 outline-none"
-            />
-            {cpanelCompanySearch && (
-              <button
-                type="button"
-                onClick={() => setCpanelCompanySearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
+          {/* Global Company Quick Search across all C-Panel modules */}
+          <div className="relative w-full sm:w-80 lg:w-96">
+            <div className="relative">
+              <Search className="w-4 h-4 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={cpanelCompanySearch}
+                onChange={(e) => setCpanelCompanySearch(e.target.value)}
+                placeholder="Search company name across all modules..."
+                className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl text-xs text-white placeholder-slate-500 outline-none"
+              />
+              {cpanelCompanySearch && (
+                <button
+                  type="button"
+                  onClick={() => setCpanelCompanySearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {cpanelCompanySearch.trim() && (
+              <div className="absolute left-0 right-0 top-full mt-2 bg-slate-950 border border-amber-500/40 rounded-2xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto divide-y divide-slate-800">
+                {db
+                  .getBusinesses()
+                  .filter(
+                    (b) =>
+                      b.organization_name.toLowerCase().includes(cpanelCompanySearch.toLowerCase()) ||
+                      b.owner_name?.toLowerCase().includes(cpanelCompanySearch.toLowerCase()) ||
+                      b.business_id.toLowerCase().includes(cpanelCompanySearch.toLowerCase())
+                  )
+                  .slice(0, 6)
+                  .map((biz) => (
+                    <div key={biz.business_id} className="p-2.5 hover:bg-slate-900 rounded-xl flex items-center justify-between text-xs gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-white truncate">{biz.organization_name}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          {biz.city}, {biz.state} • Comm: {biz.commission_rate_pct ?? 5}%
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab('biz_desk');
+                            setCpanelCompanySearch('');
+                          }}
+                          className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                        >
+                          Verification
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onSelectBusinessToView(biz);
+                            setCpanelCompanySearch('');
+                          }}
+                          className="px-2 py-1 bg-sky-500 hover:bg-sky-400 text-slate-950 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                        >
+                          View Portal
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                {db
+                  .getBusinesses()
+                  .filter(
+                    (b) =>
+                      b.organization_name.toLowerCase().includes(cpanelCompanySearch.toLowerCase()) ||
+                      b.owner_name?.toLowerCase().includes(cpanelCompanySearch.toLowerCase()) ||
+                      b.business_id.toLowerCase().includes(cpanelCompanySearch.toLowerCase())
+                  ).length === 0 && (
+                  <div className="p-4 text-center text-xs text-slate-500 italic">
+                    No company matching &quot;{cpanelCompanySearch}&quot;
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {cpanelCompanySearch.trim() && (
-            <div className="absolute left-0 right-0 top-full mt-2 bg-slate-950 border border-amber-500/40 rounded-2xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto divide-y divide-slate-800">
-              {db
-                .getBusinesses()
-                .filter(
-                  (b) =>
-                    b.organization_name.toLowerCase().includes(cpanelCompanySearch.toLowerCase()) ||
-                    b.owner_name?.toLowerCase().includes(cpanelCompanySearch.toLowerCase()) ||
-                    b.business_id.toLowerCase().includes(cpanelCompanySearch.toLowerCase())
-                )
-                .slice(0, 6)
-                .map((biz) => (
-                  <div key={biz.business_id} className="p-2.5 hover:bg-slate-900 rounded-xl flex items-center justify-between text-xs gap-2">
-                    <div className="min-w-0">
-                      <div className="font-bold text-white truncate">{biz.organization_name}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">
-                        {biz.city}, {biz.state} • Comm: {biz.commission_rate_pct ?? 5}%
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveTab('biz_desk');
-                          setCpanelCompanySearch('');
-                        }}
-                        className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
-                      >
-                        Verification
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onSelectBusinessToView(biz);
-                          setCpanelCompanySearch('');
-                        }}
-                        className="px-2 py-1 bg-sky-500 hover:bg-sky-400 text-slate-950 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
-                      >
-                        View Portal
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              {db
-                .getBusinesses()
-                .filter(
-                  (b) =>
-                    b.organization_name.toLowerCase().includes(cpanelCompanySearch.toLowerCase()) ||
-                    b.owner_name?.toLowerCase().includes(cpanelCompanySearch.toLowerCase()) ||
-                    b.business_id.toLowerCase().includes(cpanelCompanySearch.toLowerCase())
-                ).length === 0 && (
-                <div className="p-4 text-center text-xs text-slate-500 italic">
-                  No company matching &quot;{cpanelCompanySearch}&quot;
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Navigation Tabs - Exactly 11 Re-arranged Items */}
+      {/* Navigation Tabs - Ops and ERP First */}
+      {/* Navigation Tabs - Central Administration & Operations Desk (C-Panel) */}
       <div className="flex items-center space-x-2 overflow-x-auto pb-1 bg-slate-900/60 p-2 rounded-2xl border border-slate-800">
-        {/* Categories & Subcategories */}
-        <button
-          id="cpanel-tab-categories"
-          onClick={() => setActiveTab('categories')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'categories'
-              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-slate-800'
-          }`}
-        >
-          <Tags className="w-4 h-4" />
-          <span>Categories &amp; Subcategories</span>
-        </button>
-
-        {/* Ops and ERP */}
+        {/* 1. Ops & ERP */}
         <button
           id="cpanel-tab-erp"
           onClick={() => setActiveTab('erp')}
@@ -371,7 +401,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           }`}
         >
           <Crown className="w-4 h-4" />
-          <span>Ops and ERP</span>
+          <span>Ops &amp; ERP</span>
           {(pendingJobs.length + pendingNews.length) > 0 && (
             <span className="ml-1 bg-slate-950 text-amber-300 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
               {pendingJobs.length + pendingNews.length}
@@ -379,7 +409,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           )}
         </button>
 
-        {/* Admin PMS */}
+        {/* 2. Admin PMS */}
         <button
           id="cpanel-tab-pms"
           onClick={() => setActiveTab('pms')}
@@ -393,7 +423,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           <span>Admin PMS</span>
         </button>
 
-        {/* Cash Flow */}
+        {/* 3. Cash Flow */}
         <button
           id="cpanel-tab-cash-flow"
           onClick={() => setActiveTab('cash_flow')}
@@ -407,7 +437,21 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           <span>Cash Flow</span>
         </button>
 
-        {/* Security */}
+        {/* 4. Services */}
+        <button
+          id="cpanel-tab-services"
+          onClick={() => setActiveTab('services_desk')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            activeTab === 'services_desk'
+              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+              : 'text-cyan-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Briefcase className="w-4 h-4 text-cyan-400" />
+          <span>Services</span>
+        </button>
+
+        {/* 5. Security */}
         <button
           id="cpanel-tab-security"
           onClick={() => setActiveTab('rbac')}
@@ -421,21 +465,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           <span>Security</span>
         </button>
 
-        {/* Report Generator */}
-        <button
-          id="cpanel-tab-reports"
-          onClick={() => setActiveTab('report_generator')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'report_generator'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-slate-800'
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          <span>Report Generator</span>
-        </button>
-
-        {/* Hr + HRMS */}
+        {/* 6. HR+HRMS */}
         <button
           id="cpanel-tab-hrms"
           onClick={() => setActiveTab('human_resource')}
@@ -446,10 +476,10 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Hr + HRMS</span>
+          <span>HR+HRMS</span>
         </button>
 
-        {/* Verification */}
+        {/* 7. Verification */}
         <button
           id="cpanel-tab-verification"
           onClick={() => setActiveTab('biz_desk')}
@@ -463,7 +493,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           <span>Verification</span>
         </button>
 
-        {/* Pricing */}
+        {/* 8. Pricing */}
         <button
           id="cpanel-tab-pricing"
           onClick={() => setActiveTab('matrix')}
@@ -477,57 +507,45 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           <span>Pricing</span>
         </button>
 
-        {/* Role Switch */}
+        {/* 9. Flash News Desk */}
         <button
-          id="cpanel-tab-roles"
-          onClick={() => setActiveTab('roles')}
+          id="cpanel-tab-flashnews"
+          onClick={() => setActiveTab('flashnews')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'roles'
+            activeTab === 'flashnews'
               ? 'bg-amber-500 text-slate-950 shadow-md font-black'
               : 'text-amber-300 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>Role Switch</span>
+          <Radio className="w-4 h-4 text-amber-400" />
+          <span>Flash News Desk</span>
         </button>
 
-        {/* Care Desk ( Activity Log ) */}
+        {/* 10. Finance Commission Desk */}
         <button
-          id="cpanel-tab-care-desk"
-          onClick={() => setActiveTab('support_desk')}
+          id="cpanel-tab-commission-desk"
+          onClick={() => setActiveTab('commission_desk')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'support_desk'
+            activeTab === 'commission_desk'
               ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-purple-950/40'
+              : 'text-emerald-300 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Headphones className="w-4 h-4" />
-          <span>Care Desk ( Activity Log )</span>
-          {db.getCustomerCareTickets().filter((t) => t.status === 'OPEN').length > 0 && (
-            <span className="ml-1 bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
-              {db.getCustomerCareTickets().filter((t) => t.status === 'OPEN').length}
-            </span>
-          )}
+          <Coins className="w-4 h-4 text-emerald-400" />
+          <span>Finance Commission Desk</span>
         </button>
       </div>
 
-      {/* VIEW 1: CATEGORIES & SUB-CATEGORIES INTERFACE */}
-      {activeTab === 'categories' && (
-        <CategoryHierarchyManager
-          activeAdminUser={activeAdminUser}
-          onRefreshAll={onRefreshAll}
-        />
-      )}
-
-      {/* VIEW 2: OPS AND ERP (Includes sub-list: Overview, Content Queue, Audit Logs, Services, Directory, Module Active Status) */}
+      {/* OPS AND ERP: Housed sub-options list */}
       {activeTab === 'erp' && (
         <div className="space-y-5">
           {/* Sub-Navigation Bar inside Ops & ERP */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
-              Ops &amp; ERP List:
+              Ops &amp; ERP:
             </span>
 
+            {/* 1. ERP Platform Overview */}
             <button
               onClick={() => setErpSubTab('overview')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
@@ -540,7 +558,38 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
               <span>ERP Platform Overview</span>
             </button>
 
+            {/* 2. Report Generator */}
             <button
+              id="cpanel-erp-subtab-report-gen"
+              onClick={() => setErpSubTab('report_generator')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                erpSubTab === 'report_generator'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-amber-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Report Generator</span>
+            </button>
+
+            {/* 3. Account Safeguard (Level 6 to 8 & HR Only) */}
+            <button
+              id="cpanel-erp-subtab-safeguard"
+              onClick={() => setErpSubTab('lifecycle_governance')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                erpSubTab === 'lifecycle_governance'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-rose-300 hover:text-white hover:bg-rose-950/40 border border-rose-500/20'
+              }`}
+              title="Employee Offboarding & Data Safeguard Lifecycle (Level 6-8 & HR Only)"
+            >
+              <UserX className="w-3.5 h-3.5 text-current" />
+              <span>Account Safeguard</span>
+            </button>
+
+            {/* 4. Content Queue */}
+            <button
+              id="cpanel-erp-subtab-content-queue"
               onClick={() => setErpSubTab('content_desk')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
                 erpSubTab === 'content_desk'
@@ -557,43 +606,23 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
               )}
             </button>
 
+            {/* 5. Services */}
             <button
-              onClick={() => setErpSubTab('audit')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'audit'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span>Audit Logs</span>
-            </button>
-
-            <button
+              id="cpanel-erp-subtab-services"
               onClick={() => setErpSubTab('services_approval')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
                 erpSubTab === 'services_approval'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                  : 'text-cyan-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Briefcase className="w-3.5 h-3.5" />
+              <Briefcase className="w-3.5 h-3.5 text-cyan-400" />
               <span>Services</span>
             </button>
 
+            {/* 6. Modules Active Status */}
             <button
-              onClick={() => setErpSubTab('module_directory')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'module_directory'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Directory</span>
-            </button>
-
-            <button
+              id="cpanel-erp-subtab-launch-matrix"
               onClick={() => setErpSubTab('launch_matrix')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
                 erpSubTab === 'launch_matrix'
@@ -602,26 +631,90 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Module Active Status</span>
+              <span>Modules Active Status</span>
             </button>
 
+            {/* 7. Role Switch */}
             <button
-              id="cpanel-erp-subtab-flashnews"
-              onClick={() => setErpSubTab('flashnews')}
+              id="cpanel-erp-subtab-roles"
+              onClick={() => setErpSubTab('roles')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'flashnews'
+                erpSubTab === 'roles'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-indigo-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Role Switch</span>
+            </button>
+
+            {/* 8. Publication Desk */}
+            <button
+              id="cpanel-erp-subtab-flashnews-desk"
+              onClick={() => setErpSubTab('flashnews_desk')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                erpSubTab === 'flashnews_desk'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-amber-300 hover:text-white hover:bg-slate-800'
               }`}
-              title="Add or remove 160-word live blink text data and configure broadcast limit"
             >
-              <Zap className="w-3.5 h-3.5" />
-              <span>Flashnews Publication Desk</span>
-              <span className="ml-1 bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
-                160w
-              </span>
+              <Radio className="w-3.5 h-3.5 text-amber-400" />
+              <span>Publication Desk</span>
             </button>
           </div>
+
+          {/* Sub-Views: Categories, Story Categories, Regional Mapping, Lifecycle, Reset, etc. */}
+          {erpSubTab === 'categories' && (
+            <div className="space-y-4">
+              <CategoryHierarchyManager
+                activeAdminUser={activeAdminUser}
+                onRefreshAll={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {erpSubTab === 'story_categories' && (
+            <div className="space-y-4">
+              <StoryCategoryManager
+                activeAdminUser={activeAdminUser}
+                currentUser={currentUser}
+                onRefreshAll={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {erpSubTab === 'regional_mapping' && (
+            <div className="space-y-4">
+              <RegionalAuthorityMappingDesk
+                activeAdminUser={activeAdminUser}
+                currentUser={currentUser}
+                onRefreshAll={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {erpSubTab === 'lifecycle_governance' && (
+            <div className="space-y-4">
+              <EmployeeAccountLifecycleDesk
+                activeAdminUser={activeAdminUser}
+                currentUser={currentUser}
+                onRefreshData={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {erpSubTab === 'system_reset' && (
+            <div className="space-y-4">
+              <AdminApplicationResetDesk
+                activeAdminUser={activeAdminUser}
+                currentUser={currentUser}
+                onResetComplete={() => {
+                  onRefreshAll();
+                  if (onMasterReset) onMasterReset();
+                }}
+              />
+            </div>
+          )}
 
           {/* ERP Sub-Views */}
           {erpSubTab === 'overview' && (
@@ -960,7 +1053,87 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             />
           )}
 
-          {erpSubTab === 'flashnews' && (
+          {erpSubTab === 'report_generator' && (
+            <div className="space-y-4">
+              <ReportGeneratorDesk
+                activeAdminUser={db.getAdminUsers().find((a) => a.role === 'SUPER_ADMIN') || db.getAdminUsers()[0]}
+                onRefreshAll={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {erpSubTab === 'roles' && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+              <div>
+                <h3 className="text-base font-bold text-white">Role Classification &amp; IAM Governance</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Managers have exclusive capability to promote Standard Users to Admin/Manager and demote Admins back to Standard tier.
+                </p>
+              </div>
+
+              {roleChangeNotice && (
+                <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{roleChangeNotice}</span>
+                </div>
+              )}
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-mono border-b border-slate-800">
+                    <tr>
+                      <th className="py-3 px-4">User</th>
+                      <th className="py-3 px-4">Email</th>
+                      <th className="py-3 px-4">Current Classification</th>
+                      <th className="py-3 px-4">Account Status</th>
+                      <th className="py-3 px-4 text-right">Switch Classification</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 font-sans">
+                    {regularUsers.map((u) => (
+                      <tr key={u.user_id} className="hover:bg-slate-800/40">
+                        <td className="py-3 px-4 font-semibold text-white">@{u.username}</td>
+                        <td className="py-3 px-4 font-mono text-slate-400">{u.email}</td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                              u.role === 'ADMIN' || u.role === 'SUPER_ADMIN'
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                : u.role === 'MANAGER'
+                                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                            }`}
+                          >
+                            {u.role || 'STANDARD_USER'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-[10px] font-mono text-emerald-400">{u.account_status}</span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end space-x-1.5">
+                            <select
+                              value={u.role || 'STANDARD_USER'}
+                              onChange={(e) => handleSwitchRole(u.user_id, e.target.value)}
+                              className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-white font-mono outline-none focus:border-amber-500 cursor-pointer"
+                            >
+                              {db.getCustomUserTypes().map((ct) => (
+                                <option key={ct.id} value={ct.key}>
+                                  {ct.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {erpSubTab === 'flashnews_desk' && (
             <div className="space-y-4">
               <FlashNewsPublicationDesk
                 currentUser={currentUser}
@@ -969,6 +1142,38 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
               />
             </div>
           )}
+        </div>
+      )}
+
+      {/* VIEW: SERVICES APPROVAL DESK */}
+      {activeTab === 'services_desk' && (
+        <AdminServicesApprovalDesk
+          onRefreshAll={onRefreshAll}
+          onOpenBroadcastModal={() => setShowBroadcastModal(true)}
+        />
+      )}
+
+      {/* VIEW: FLASH NEWS PUBLICATION DESK */}
+      {activeTab === 'flashnews' && (
+        <div className="space-y-4">
+          <FlashNewsPublicationDesk
+            currentUser={currentUser}
+            activeAdminUser={activeAdminUser}
+            onRefreshData={onRefreshAll}
+          />
+        </div>
+      )}
+
+      {/* VIEW: FINANCE COMMISSION DESK */}
+      {activeTab === 'commission_desk' && (
+        <div className="space-y-4">
+          <CRMPortal
+            initialTab="commissions"
+            currentUser={currentUser}
+            activeAdminUser={activeAdminUser}
+            onOpenWallet={onOpenWallet}
+            onRefreshData={onRefreshAll}
+          />
         </div>
       )}
 
@@ -1196,6 +1401,16 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           onRefreshAll();
         }}
       />
+
+
+
+      {/* Reset Notification Toast */}
+      {resetSuccessMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-950/90 border border-emerald-500 text-emerald-200 px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 text-xs font-medium animate-bounce">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span>{resetSuccessMessage}</span>
+        </div>
+      )}
     </div>
   );
 };

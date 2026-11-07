@@ -18,3 +18,8 @@ export * from './AdminModerationDesk';
 export * from './HumanResourceHRMSModule';
 export * from './CategoryHierarchyManager';
 export * from './CommissionPercentageEntryModal';
+export * from './StoryCategoryManager';
+export * from './RegionalAuthorityMappingDesk';
+export * from './EmployeeAccountLifecycleDesk';
+export * from './AdminApplicationResetDesk';
+export * from './TreasuryReservesDesk';

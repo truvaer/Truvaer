@@ -126,7 +126,7 @@ export const AdminActivityFeed: React.FC<AdminActivityFeedProps> = ({
       setSimulatedNotice(`Simulated WON lead: "${selected}" (₹${(val / 100000).toFixed(1)}L)`);
     } else if (type === 'BIZ_APPROVAL') {
       const orgNames = [
-        'Titan Wings FBO & Ground Handling',
+        'Titan Wings VIP Ground Handling',
         'AeroSafe Avionics Calibration Center',
         'Himalayan Helicopter Tours & Charters',
         'Deccan Flying Academy (CAR-147)',

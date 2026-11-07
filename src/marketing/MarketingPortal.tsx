@@ -17,6 +17,7 @@ import {
   Trash2,
   EyeOff,
   Plus,
+  Zap,
   Video,
   Image as ImageIcon,
   Edit3,
@@ -239,7 +240,7 @@ export const AVIATION_TAXONOMY: Record<string, string[]> = {
     'Ground Support Equipment (GSE)',
     'Pre-Owned Business Jet Sales',
     'Executive Jet Charter',
-    'FBO Executive Lounge & Terminal',
+    'VIP Executive Lounge & Terminal',
     'Line Maintenance (Part-145)',
     'Heavy Base Overhaul (C & D Check)',
     'VIP In-Flight Gourmet Cuisine',
@@ -288,10 +289,10 @@ export const AVIATION_TAXONOMY: Record<string, string[]> = {
     'Cargo & Heavy Lift Charter',
     'Empty Leg Specialists',
   ],
-  'Airport & FBO Terminals': [
+  'Airport & VIP Terminals': [
     'All Subcategories',
     'Commercial Airport Terminal',
-    'FBO Executive Lounge & Terminal',
+    'VIP Executive Lounge & Terminal',
     'Airside Ground Handling',
     'Helipad & Vertiport',
     'Air Cargo Complex',
@@ -388,6 +389,8 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
   const [portalTab, setPortalTab] = useState<'linkedin_feed' | 'directory'>(
     initialSubTab || 'linkedin_feed'
   );
+  const [openFlashDeskTrigger, setOpenFlashDeskTrigger] = useState(0);
+  const [openComposerTrigger, setOpenComposerTrigger] = useState(0);
 
   useEffect(() => {
     if (initialSubTab) {
@@ -1056,8 +1059,8 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
     if (f.includes('charter')) {
       return l.includes('charter') || l.includes('private air');
     }
-    if (f.includes('airport') || f.includes('fbo') || f.includes('terminal')) {
-      return l.includes('airport') || l.includes('fbo') || l.includes('terminal');
+    if (f.includes('airport') || f.includes('terminal') || f.includes('vip')) {
+      return l.includes('airport') || l.includes('terminal') || l.includes('vip');
     }
     if (f.includes('mro') || f.includes('avionics')) {
       return l.includes('mro') || l.includes('avionics') || l.includes('maintenance') || l.includes('overhaul');
@@ -1630,7 +1633,7 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Global verified aviation service directory, showcase, airport terminals, luxury suites &amp; FBO facilities.
+              Global verified aviation service directory, showcase, airport terminals, luxury suites &amp; executive VIP facilities.
             </p>
           </div>
 
@@ -1695,9 +1698,46 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
           </button>
         </div>
 
-        <div className="hidden md:flex items-center space-x-2 text-[11px] text-slate-400 pr-3">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Active View: {portalTab === 'linkedin_feed' ? 'Stories for you' : 'ServiceScout'}</span>
+        {/* Right side: Action Buttons moved to upper bar for Business & Admin users (Image 2) */}
+        <div className="flex items-center space-x-2.5 w-full sm:w-auto justify-end">
+          {portalTab === 'linkedin_feed' && (
+            <div className="flex items-center space-x-2">
+              {/* Flashnews Publication Desk: Route to compose live blink text data (Max 200 Words) */}
+              {(isAdmin || currentUser?.role === 'SUPER_ADMIN' || activeAdminUser?.role === 'SUPER_ADMIN' || (currentBusiness && currentBusiness.can_publish_flashnews !== false)) && (
+                <button
+                  type="button"
+                  id="portal-top-flashnews-desk-btn"
+                  onClick={() => setOpenFlashDeskTrigger((prev) => prev + 1)}
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow-sm"
+                  title="Add, compose, or publish FlashNews broadcasts (200 words max)"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  <span>FlashNews Desk</span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-[10px] font-mono text-amber-200">
+                    200w
+                  </span>
+                </button>
+              )}
+
+              {/* Publish Post Button */}
+              {(currentBusiness || isAdmin) && (
+                <button
+                  type="button"
+                  id="portal-top-publish-post-btn"
+                  onClick={() => setOpenComposerTrigger((prev) => prev + 1)}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Publish Post</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="hidden md:flex items-center space-x-2 text-[11px] text-slate-400 pr-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Active View: {portalTab === 'linkedin_feed' ? 'Stories for you' : 'ServiceScout'}</span>
+          </div>
         </div>
       </div>
 
@@ -1711,6 +1751,8 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
           onOpenDirectChat={onOpenDirectChat}
           onOpenUserProfile={onOpenUserProfile}
           onSwitchToDirectory={() => setPortalTab('directory')}
+          externalOpenFlashDeskTrigger={openFlashDeskTrigger}
+          externalOpenComposerTrigger={openComposerTrigger}
         />
       ) : !db.isModuleActive('mod_biz_listing') ? (
         <div className="p-8 sm:p-12 text-center bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl mx-auto my-8 shadow-2xl space-y-4">

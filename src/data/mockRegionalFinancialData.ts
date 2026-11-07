@@ -16,7 +16,7 @@ export const REGIONAL_FINANCIAL_METRICS: Record<AviationZone, RegionalFinancialM
     strategicRecommendation:
       'APAC represents the highest cash flow velocity across the network. Urgent admin & finance focus required on capital expansion for Part-145 hangars at Mumbai (BOM) & Singapore (SIN) to meet 42% excess charter inquiries.',
     actionItems: [
-      'Scale dedicated FBO apron slots and line maintenance at Mumbai and Delhi hubs.',
+      'Scale dedicated VIP apron slots and line maintenance at Mumbai and Delhi hubs.',
       'Deploy 15% surplus treasury into flight academy cadet financing in Bengaluru & Vietnam.',
       'Lock in fuel procurement contracts with Indian Oil & Shell Aviation to guard against Q4 price hikes.',
       'Automate credit settlement for 35 regional charter operators to speed up commission realization.',
@@ -26,7 +26,7 @@ export const REGIONAL_FINANCIAL_METRICS: Record<AviationZone, RegionalFinancialM
       mroMaintenance: 11200000,
       flightAcademies: 7400000,
       sparesRotables: 4500000,
-      fboGroundHandling: 2200000,
+      groundHandling: 2200000,
     },
     expenditureBreakdown: {
       hangarFuel: 14800000,
@@ -75,7 +75,7 @@ export const REGIONAL_FINANCIAL_METRICS: Record<AviationZone, RegionalFinancialM
       mroMaintenance: 4800000,
       flightAcademies: 3100000,
       sparesRotables: 1800000,
-      fboGroundHandling: 1100000,
+      groundHandling: 1100000,
     },
     expenditureBreakdown: {
       hangarFuel: 6800000,
@@ -92,7 +92,7 @@ export const REGIONAL_FINANCIAL_METRICS: Record<AviationZone, RegionalFinancialM
     ],
     cashFlowStages: [
       { stage: 'Gross Sales Inflow', amount: 24200000, type: 'inflow', description: 'Resource charters, VIP business flights & medevac receipts' },
-      { stage: 'Fuel & Airport Handling', amount: -6800000, type: 'outflow', description: 'Aviation kerosene & oceanic FBO transit handling' },
+      { stage: 'Fuel & Airport Handling', amount: -6800000, type: 'outflow', description: 'Aviation kerosene & oceanic VIP transit handling' },
       { stage: 'Hangar & Airside Maintenance', amount: -5200000, type: 'outflow', description: 'CASA-certified overhaul & regional tie-down charges' },
       { stage: 'Brokerage & Commissions', amount: -2400000, type: 'outflow', description: 'Direct sales desk disbursements & dealer commissions' },
       { stage: 'Platform Ops & Compliance', amount: -1500000, type: 'outflow', description: 'Regulatory safety oversight & insurance underwriting' },
@@ -124,7 +124,7 @@ export const REGIONAL_FINANCIAL_METRICS: Record<AviationZone, RegionalFinancialM
       mroMaintenance: 16800000,
       flightAcademies: 4200000,
       sparesRotables: 5800000,
-      fboGroundHandling: 3500000,
+      groundHandling: 3500000,
     },
     expenditureBreakdown: {
       hangarFuel: 22400000,
@@ -173,7 +173,7 @@ export const REGIONAL_FINANCIAL_METRICS: Record<AviationZone, RegionalFinancialM
       mroMaintenance: 12400000,
       flightAcademies: 5100000,
       sparesRotables: 4900000,
-      fboGroundHandling: 2700000,
+      groundHandling: 2700000,
     },
     expenditureBreakdown: {
       hangarFuel: 16500000,
@@ -190,7 +190,7 @@ export const REGIONAL_FINANCIAL_METRICS: Record<AviationZone, RegionalFinancialM
     ],
     cashFlowStages: [
       { stage: 'Gross Sales Inflow', amount: 51900000, type: 'inflow', description: 'Fractional ownership, brokerage & avionics overhaul' },
-      { stage: 'Fuel & Airport Handling', amount: -16500000, type: 'outflow', description: 'FBO fuel contracts & de-icing/ramp operations' },
+      { stage: 'Fuel & Airport Handling', amount: -16500000, type: 'outflow', description: 'VIP fuel contracts & de-icing/ramp operations' },
       { stage: 'Airframe Maintenance & Leases', amount: -13300000, type: 'outflow', description: 'FAA Repair Station services & engine exchange programs' },
       { stage: 'Commissions & Vendor Payouts', amount: -5600000, type: 'outflow', description: 'Brokered air travel commissions & escrow payouts' },
       { stage: 'Compliance & Platform Tech', amount: -3700000, type: 'outflow', description: 'FAA Form 8130 compliance tracking & server infrastructure' },
@@ -222,7 +222,7 @@ export const REGIONAL_FINANCIAL_METRICS: Record<AviationZone, RegionalFinancialM
       mroMaintenance: 2800000,
       flightAcademies: 1100000,
       sparesRotables: 1400000,
-      fboGroundHandling: 600000,
+      groundHandling: 600000,
     },
     expenditureBreakdown: {
       hangarFuel: 6100000,
@@ -271,7 +271,7 @@ export const REGIONAL_FINANCIAL_METRICS: Record<AviationZone, RegionalFinancialM
       mroMaintenance: 2100000,
       flightAcademies: 1100000,
       sparesRotables: 900000,
-      fboGroundHandling: 500000,
+      groundHandling: 500000,
     },
     expenditureBreakdown: {
       hangarFuel: 5200000,
@@ -313,7 +313,7 @@ export const GLOBAL_CONSOLIDATED_METRIC: RegionalFinancialMetric = {
     'Consolidated enterprise yield stands at +$45.85M net operational profit (+21.8% margin). Overall treasury is strongly in the green. Focus on turning the LATAM territory from initial deficit into positive cash flow, while sustaining high profit engines in APAC and ANZ.',
   actionItems: [
     'Execute global fuel hedging program covering 40,000,000 liters across Top 10 international hubs.',
-    'Reinvest $18.5M of net retained cash into direct FBO partnerships in Singapore, Mumbai, and Dubai.',
+    'Reinvest $18.5M of net retained cash into direct executive terminal partnerships in Singapore, Mumbai, and Dubai.',
     'Institute 2-stage treasury sign-off for payouts exceeding $100,000 to maintain solvency safety cushions.',
     'Accelerate cross-regional charter bookings leveraging multi-region operator clearances.',
   ],
@@ -322,7 +322,7 @@ export const GLOBAL_CONSOLIDATED_METRIC: RegionalFinancialMetric = {
     mroMaintenance: 49100000,
     flightAcademies: 22000000,
     sparesRotables: 18100000,
-    fboGroundHandling: 13800000,
+    groundHandling: 13800000,
   },
   expenditureBreakdown: {
     hangarFuel: 70800000,
@@ -369,7 +369,7 @@ export const REGIONAL_LEDGER_TRANSACTIONS: RegionalLedgerTransaction[] = [
     department: 'Flight Operations',
     amount: -42800,
     status: 'AUDITED',
-    referenceDoc: 'FBO-PO-4419',
+    referenceDoc: 'VIP-PO-4419',
     operatorName: 'Shell Aviation Pacific',
   },
   {
@@ -417,7 +417,7 @@ export const REGIONAL_LEDGER_TRANSACTIONS: RegionalLedgerTransaction[] = [
     department: 'Flight Operations',
     amount: -36500,
     status: 'AUDITED',
-    referenceDoc: 'FBO-PO-4399',
+    referenceDoc: 'VIP-PO-4399',
     operatorName: 'Jet Aviation Zurich',
   },
   {
@@ -465,7 +465,7 @@ export const REGIONAL_LEDGER_TRANSACTIONS: RegionalLedgerTransaction[] = [
     department: 'Flight Operations',
     amount: -29400,
     status: 'AUDITED',
-    referenceDoc: 'FBO-PO-4380',
+    referenceDoc: 'VIP-PO-4380',
     operatorName: 'Ampol Aviation Australia',
   },
   {

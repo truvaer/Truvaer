@@ -63,6 +63,8 @@ interface LinkedInMarketingFeedProps {
   onOpenUserProfile?: () => void;
   onSwitchToDirectory?: () => void;
   onOpenPublicationDesk?: () => void;
+  externalOpenFlashDeskTrigger?: number;
+  externalOpenComposerTrigger?: number;
 }
 
 export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
@@ -75,15 +77,32 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
   onOpenUserProfile,
   onSwitchToDirectory,
   onOpenPublicationDesk,
+  externalOpenFlashDeskTrigger,
+  externalOpenComposerTrigger,
 }) => {
   // Flashnews Publication Desk Modal State
   const [showFlashDeskModal, setShowFlashDeskModal] = useState(false);
+
+  useEffect(() => {
+    if (externalOpenFlashDeskTrigger && externalOpenFlashDeskTrigger > 0) {
+      setShowFlashDeskModal(true);
+    }
+  }, [externalOpenFlashDeskTrigger]);
 
   // Posts state
   const [posts, setPosts] = useState<BusinessPost[]>([]);
   const [feedFilter, setFeedFilter] = useState<'all' | 'following' | 'marketed'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Dynamic Story Categories managed via Admin C-Panel Story Category Management Desk
+  const dynamicStoryCategories = useMemo(() => {
+    const list = db.getStoryCategories().filter((c) => c.status === 'ACTIVE');
+    if (list.length > 0) {
+      return list.map((c) => c.name);
+    }
+    return CATEGORIES.filter((c) => c !== 'All');
+  }, []);
 
   // Followed businesses list for current user
   const currentUserId = currentUser?.user_id || currentBusiness?.business_id || 'guest';
@@ -93,6 +112,14 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
 
   // Modal for Post/Article Creation (Business Users Only)
   const [showComposerModal, setShowComposerModal] = useState(false);
+
+  useEffect(() => {
+    if (externalOpenComposerTrigger && externalOpenComposerTrigger > 0) {
+      setPostType('POST');
+      setShowComposerModal(true);
+    }
+  }, [externalOpenComposerTrigger]);
+
   const [postType, setPostType] = useState<BusinessPostType>('POST');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -512,55 +539,6 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
         </div>
       )}
 
-      {/* Top Banner: Switch Between Stories for you & ServiceScout */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold">
-            <Globe className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-sm font-bold text-white flex items-center space-x-2">
-              <span>Stories for you</span>
-              <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-semibold border border-blue-500/30">
-                Live Feed
-              </span>
-            </div>
-            <div className="text-xs text-slate-400">
-              Personalized stream of followed flight academies, jet charters, and targeted marketing blasts.
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
-          {/* Flashnews Publication Desk: Route to add/compose live blink text data (Max 200 Words) */}
-          {(isAdmin || currentUser?.role === 'SUPER_ADMIN' || activeAdminUser?.role === 'SUPER_ADMIN' || (currentBusiness && currentBusiness.can_publish_flashnews !== false)) && (
-            <button
-              type="button"
-              onClick={() => setShowFlashDeskModal(true)}
-              className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow-sm"
-              title="Add, compose, or publish FlashNews broadcasts (200 words max)"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-              <span>FlashNews Desk</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-[10px] font-mono text-amber-200">
-                200w
-              </span>
-            </button>
-          )}
-
-          {(currentBusiness || isAdmin) && (
-            <button
-              type="button"
-              onClick={() => setShowComposerModal(true)}
-              className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Publish Post</span>
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* 3-Column LinkedIn Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* ========================================================================= */}
@@ -841,7 +819,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
               className="w-full sm:w-52 py-2 px-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-blue-500"
             >
               <option value="All">All Categories</option>
-              {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
+              {dynamicStoryCategories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
@@ -1426,7 +1404,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                     onChange={(e) => setSelectedPostCategory(e.target.value)}
                     className="w-full py-2 px-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-blue-500"
                   >
-                    {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
+                    {dynamicStoryCategories.map((cat) => (
                       <option key={cat} value={cat}>
                         {cat}
                       </option>
@@ -1545,7 +1523,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                           onChange={(e) => setCampaignCategory(e.target.value)}
                           className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
                         >
-                          {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
+                          {dynamicStoryCategories.map((cat) => (
                             <option key={cat} value={cat}>
                               {cat}
                             </option>

@@ -121,54 +121,54 @@ html.light,
 .light {
   color-scheme: light;
 
-  /* Semantic Theme CSS Variables in Light Mode */
-  --theme-bg: #E5EDF5;
-  --theme-surface: #F0F9FF;
-  --theme-surface-subtle: #E2EBF5;
-  --theme-border: #CBD5E1;
-  --theme-border-contrast: #94A3B8;
-  --theme-text-primary: #1F2937;
-  --theme-text-secondary: #475569;
-  --theme-text-muted: #64748B;
-  --theme-text-header: #0F172A;
-  --theme-input-bg: #FFFFFF;
-  --theme-input-text: #1F2937;
+  /* Semantic Theme CSS Variables in Light Mode (Eye Support: 60-80% Luminosity) */
+  --theme-bg: #D0DCE7;
+  --theme-surface: #E3EAF2;
+  --theme-surface-subtle: #D9E3ED;
+  --theme-border: #A2B5CA;
+  --theme-border-contrast: #64748B;
+  --theme-text-primary: #0F172A;
+  --theme-text-secondary: #334155;
+  --theme-text-muted: #475569;
+  --theme-text-header: #020617;
+  --theme-input-bg: #EAEFF6;
+  --theme-input-text: #0F172A;
 
   /* Palette Tokens */
-  --brand-blue: #3B82F6;
-  --brand-sky: #60A5FA;
+  --brand-blue: #2563EB;
+  --brand-sky: #3B82F6;
   --brand-charcoal: #1F2937;
-  --brand-ice: #F0F9FF;
-  --brand-wisteria: #C8B8D8;
+  --brand-ice: #E3EAF2;
+  --brand-wisteria: #7C3AED;
 
-  /* Soft, Soothing Eye-Friendly Base & Surfaces */
-  --color-slate-950: #E5EDF5; /* Gentle muted cool ice-slate, eliminates eye glare */
-  --color-slate-900: #F0F9FF; /* User specified #F0F9FF soft ice-sky card surface (zero harsh white) */
-  --color-slate-850: #E2EBF5; /* Subtle secondary inset */
-  --color-slate-800: #CBD5E1; /* Soft, restful borders */
-  --color-slate-750: #B8C7DA;
-  --color-slate-700: #8FA2BA;
+  /* Soft, Soothing Eye-Friendly Base & Surfaces (60% - 80% Brightness Control) */
+  --color-slate-950: #D0DCE7; /* Gentle muted foundation, eliminates eye glare */
+  --color-slate-900: #E3EAF2; /* Restful soft card surface (zero harsh white) */
+  --color-slate-850: #D9E3ED; /* Subtle secondary inset */
+  --color-slate-800: #A2B5CA; /* Soft, restful borders */
+  --color-slate-750: #8DA2BA;
+  --color-slate-700: #64748B;
 
   /* Inverted Typography with Relaxing Contrast */
-  --color-slate-600: #64748B;
-  --color-slate-500: #475569;
-  --color-slate-400: #475569;
-  --color-slate-300: #334155;
-  --color-slate-200: #1E293B;
-  --color-slate-100: #1F2937; /* User specified #1F2937 clean, restful charcoal slate text */
-  --color-slate-50: #0F172A;
+  --color-slate-600: #475569;
+  --color-slate-500: #334155;
+  --color-slate-400: #1E293B;
+  --color-slate-300: #1E293B;
+  --color-slate-200: #0F172A;
+  --color-slate-100: #0F172A; /* Clean, restful charcoal slate text */
+  --color-slate-50: #020617;
   --color-white: #FFFFFF; /* Pure crisp white for text on dark/colored buttons */
 
   /* Electric Blue & Sky in Light Mode */
   --color-blue-700: #1D4ED8;
-  --color-blue-600: #3B82F6;
+  --color-blue-600: #2563EB;
   --color-blue-500: #3B82F6;
-  --color-blue-400: #2563EB;
-  --color-blue-300: #60A5FA;
-  --color-sky-600: #2563EB;
-  --color-sky-500: #3B82F6;
-  --color-sky-400: #2563EB;
-  --color-sky-300: #60A5FA;
+  --color-blue-400: #1D4ED8;
+  --color-blue-300: #2563EB;
+  --color-sky-600: #1D4ED8;
+  --color-sky-500: #2563EB;
+  --color-sky-400: #1D4ED8;
+  --color-sky-300: #3B82F6;
 
   /* Executive Wisteria in Light Mode */
   --color-purple-400: #6B21A8;
@@ -199,15 +199,35 @@ html.light,
   --color-cyan-300: #155E75; /* Deep Cyan */
 
   /* Custom Role-Based Accents in Light Mode */
-  --marketing-primary: #3B82F6;
-  --marketing-primary-hover: #2563EB;
-  --marketing-accent: #2563EB;
-  --business-accent: #3B82F6;
-  --business-accent-hover: #2563EB;
+  --marketing-primary: #2563EB;
+  --marketing-primary-hover: #1D4ED8;
+  --marketing-accent: #1D4ED8;
+  --business-accent: #2563EB;
+  --business-accent-hover: #1D4ED8;
   --verified-accent: #047857;
 
-  background-color: #E5EDF5;
-  color: #1F2937;
+  background-color: #D0DCE7;
+  color: #0F172A;
+}
+
+/* =============================================================================
+   EYE SUPPORT SHIELD FOR LIGHT MODE (60% - 80% BRIGHTNESS & ANTI-GLARE SOFT BLUR)
+   Softens luminance intensity to 60-80% and applies gentle optical diffusion blur
+   to prevent eye fatigue from stark bright white backgrounds.
+   ============================================================================= */
+html.light::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99999;
+  background: var(--light-veil-bg, rgba(15, 23, 42, 0.18));
+  backdrop-filter: blur(var(--light-veil-blur, 0.35px));
+  -webkit-backdrop-filter: blur(var(--light-veil-blur, 0.35px));
+}
+
+html.light {
+  filter: contrast(0.96) saturate(0.95);
 }
 
 /* =============================================================================
@@ -665,36 +685,36 @@ html.light .bg-\[\#335577\] {
   color: #FFFFFF !important;
 }
 
-/* Subtle elevation for cards in Light Mode - Eye Friendly Soft Ice-Sky #F0F9FF */
+/* Subtle elevation for cards in Light Mode - Eye Friendly Soft Surface #E3EAF2 */
 html.light .bg-slate-900,
 html.light .bg-white {
-  background-color: #F0F9FF !important;
-  border-color: #CBD5E1 !important;
-  box-shadow: 0 2px 8px -1px rgba(31, 41, 55, 0.05), 0 1px 3px -1px rgba(31, 41, 55, 0.03);
+  background-color: #E3EAF2 !important;
+  border-color: #A2B5CA !important;
+  box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
 }
 
 html.light .bg-slate-950 {
-  background-color: #E5EDF5 !important;
+  background-color: #D0DCE7 !important;
 }
 
 html.light header {
-  background-color: rgba(240, 249, 255, 0.98) !important;
-  border-color: #CBD5E1 !important;
-  box-shadow: 0 2px 8px -2px rgba(31, 41, 55, 0.05);
+  background-color: rgba(227, 234, 242, 0.98) !important;
+  border-color: #A2B5CA !important;
+  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.06);
 }
 
 /* Live Market Ticker in Light Mode */
 html.light #live-market-ticker {
-  background-color: #F0F9FF !important;
-  border-color: #CBD5E1 !important;
-  box-shadow: 0 2px 4px rgba(31, 41, 55, 0.04);
+  background-color: #E3EAF2 !important;
+  border-color: #A2B5CA !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
 }
 html.light #live-market-ticker .text-slate-300 {
-  color: #334155;
+  color: #1E293B;
 }
 html.light #live-market-ticker .bg-slate-800 {
-  background-color: #E2EBF5;
-  color: #1F2937;
+  background-color: #D9E3ED;
+  color: #0F172A;
 }
 
 /* Selection Highlight */

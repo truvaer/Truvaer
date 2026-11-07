@@ -316,7 +316,7 @@ export const AdminBroadcastModal: React.FC<AdminBroadcastModalProps> = ({
                       className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-medium cursor-pointer"
                     >
                       <option value="ALL">All Registered Operators &amp; Aviator Clients</option>
-                      <option value="BUSINESS_ONLY">Aviation Business Operators Only (FBO, MRO, Academies)</option>
+                      <option value="BUSINESS_ONLY">Aviation Business Operators Only (Charter, MRO, Academies)</option>
                       <option value="REGULAR_ONLY">Private Clients &amp; Individual Aviators Only</option>
                     </select>
                   </div>

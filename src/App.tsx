@@ -489,11 +489,14 @@ export default function App() {
   };
 
   const handleResetDb = () => {
-    db.resetToDefaults();
+    const res = db.fullMasterSystemReset();
     refreshData();
     setCurrentUser(null);
     setCurrentBusiness(null);
     setCurrentTab('marketing');
+    setMarketingSubTab('linkedin_feed');
+    setTestEventToast(res.message);
+    setTimeout(() => setTestEventToast(null), 5000);
   };
 
   const handleSimulateLiveEvent = () => {
@@ -880,6 +883,7 @@ export default function App() {
                     onNavigateToModule={(target) => setCurrentTab(target)}
                     currentUser={currentUser}
                     activeAdminUser={activeAdminUser}
+                    onMasterReset={handleResetDb}
                   />
                 </div>
               ) : (

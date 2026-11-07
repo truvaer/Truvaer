@@ -16,6 +16,7 @@ import {
   MessageSquare,
   ArrowLeft,
   Wallet,
+  Landmark,
 } from 'lucide-react';
 import { RegularUser, BusinessProfile } from '../types';
 import { AdminDashboardView } from './AdminDashboardView';
@@ -29,8 +30,9 @@ import { WalletRazorpayModal } from '../shared/WalletRazorpayModal';
 import { db } from '../data/mockDatabase';
 import { AdminUser } from '../types';
 import { FlashNewsPublicationDesk } from '../erp/FlashNewsPublicationDesk';
+import { TreasuryReservesDesk } from '../erp/TreasuryReservesDesk';
 
-export type CockpitPortalMode = 'DASHBOARD' | 'OPERATIONS' | 'SALE' | 'COMMUNICATIONS' | 'CHAT' | 'WALLET';
+export type CockpitPortalMode = 'DASHBOARD' | 'OPERATIONS' | 'WALLET' | 'SALE' | 'COMMUNICATIONS' | 'CHAT' | 'TREASURY';
 
 interface CompleteUnifiedDashboardProps {
   currentUser: RegularUser | null;
@@ -252,6 +254,28 @@ export const CompleteUnifiedDashboard: React.FC<CompleteUnifiedDashboardProps> =
             <MessageSquare className="w-3.5 h-3.5 text-current" />
             <span>Chat</span>
           </button>
+
+          {/* 6. ( Treasury & Reserves ) Button - Positioned exactly after Chat - Visible ONLY to Level 8 Members & Super Admin */}
+          {(activeAdminUser?.level === 8 ||
+            currentUser?.role === 'SUPER_ADMIN' ||
+            activeAdminUser?.role === 'SUPER_ADMIN' ||
+            currentUser?.email?.toLowerCase() === 'aditya@yarifly.com' ||
+            activeAdminUser?.email?.toLowerCase() === 'aditya@yarifly.com') && (
+            <button
+              id="dashboard-treasury-btn"
+              type="button"
+              onClick={() => setPortalMode(portalMode === 'TREASURY' ? 'DASHBOARD' : 'TREASURY')}
+              className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                portalMode === 'TREASURY'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md font-black'
+                  : 'text-amber-300 hover:text-white hover:bg-amber-950/40 border border-amber-500/20'
+              }`}
+              title="Platform Treasury & Statutory Aviation Escrow Reserves Desk (L8 Access Only)"
+            >
+              <Landmark className="w-3.5 h-3.5 text-current" />
+              <span>( Treasury &amp; Reserves )</span>
+            </button>
+          )}
         </div>
 
         {/* Perspective switcher (only shown in DASHBOARD mode for previewing roles) */}
@@ -415,6 +439,28 @@ export const CompleteUnifiedDashboard: React.FC<CompleteUnifiedDashboardProps> =
           currentUser={currentUser}
           activeAdminUser={activeAdminUser}
         />
+      ) : portalMode === 'TREASURY' ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-2xl">
+            <button
+              onClick={() => setPortalMode('DASHBOARD')}
+              className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center space-x-1.5 cursor-pointer bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Return to Dashboard Overview</span>
+            </button>
+            <div className="text-xs text-slate-400 font-mono flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span>Treasury &amp; Reserves Management Desk (In-Body Console)</span>
+            </div>
+          </div>
+          <TreasuryReservesDesk
+            currentUser={currentUser}
+            activeAdminUser={activeAdminUser}
+            onRefreshData={onRefreshData}
+            onReturnToDashboard={() => setPortalMode('DASHBOARD')}
+          />
+        </div>
       ) : (
         <>
           {activeRoleView === 'ADMIN' && (
@@ -448,7 +494,7 @@ export const CompleteUnifiedDashboard: React.FC<CompleteUnifiedDashboardProps> =
       {/* FLASHNEWS PUBLICATION DESK MODAL */}
       {showFlashDeskModal && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-          <div className="w-full max-w-5xl my-auto">
+          <div className="w-full max-w-6xl xl:max-w-7xl my-auto">
             <FlashNewsPublicationDesk
               currentUser={currentUser}
               currentBusiness={currentBusiness || activeBusinessProfile}

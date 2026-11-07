@@ -27,7 +27,7 @@ const LIVE_EVENTS: TickerItem[] = [
     type: 'FLIGHT',
     city: 'Singapore',
     code: 'WSSS',
-    message: 'Jet Aviation FBO VIP apron slot confirmed for Gulfstream G650ER arrival.',
+    message: 'Jet Aviation VIP Executive apron slot confirmed for Gulfstream G650ER arrival.',
     timestamp: 'Just now',
     accent: 'text-blue-400',
   },

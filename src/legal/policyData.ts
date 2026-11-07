@@ -40,7 +40,7 @@ export const POLICIES: Record<PolicySlug, PolicyDocument> = {
     effectiveDate: 'January 1, 2026',
     readingTimeMinutes: 5,
     summary:
-      'Truvaer is the world’s premier sovereign business aviation ecosystem, bridging private jet owners, certified air charter operators, Fixed Base Operators (FBOs), and discerning global aviators across 180+ countries.',
+      'Truvaer is the world’s premier sovereign business aviation ecosystem, bridging private jet owners, certified air charter operators, Executive Aviation Operators, and discerning global aviators across 180+ countries.',
     sections: [
       {
         id: 'mission-vision',
@@ -178,7 +178,7 @@ export const POLICIES: Record<PolicySlug, PolicyDocument> = {
           },
           {
             subtitle: 'Verified Corporate Business Operator Accounts',
-            text: 'For Air Operator Certificate (AOC) holders, FBO facilities, aircraft maintenance organizations, and charter brokers. Operators must submit official business registration, insurance certificates, and banking coordinates for administrative verification before public listing.',
+            text: 'For Air Operator Certificate (AOC) holders, executive terminal facilities, aircraft maintenance organizations, and charter brokers. Operators must submit official business registration, insurance certificates, and banking coordinates for administrative verification before public listing.',
           },
           {
             subtitle: 'Administrative & Governance Accounts (L0–L8)',

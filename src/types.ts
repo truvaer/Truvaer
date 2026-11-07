@@ -444,6 +444,13 @@ export interface AdminUser {
   last_2fa_verified_at?: string;
   historical_passwords?: string[];
   last_password_reset_at?: string;
+  status?: 'ACTIVE' | 'DISABLED' | 'SUSPENDED' | 'ARCHIVED';
+  status_reason?: string;
+  status_changed_at?: string;
+  status_changed_by?: string;
+  employment_status?: string;
+  safeguard_locked?: boolean;
+  data_handover_status?: 'COMPLETED' | 'PENDING' | 'TRANSFERRED_TO_RM' | 'NA';
 }
 
 export type PublicationStatus = 'PUBLISHED' | 'RESTRICTED' | 'PENDING_APPROVAL' | 'SUSPENDED';
@@ -1401,7 +1408,7 @@ export interface RegionalFinancialMetric {
     mroMaintenance: number;
     flightAcademies: number;
     sparesRotables: number;
-    fboGroundHandling: number;
+    groundHandling: number;
   };
   expenditureBreakdown: {
     hangarFuel: number;
@@ -1602,7 +1609,8 @@ export type FlashNewsStatus =
   | 'PENDING_LEVEL_1'
   | 'PENDING_LEVEL_2'
   | 'REJECTED'
-  | 'ARCHIVED';
+  | 'ARCHIVED'
+  | 'INACTIVE';
 
 export interface FlashNewsItem {
   id: string;
@@ -1674,6 +1682,39 @@ export interface FlashNewsConfig {
   updated_by: string;
 }
 
+// -------------------------------------------------------------
+// Story Category & Regional Authority Mapping Types
+// -------------------------------------------------------------
+export interface StoryCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  story_count: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  colorBadge?: string;
+  created_at: string;
+  updated_at: string;
+}
 
+export interface RegionalAuthorityZone {
+  id: string;
+  code: string; // e.g. 'APAC', 'EMEA', 'LATAM', 'NA', 'ANZ', 'CIS', 'MENA'
+  name: string;
+  description: string;
+  headquarters?: string;
+  primaryAuthority?: string;
+  isSystem?: boolean;
+}
 
-
+export interface RegionCountryMapping {
+  id: string;
+  code: string; // ISO 2-letter e.g. 'IN', 'US', 'AE'
+  name: string;
+  regionCode: string; // references RegionalAuthorityZone.code
+  regionalAuthorityAgency?: string; // e.g. 'DGCA', 'FAA', 'EASA', 'GCAA', 'CAA', 'CASA'
+  currency?: string;
+  status: 'ACTIVE' | 'PENDING_AUDIT';
+  created_at?: string;
+  updated_at?: string;
+}

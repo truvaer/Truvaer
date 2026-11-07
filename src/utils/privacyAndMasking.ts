@@ -83,7 +83,7 @@ export const ADMIN_DEPARTMENTS: { id: AdminDepartment; name: string; description
   { id: 'Sales', name: 'Sales & Enterprise Acquisitions', description: 'B2B Client accounts, flight brokers & corporate charter packages', icon: 'TrendingUp' },
   { id: 'Marketing', name: 'Marketing & Brand Strategy', description: 'Directory placements, campaigns, SEO & media sponsorship', icon: 'Megaphone' },
   { id: 'Finance', name: 'Finance & Treasury Operations', description: 'Corporate wallet settlements, audits, Razorpay gateways, tax & Commissions', icon: 'Coins' },
-  { id: 'Operations', name: 'Operations & Terminal Logistics', description: 'FBO line coordination, flight slots, directory compliance & KYC verification', icon: 'Plane' },
+  { id: 'Operations', name: 'Operations & Terminal Logistics', description: 'Executive flight coordination, flight slots, directory compliance & KYC verification', icon: 'Plane' },
   { id: 'Stores', name: 'Stores & Hangar Spares Inventory', description: 'Aviation spare parts, avionics components, rotables & hangar requisitions', icon: 'Package' },
   { id: 'HR', name: 'Human Resource & People Care', description: 'Personnel onboarding, credentials, career grading & promotions', icon: 'Users' },
   { id: 'Senior Management Team', name: 'Senior Management & Board', description: 'Executive policy, strategic oversight & super-admin authority', icon: 'Crown' },

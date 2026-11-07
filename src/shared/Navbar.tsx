@@ -107,6 +107,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     currentUser?.role === 'SUPER_ADMIN' ||
     currentUser?.role === 'MANAGER';
 
+  const isSuperAdmin =
+    currentUser?.role === 'SUPER_ADMIN' ||
+    currentUser?.email === 'aditya@yarifly.com' ||
+    currentUser?.user_id === 'usr_super_admin';
+
   const isBusinessUser = !!currentBusiness;
   const businessWalletBalance = currentBusiness?.corporate_wallet?.credit_balance ?? 0;
 
@@ -237,17 +242,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <span>Simulate Real-time Action</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onResetDb();
-                        setShowTestingTools(false);
-                      }}
-                      className="w-full py-1.5 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 font-medium flex items-center justify-center space-x-1.5 cursor-pointer transition-colors"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Reset Test Database Seeds</span>
-                    </button>
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onResetDb();
+                          setShowTestingTools(false);
+                        }}
+                        className="w-full py-1.5 px-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-semibold flex items-center justify-center space-x-1.5 cursor-pointer transition-colors"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Factory Reset Database (Super Admin)</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -507,15 +514,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </button>
                   ))}
 
-                  <div className="border-t border-slate-800 my-1.5"></div>
-                  <button
-                    type="button"
-                    onClick={onResetDb}
-                    className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-slate-200 flex items-center space-x-2 cursor-pointer transition-colors text-[11px]"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Sync &amp; Restore Aviation Database</span>
-                  </button>
+                  {isSuperAdmin && (
+                    <>
+                      <div className="border-t border-slate-800 my-1.5"></div>
+                      <button
+                        type="button"
+                        onClick={onResetDb}
+                        className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-rose-950/40 text-rose-400 hover:text-rose-200 flex items-center space-x-2 cursor-pointer transition-colors text-[11px]"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Factory Reset Database (Super Admin)</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

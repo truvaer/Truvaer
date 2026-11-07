@@ -79,6 +79,11 @@ import { ApprovedTaxonomyDesk } from './ApprovedTaxonomyDesk';
 import { AdminModerationDesk } from './AdminModerationDesk';
 import { HumanResourceHRMSModule } from './HumanResourceHRMSModule';
 import { CentralizedCreditDebitMatrix } from './CentralizedCreditDebitMatrix';
+import { CategoryHierarchyManager } from './CategoryHierarchyManager';
+import { StoryCategoryManager } from './StoryCategoryManager';
+import { RegionalAuthorityMappingDesk } from './RegionalAuthorityMappingDesk';
+import { AdminApplicationResetDesk } from './AdminApplicationResetDesk';
+import { Newspaper, Globe, MapPin } from 'lucide-react';
 
 interface AdminERPPlatformProps {
   onRefreshAll?: () => void;
@@ -120,6 +125,14 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
     | 'promotion_approvals'
     | 'logs'
     | 'settings'
+    | 'audit_logs'
+    | 'directory'
+    | 'categories'
+    | 'story_categories'
+    | 'regional_mapping'
+    | 'system_reset'
+    | 'content_queue'
+    | 'services_desk'
   >('dashboard');
 
   const [dashboardSection, setDashboardSection] = useState<'finance_cashflow' | 'module_directory' | 'approvals_ops'>('finance_cashflow');
@@ -949,19 +962,6 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
               </button>
             )}
 
-            {/* Quick Action: Open Treasury & Reserves Modal (Housed inside Ops & ERP) */}
-            {onOpenWallet && (
-              <button
-                type="button"
-                onClick={onOpenWallet}
-                className="flex items-center space-x-1.5 px-3 py-2.5 rounded-2xl bg-blue-950/70 hover:bg-blue-900 border border-blue-500/40 text-blue-300 hover:text-white text-xs font-semibold transition-all shadow-sm cursor-pointer"
-                title="Admin Treasury & Reserves Management (Housed in Ops & ERP)"
-              >
-                <CreditCard className="w-4 h-4 text-blue-400" />
-                <span className="hidden sm:inline">Treasury &amp; Reserves</span>
-                <span className="sm:hidden">Treasury</span>
-              </button>
-            )}
 
             {/* Active Admin Persona Picker (For testing authorization levels) */}
             <div className="bg-slate-950 border border-slate-800 rounded-2xl p-2.5 flex items-center space-x-3">
@@ -1167,26 +1167,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
               </button>
             )}
 
-            {/* Stores & Hangar Spares: Available only to Stores, Ops, or Super Admin */}
-            {canAccessStores && (
-              <button
-                id="erp-tab-stores"
-                onClick={() => setActiveTab('stores')}
-                className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
-                  activeTab === 'stores'
-                    ? 'bg-amber-500 text-slate-950 shadow-md'
-                    : 'text-purple-300 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <span className="flex items-center space-x-2">
-                  <Package className="w-4 h-4 shrink-0" />
-                  <span>Stores &amp; Spares Hub</span>
-                </span>
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-purple-500/20 text-purple-300 font-mono font-bold">
-                  Inventory
-                </span>
-              </button>
-            )}
+            {/* Stores & Hangar Spares: Hidden per specification */}
 
             {/* Finance Department Commission Ledger: Strictly for Finance & Super Admin */}
             {canAccessCommissions && (
@@ -1209,7 +1190,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
               </button>
             )}
 
-            {/* Accounts Master: Verification, KYC, Business Updates (Operations & Super Admin) */}
+            {/* User Accounts (Renamed from Accounts Master) */}
             {canAccessOps && (
               <button
                 id="erp-tab-accounts"
@@ -1222,7 +1203,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
               >
                 <span className="flex items-center space-x-2">
                   <Users className="w-4 h-4 shrink-0" />
-                  <span>Accounts Master</span>
+                  <span>User Accounts</span>
                 </span>
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-950 text-slate-300 font-mono">
                   {businesses.length + regularUsers.length}
@@ -1230,26 +1211,154 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
               </button>
             )}
 
-            {/* Treasury & Reserves Desk: Finance & Super Admin */}
-            {canAccessFinance && (
-              <button
-                id="erp-tab-transactions"
-                onClick={() => setActiveTab('transactions')}
-                className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
-                  activeTab === 'transactions'
-                    ? 'bg-amber-500 text-slate-950 shadow-md'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <span className="flex items-center space-x-2">
-                  <Landmark className="w-4 h-4 shrink-0 text-amber-400" />
-                  <span>Treasury &amp; Reserves Desk</span>
+            {/* Category & Sub-Category */}
+            <button
+              id="erp-tab-categories"
+              onClick={() => setActiveTab('categories')}
+              className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                activeTab === 'categories'
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'text-emerald-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center space-x-2">
+                <Tags className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>Category &amp; Sub-Category</span>
+              </span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                Taxonomy
+              </span>
+            </button>
+
+            {/* Story Category */}
+            <button
+              id="erp-tab-story-categories"
+              onClick={() => setActiveTab('story_categories')}
+              className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                activeTab === 'story_categories'
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'text-amber-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center space-x-2">
+                <Newspaper className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>Story Category</span>
+              </span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500/20 text-amber-300 font-mono font-bold">
+                L8 Only
+              </span>
+            </button>
+
+            {/* Regional & Country Mapping */}
+            <button
+              id="erp-tab-regional-mapping"
+              onClick={() => setActiveTab('regional_mapping')}
+              className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                activeTab === 'regional_mapping'
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'text-sky-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center space-x-2">
+                <Globe className="w-4 h-4 shrink-0 text-sky-400" />
+                <span>Regional &amp; Country Mapping</span>
+              </span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-sky-500/20 text-sky-300 font-mono font-bold">
+                L8 Only
+              </span>
+            </button>
+
+            {/* Directory */}
+            <button
+              id="erp-tab-directory"
+              onClick={() => setActiveTab('directory')}
+              className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                activeTab === 'directory'
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'text-indigo-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center space-x-2">
+                <Layers className="w-4 h-4 shrink-0 text-indigo-400" />
+                <span>Directory</span>
+              </span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-indigo-500/20 text-indigo-300 font-mono font-bold">
+                Hub
+              </span>
+            </button>
+
+            {/* Content Queue */}
+            <button
+              id="erp-tab-content-queue"
+              onClick={() => setActiveTab('content_queue')}
+              className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                activeTab === 'content_queue'
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>Content Queue</span>
+              </span>
+              {pendingPublications > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-500 text-white font-bold">
+                  {pendingPublications}
                 </span>
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500/20 text-amber-300 font-mono font-bold">
-                  ₹15L Cap
-                </span>
-              </button>
-            )}
+              )}
+            </button>
+
+            {/* Services */}
+            <button
+              id="erp-tab-services"
+              onClick={() => setActiveTab('services_desk')}
+              className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                activeTab === 'services_desk'
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'text-cyan-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center space-x-2">
+                <Briefcase className="w-4 h-4 shrink-0 text-cyan-400" />
+                <span>Services</span>
+              </span>
+            </button>
+
+            {/* Audit Logs */}
+            <button
+              id="erp-tab-audit-logs"
+              onClick={() => setActiveTab('audit_logs')}
+              className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                activeTab === 'audit_logs'
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center space-x-2">
+                <ShieldCheck className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>Audit logs</span>
+              </span>
+            </button>
+
+            {/* Full Application Reset */}
+            <button
+              id="erp-tab-system-reset"
+              onClick={() => setActiveTab('system_reset')}
+              className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                activeTab === 'system_reset'
+                  ? 'bg-rose-600 text-white shadow-md font-black'
+                  : 'text-rose-400 hover:bg-rose-950/40 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center space-x-2">
+                <RotateCcw className="w-4 h-4 shrink-0" />
+                <span>Full Application Reset</span>
+              </span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-500/20 text-rose-300 font-mono font-bold">
+                Reset
+              </span>
+            </button>
+
 
             {/* API & Contracts Inspector: Ops & Super Admin */}
             <button
@@ -1441,6 +1550,176 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
 
         {/* RIGHT MAIN WORKSPACE */}
         <div className="flex-1 min-w-0 w-full space-y-4">
+
+      {/* Category & Subcategory Management */}
+      {activeTab === 'categories' && (
+        <CategoryHierarchyManager
+          activeAdminUser={activeAdmin}
+          onRefreshAll={() => {
+            loadAllData();
+            if (onRefreshAll) onRefreshAll();
+          }}
+        />
+      )}
+
+      {/* Story Category Management (L8 & Super Admin Only) */}
+      {activeTab === 'story_categories' && (
+        <StoryCategoryManager
+          activeAdminUser={activeAdmin}
+          onRefreshAll={() => {
+            loadAllData();
+            if (onRefreshAll) onRefreshAll();
+          }}
+        />
+      )}
+
+      {/* Regional & Country Mapping Desk (L8 & Super Admin Only) */}
+      {activeTab === 'regional_mapping' && (
+        <RegionalAuthorityMappingDesk
+          activeAdminUser={activeAdmin}
+          onRefreshAll={() => {
+            loadAllData();
+            if (onRefreshAll) onRefreshAll();
+          }}
+        />
+      )}
+
+      {/* Full Application Reset Desk */}
+      {activeTab === 'system_reset' && (
+        <AdminApplicationResetDesk
+          activeAdminUser={activeAdmin}
+          currentUser={activeAdmin as any}
+          onRefreshAll={() => {
+            loadAllData();
+            if (onRefreshAll) onRefreshAll();
+          }}
+          onMasterReset={() => {
+            loadAllData();
+            if (onRefreshAll) onRefreshAll();
+          }}
+        />
+      )}
+
+      {/* Module Directory Hub */}
+      {activeTab === 'directory' && (
+        <AdminModuleDirectory
+          onSelectModuleTab={(tabKey) => {
+            if (tabKey === 'accounts') setActiveTab('accounts');
+            else if (tabKey === 'categories') setActiveTab('categories');
+            else if (tabKey === 'services_desk') setActiveTab('services_desk');
+            else if (tabKey === 'crm') setActiveTab('crm');
+            else if (tabKey === 'commissions') setActiveTab('commissions');
+            else if (tabKey === 'audit_logs') setActiveTab('audit_logs');
+            else setActiveTab('dashboard');
+          }}
+        />
+      )}
+
+      {/* Services Desk */}
+      {activeTab === 'services_desk' && (
+        <AdminServicesApprovalDesk
+          activeAdminUser={activeAdmin}
+          onRefreshAll={() => {
+            loadAllData();
+            if (onRefreshAll) onRefreshAll();
+          }}
+          onOpenBroadcastModal={() => setShowBroadcastModal(true)}
+        />
+      )}
+
+      {/* Audit Logs Desk */}
+      {activeTab === 'audit_logs' && (
+        <div className="space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+                <ShieldCheck className="w-5 h-5 text-amber-400" />
+                <span>Audit Logs &amp; Immutable System Ledger</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Full chronological event history, security modifications, and governance events.
+              </p>
+            </div>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-3">
+            <div className="divide-y divide-slate-800">
+              {db.getAdminAuditLogs().slice(0, 50).map((log) => (
+                <div key={log.id} className="py-3 flex items-start justify-between gap-4 text-xs">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-mono text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                        {log.category}
+                      </span>
+                      <span className="font-bold text-white">{log.title}</span>
+                    </div>
+                    <p className="text-slate-300 text-xs mt-1">{log.description}</p>
+                    <div className="text-[10px] text-slate-500 font-mono mt-1">
+                      By {log.actor_name} ({log.actor_role}) • Target: {log.target_name || log.target_id || 'System'}
+                    </div>
+                  </div>
+                  <div className="text-[10px] font-mono text-slate-500 whitespace-nowrap">
+                    {new Date(log.timestamp).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Content Queue Desk */}
+      {activeTab === 'content_queue' && (
+        <div className="space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+                <Clock className="w-5 h-5 text-amber-400" />
+                <span>Content Verification Queue</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Aviation listings and publications requiring administrative verification.
+              </p>
+            </div>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+            {listings.filter((l) => l.publication_status === 'PENDING_APPROVAL').length === 0 ? (
+              <div className="text-center py-10 text-slate-400 text-xs">
+                <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-400 mb-2" />
+                All aviation service listings and publications are verified. Queue is clear!
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-800">
+                {listings
+                  .filter((l) => l.publication_status === 'PENDING_APPROVAL')
+                  .map((item) => (
+                    <div key={item.id} className="py-3 flex items-center justify-between gap-4 text-xs">
+                      <div>
+                        <div className="font-bold text-white">{item.name}</div>
+                        <div className="text-slate-400 text-[11px]">{item.category} • {item.city}, {item.country}</div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSetPublicationStatus(item.id, 'PUBLISHED')}
+                          className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold hover:bg-emerald-500 hover:text-slate-950 cursor-pointer"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSetPublicationStatus(item.id, 'RESTRICTED')}
+                          className="px-3 py-1 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-bold hover:bg-rose-500 hover:text-white cursor-pointer"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* NEW TAB: GRANULAR RBAC CONTROL PANEL & TERRITORIAL SCOPING               */}
@@ -1800,7 +2079,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
                     + Provision Business Account
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Add new certified FBO, charter, or airport partner with initial corporate wallet allocation.
+                    Add new certified charter, fleet, or executive airport partner with initial corporate wallet allocation.
                   </p>
                 </div>
 
@@ -4090,7 +4369,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                   >
                     <option value="Private Air Charter">Private Air Charter</option>
-                    <option value="Airport & FBO Terminals">Airport &amp; FBO Terminals</option>
+                    <option value="Airport & VIP Terminals">Airport &amp; VIP Terminals</option>
                     <option value="MRO & Avionics">MRO &amp; Avionics</option>
                     <option value="Pilot Training & Academies">Pilot Training &amp; Academies</option>
                     <option value="Aviation Fuel & Ground Ops">Aviation Fuel &amp; Ground Ops</option>

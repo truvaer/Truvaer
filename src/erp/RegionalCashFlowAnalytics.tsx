@@ -1027,7 +1027,7 @@ export const RegionalCashFlowAnalytics: React.FC<RegionalCashFlowAnalyticsProps>
                 mroMaintenance: 'Part-145 Maintenance & Avionics',
                 flightAcademies: 'Pilot Training & Cadet Academies',
                 sparesRotables: 'Aircraft Spares & Rotables Supply',
-                fboGroundHandling: 'FBO Ground & Apron Services',
+                groundHandling: 'VIP Ground & Apron Handling Services',
               };
 
               return (

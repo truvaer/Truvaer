@@ -96,10 +96,14 @@ import {
   ModuleRolloutStage,
   ModuleOperationalStatus,
   FlashNewsItem,
+  FlashNewsStatus,
   FlashNewsConfig,
   FlashNewsCategory,
   FlashNewsPricingMatrix,
   FlashNewsAutoMailBackupConfig,
+  StoryCategory,
+  RegionalAuthorityZone,
+  RegionCountryMapping,
 } from '../types';
 import {
   FLASH_NEWS_KEY,
@@ -109,6 +113,14 @@ import {
   defaultFlashNewsPricingMatrix,
   countWords,
 } from './flashNewsSeeds';
+import {
+  STORY_CATEGORIES_KEY,
+  REGIONAL_ZONES_KEY,
+  COUNTRY_MAPPINGS_KEY,
+  initialStoryCategories,
+  initialRegionalZones,
+  initialCountryMappings,
+} from './storyAndRegionalSeeds';
 import {
   getZoneForCountry,
   STANDARD_SERVICES_BY_CATEGORY,
@@ -520,7 +532,7 @@ export const initialCustomerCareTickets: CustomerCareTicket[] = [
     context: {
       userType: 'BUSINESS',
       businessId: 'biz_apex_01',
-      role: 'VERIFIED_FBO_PARTNER',
+      role: 'VERIFIED_OPERATOR_PARTNER',
       subscription_tier: 'Enterprise Platinum Tier',
     },
     responses: [
@@ -581,7 +593,7 @@ export const initialCustomerCareTickets: CustomerCareTicket[] = [
     context: {
       userType: 'BUSINESS',
       businessId: 'biz_eurojet_01',
-      role: 'VERIFIED_FBO_PARTNER',
+      role: 'VERIFIED_OPERATOR_PARTNER',
       subscription_tier: 'Enterprise Platinum Tier',
     },
     responses: [],
@@ -605,7 +617,7 @@ export const initialCustomUserTypes: CustomUserType[] = [
     id: 'role_business',
     key: 'BUSINESS_USER',
     label: 'Corporate Aviation Business',
-    description: 'Aircraft operators, FBO, charter brokerages & line MROs. Strict access limited only to quotations, client follow-up, deal proposals, commission logging/tracking, corporate wallet and commercial communications.',
+    description: 'Aircraft operators, charter brokerages & line MROs. Strict access limited only to quotations, client follow-up, deal proposals, commission logging/tracking, corporate wallet and commercial communications.',
     defaultAllowedModules: [
       'crm_quotations',
       'crm_client_followup',
@@ -753,7 +765,7 @@ const initialAdminProjects: AdminProject[] = [
   },
   {
     id: 'proj_04',
-    title: 'Tier-1 Airport FBO Direct Ground Fuel Subvention Contracts',
+    title: 'Tier-1 Airport VIP Direct Ground Fuel Subvention Contracts',
     description: 'Negotiate bulk Jet-A1 contract rates and dedicated apron ramp access for verified Truvaer corporate fleet operators.',
     category: 'COMMERCIAL',
     priority: 'MEDIUM',
@@ -854,9 +866,9 @@ const initialAdminTasks: AdminTask[] = [
   {
     id: 'task_pms_06',
     project_id: 'proj_04',
-    project_title: 'Tier-1 Airport FBO Direct Ground Fuel Subvention Contracts',
+    project_title: 'Tier-1 Airport VIP Direct Ground Fuel Subvention Contracts',
     title: 'Draft standard apron refueling SLA terms for Dubai World Central (DWC)',
-    description: 'Engage with FBO handlers to finalize guaranteed 30-minute turn-around fueling SLAs.',
+    description: 'Engage with VIP ground handlers to finalize guaranteed 30-minute turn-around fueling SLAs.',
     assigned_admin_id: 'adm_sales_04',
     assigned_admin_name: 'Vikram Patel',
     assigned_admin_role: 'Commercial Lead (L5)',
@@ -937,7 +949,7 @@ const initialBroadcastNotifications: BroadcastNotification[] = [
     sender_admin_id: 'adm_01',
     sender_admin_name: 'B Aditya Narayana (Chairman L8)',
     title: 'APAC & EMEA Ultra-Long Range Jet Charter Corridors Open',
-    message: 'Official Notice: Priority slot allocations and VIP FBO fuel subventions are now operational across Singapore, Dubai, and Mumbai corridors.',
+    message: 'Official Notice: Priority slot allocations and VIP executive fuel subventions are now operational across Singapore, Dubai, and Mumbai corridors.',
     category: 'Private Air Charter',
     zone: 'APAC',
     country: 'All',
@@ -951,7 +963,7 @@ const initialBroadcastNotifications: BroadcastNotification[] = [
     sender_admin_id: 'adm_02',
     sender_admin_name: 'Operations & Airspace Desk',
     title: 'ANZ Regional Airport Ground Handling Standards Bulletin',
-    message: 'Notice to all FBO and ground handling operators across Australia, New Zealand and Oceania: Updated apron GSE certification guidelines are now in effect.',
+    message: 'Notice to all executive and ground handling operators across Australia, New Zealand and Oceania: Updated apron GSE certification guidelines are now in effect.',
     category: 'Airport',
     zone: 'ANZ',
     country: 'All',
@@ -1696,7 +1708,7 @@ const initialCRMSales: CRMSalesRecord[] = [
     created_by: 'Admin',
     payment_method: 'Bank Transfer',
     items: [
-      { description: 'Executive FBO Ramp Clearance & GPU Power Hookup', quantity: 1, unit_price: 35000, total: 35000 },
+      { description: 'Executive VIP Ramp Clearance & GPU Power Hookup', quantity: 1, unit_price: 35000, total: 35000 },
       { description: 'Airside Crew Catering & Refreshments', quantity: 1, unit_price: 7196, total: 7196 },
     ],
     zone: 'West Zone',
@@ -2163,8 +2175,8 @@ const initialCRMSales: CRMSalesRecord[] = [
     sales_date: '27-04-2019',
     sales_status: 'Final',
     reference_no: 'REF-114',
-    customer_name: 'Emirates Executive FBO',
-    customer_email: 'fbo.handling@emirates.ae',
+    customer_name: 'Emirates Executive Flight Support',
+    customer_email: 'flight.handling@emirates.ae',
     customer_phone: '+971 4 299 1111',
     business_id: 'a1b2c3d4-5566-7788-9900-aabbccddeeff',
     business_name: 'JetVentures VIP SkySuite & Private Charters',
@@ -2398,7 +2410,7 @@ const initialCRMSales: CRMSalesRecord[] = [
     created_by: 'Admin',
     payment_method: 'Credit Card',
     items: [
-      { description: 'Executive FBO Red Carpet Aircraft Boarding Stairs Deployment', quantity: 1, unit_price: 18500, total: 18500 },
+      { description: 'Executive VIP Red Carpet Aircraft Boarding Stairs Deployment', quantity: 1, unit_price: 18500, total: 18500 },
     ],
     zone: 'West Zone',
     country: 'IN',
@@ -2916,7 +2928,7 @@ const initialBusinesses: BusinessProfile[] = [
     registration_number: 'ABCD12345F',
     date_of_registration: '2024-01-15',
     nature_of_business: 'Aviation Corporate Fleet & Charter Services',
-    business_description: 'Global executive aircraft charter, fleet operations, FBO ground logistics and corporate aviation solutions.',
+    business_description: 'Global executive aircraft charter, fleet operations, VIP ground logistics and corporate aviation solutions.',
     physical_location: 'Executive Aviation Complex, Terminal 1, Mumbai International Airport, India',
     website_url: 'https://corporate.truvaer.com',
     country: 'IN',
@@ -3041,7 +3053,7 @@ const initialServiceListings: ServiceListing[] = [
   {
     id: 'srv_rgoa_02',
     business_id: 'a1b2c3d4-5566-7788-9900-aabbccddeeff',
-    name: 'GMR Rajiv Gandhi Executive Terminal & Airside FBO',
+    name: 'GMR Rajiv Gandhi Executive Terminal & Airside Handling',
     category: 'Airport',
     subCategory: 'Executive Airport Hub & Ground Handling',
     logoUrl: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=400&q=80',
@@ -3076,7 +3088,7 @@ const initialServiceListings: ServiceListing[] = [
     business_id: 'a1b2c3d4-5566-7788-9900-aabbccddeeff',
     name: 'JetVentures VIP SkySuite & Private Charters',
     category: 'Private Air Charter',
-    subCategory: 'Executive FBO & Jet Charter',
+    subCategory: 'Executive VIP Terminal & Jet Charter',
     logoUrl: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=400&q=80',
     videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-clouds-and-blue-sky-2408-large.mp4',
     city: 'Dubai',
@@ -3371,10 +3383,10 @@ const initialServiceListings: ServiceListing[] = [
   },
   {
     id: 'srv_11',
-    business_id: 'biz_london_fbo_11',
-    name: 'Signature Royal FBO & VIP Aviation Terminal',
-    category: 'Airport & FBO Terminals',
-    subCategory: 'FBO Executive Lounge & Terminal',
+    business_id: 'biz_london_vip_11',
+    name: 'Signature Royal VIP Aviation Terminal',
+    category: 'Airport & VIP Terminals',
+    subCategory: 'VIP Executive Lounge & Terminal',
     logoUrl: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=400&q=80',
     videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-clouds-and-blue-sky-2408-large.mp4',
     city: 'London',
@@ -3384,7 +3396,7 @@ const initialServiceListings: ServiceListing[] = [
     pincode: 'LU2 9NW',
     phone: '+441582700800',
     email: 'ops@signatureroyal.co.uk',
-    registration_number: 'UK-CAA-FBO-7712',
+    registration_number: 'UK-CAA-VIP-7712',
     established_year: 2012,
     services: ['Private Jet Apron Parking & Heated Hangarage', 'Dedicated UK Border Force Airside Immigration', 'Under-Wing Chauffeur Limousine Ramp Access', 'Bespoke Executive Crew Rest Lounges'],
     facilities: ['State-of-the-Art Private Passenger Terminal', 'Direct Runway Apron Taxiway', 'Executive Airside Rest Suites', 'Private VIP Conference Suites'],
@@ -3773,6 +3785,9 @@ class MockDatabase {
   private envMode: 'LIVE' | 'TESTING';
   private flashNewsItems: FlashNewsItem[];
   private flashNewsConfig: FlashNewsConfig;
+  private storyCategories: StoryCategory[];
+  private regionalZones: RegionalAuthorityZone[];
+  private countryMappings: RegionCountryMapping[];
 
   constructor() {
     const savedMode = typeof window !== 'undefined' ? localStorage.getItem('truvaer_env_mode') : null;
@@ -3814,7 +3829,7 @@ class MockDatabase {
           id: 'rep_sample_01',
           report_number: 'TRU-REP-2026-0501',
           listing_id: 'listing_01',
-          listing_name: 'GMR Rajiv Gandhi Executive Terminal & Airside FBO',
+          listing_name: 'GMR Rajiv Gandhi Executive Terminal & Airside Handling',
           business_id: 'biz_gmr_01',
           reporter_email: 'aviator.aditya@yarifly.com',
           reporter_name: 'Aditya Narayana',
@@ -4052,6 +4067,19 @@ class MockDatabase {
       this.flashNewsConfig = { ...initialFlashNewsConfig };
     }
 
+    this.storyCategories = loadStorage<StoryCategory[]>(STORY_CATEGORIES_KEY, initialStoryCategories);
+    if (!this.storyCategories || this.storyCategories.length === 0) {
+      this.storyCategories = [...initialStoryCategories];
+    }
+    this.regionalZones = loadStorage<RegionalAuthorityZone[]>(REGIONAL_ZONES_KEY, initialRegionalZones);
+    if (!this.regionalZones || this.regionalZones.length === 0) {
+      this.regionalZones = [...initialRegionalZones];
+    }
+    this.countryMappings = loadStorage<RegionCountryMapping[]>(COUNTRY_MAPPINGS_KEY, initialCountryMappings);
+    if (!this.countryMappings || this.countryMappings.length === 0) {
+      this.countryMappings = [...initialCountryMappings];
+    }
+
     // Ensure Super Admin Chairman / MD profile has full unrestricted access permissions across modules
     const superAdminAcc = this.adminUsers.find((a) => a.admin_id === 'admin_super_admin' || a.role === 'SUPER_ADMIN');
     if (superAdminAcc) {
@@ -4171,9 +4199,16 @@ class MockDatabase {
     saveStorage(GLOBAL_CRISIS_MODE_KEY, this.globalCrisisMode);
     saveStorage(FLASH_NEWS_KEY, this.flashNewsItems);
     saveStorage(FLASH_NEWS_CONFIG_KEY, this.flashNewsConfig);
+    saveStorage(STORY_CATEGORIES_KEY, this.storyCategories);
+    saveStorage(REGIONAL_ZONES_KEY, this.regionalZones);
+    saveStorage(COUNTRY_MAPPINGS_KEY, this.countryMappings);
   }
 
   public getAdminActivities(): AdminActivityItem[] {
+    return [...this.adminActivities];
+  }
+
+  public getAdminAuditLogs(): AdminActivityItem[] {
     return [...this.adminActivities];
   }
 
@@ -6947,11 +6982,33 @@ class MockDatabase {
     }
   }
 
-  public addAdminUser(data: Partial<AdminUser> & { password?: string }): { success: boolean; message: string; admin?: AdminUser } {
+  public addAdminUser(
+    data: Partial<AdminUser> & { password?: string },
+    creatorIsL8?: boolean
+  ): { success: boolean; message: string; admin?: AdminUser } {
+    const emailNorm = (data.email || 'officer@truvaer.com').toLowerCase().trim();
+    const isValidCorporateDomain = emailNorm.endsWith('@yarifly.com') || emailNorm.endsWith('@truvaer.com');
+
+    // Strict condition: any admin / Super admin account should have a mandatory account with domain email address ending with "@yarifly.com or @truvaer.com" only
+    if (!isValidCorporateDomain) {
+      return {
+        success: false,
+        message: 'Strict Corporate Policy: Any Admin or Super Admin account must have a mandatory corporate domain ending with "@yarifly.com" or "@truvaer.com" only. Third-party domains are forbidden.',
+      };
+    }
+
+    // Strict condition: Super admin can be changed/created only if L8 user permits them
+    if ((data.role === 'SUPER_ADMIN' || (data.level !== undefined && data.level === 8)) && !creatorIsL8) {
+      return {
+        success: false,
+        message: 'Security Exception: Creation of or conversion to Super Admin (Level 8) is strictly restricted and requires direct permission from an active Level 8 Sovereign User.',
+      };
+    }
+
     const newAdmin: AdminUser = {
       admin_id: `admin_${generateUUID().substring(0, 8)}`,
       name: data.name || 'New Admin Officer',
-      email: (data.email || 'officer@truvaer.com').toLowerCase().trim(),
+      email: emailNorm,
       role: data.role || 'ADMIN',
       assigned_modules: data.assigned_modules || ['Operations'],
       department: data.department || 'Operations',
@@ -6960,6 +7017,8 @@ class MockDatabase {
       reporting_manager_id: data.reporting_manager_id,
       reporting_manager_name: data.reporting_manager_name,
       permissions: data.permissions || ['STANDARD_AUDIT', 'PORTAL_ACCESS'],
+      status: 'ACTIVE',
+      employment_status: 'Active Employee',
     };
 
     this.adminUsers.push(newAdmin);
@@ -7046,9 +7105,37 @@ class MockDatabase {
     };
   }
 
-  public updateAdminUser(adminId: string, updates: Partial<AdminUser>): { success: boolean; message: string } {
+  public updateAdminUser(
+    adminId: string,
+    updates: Partial<AdminUser>,
+    requesterIsL8?: boolean
+  ): { success: boolean; message: string } {
     const admin = this.adminUsers.find((a) => a.admin_id === adminId);
     if (!admin) return { success: false, message: 'Admin record not found.' };
+
+    // Domain validation if email updated
+    if (updates.email) {
+      const emailNorm = updates.email.toLowerCase().trim();
+      if (!emailNorm.endsWith('@yarifly.com') && !emailNorm.endsWith('@truvaer.com')) {
+        return {
+          success: false,
+          message: 'Corporate Security Exception: Administrative accounts must use authorized corporate domain ending with @yarifly.com or @truvaer.com.',
+        };
+      }
+    }
+
+    // Super Admin elevation check: only if L8 user permits
+    const isElevatingToSuperAdmin =
+      (updates.role === 'SUPER_ADMIN' || (updates.level !== undefined && updates.level === 8)) &&
+      admin.role !== 'SUPER_ADMIN' &&
+      admin.level !== 8;
+
+    if (isElevatingToSuperAdmin && !requesterIsL8) {
+      return {
+        success: false,
+        message: 'Elevation Security Violation: Promotion to Super Admin (Level 8) is strictly prohibited unless authorized and converted directly by an active Level 8 Sovereign User.',
+      };
+    }
 
     Object.assign(admin, updates);
     this.persist();
@@ -7066,6 +7153,184 @@ class MockDatabase {
     this.persist();
     return { success: true, message: `Admin ${removed.name} removed from organization directory.` };
   }
+
+  // -------------------------------------------------------------
+  // EMPLOYEE ACCOUNT ACCESS & SAFEGUARD LIFECYCLE (Level 6-8 & HR)
+  // -------------------------------------------------------------
+  public setEmployeeAccountLifecycleStatus(
+    adminId: string,
+    status: 'ACTIVE' | 'DISABLED' | 'SUSPENDED' | 'ARCHIVED',
+    reason: string,
+    actorName: string,
+    actorRole: string
+  ): { success: boolean; message: string; admin?: AdminUser } {
+    if (adminId === 'admin_super_01' || adminId === 'usr_super_admin') {
+      return {
+        success: false,
+        message: 'Security Exception: Sovereign Super Administrator (B Aditya Narayana) cannot be deactivated or disabled.',
+      };
+    }
+
+    const admin = this.adminUsers.find(
+      (a) => a.admin_id === adminId || a.email.toLowerCase() === adminId.toLowerCase()
+    );
+    if (!admin) return { success: false, message: 'Employee / Administrator record not found.' };
+
+    const previousStatus = admin.status || 'ACTIVE';
+    admin.status = status;
+    admin.status_reason = reason.trim() || `Status updated to ${status}`;
+    admin.status_changed_at = new Date().toISOString();
+    admin.status_changed_by = `${actorName} (${actorRole})`;
+
+    let transferredLeadsCount = 0;
+    let transferredOppsCount = 0;
+    let transferredTasksCount = 0;
+    let transferredTicketsCount = 0;
+    let assignedRM: AdminUser | null = null;
+
+    if (status === 'DISABLED') {
+      admin.employment_status = 'Terminated / Departed - Proprietary Data Safeguarded';
+      admin.safeguard_locked = true;
+      admin.data_handover_status = 'TRANSFERRED_TO_RM';
+    } else if (status === 'ACTIVE') {
+      admin.employment_status = 'Active Employee';
+      admin.safeguard_locked = false;
+      admin.data_handover_status = 'NA';
+    } else if (status === 'SUSPENDED') {
+      admin.employment_status = 'Suspended - Audit Freeze';
+      admin.safeguard_locked = true;
+      admin.data_handover_status = 'TRANSFERRED_TO_RM';
+    } else if (status === 'ARCHIVED') {
+      admin.employment_status = 'Archived Employee Record';
+      admin.safeguard_locked = true;
+      admin.data_handover_status = 'COMPLETED';
+    }
+
+    // Automated asset & lead handover to assigned Reporting Manager (RM)
+    if (status === 'DISABLED' || status === 'SUSPENDED') {
+      assignedRM =
+        (admin.reporting_manager_id && this.adminUsers.find((a) => a.admin_id === admin.reporting_manager_id && a.status === 'ACTIVE')) ||
+        this.adminUsers.find(
+          (a) => a.department === admin.department && (a.level ?? 0) >= 5 && a.admin_id !== admin.admin_id && a.status === 'ACTIVE'
+        ) ||
+        this.adminUsers.find((a) => a.role === 'SUPER_ADMIN' || a.level === 8) ||
+        this.adminUsers[0];
+
+      if (assignedRM) {
+        admin.reporting_manager_id = assignedRM.admin_id;
+        admin.reporting_manager_name = assignedRM.name;
+
+        // 1. Reassign CRM Leads
+        this.crmLeads.forEach((lead) => {
+          if (
+            lead.assigned_to === admin.name ||
+            lead.assigned_to === admin.email ||
+            lead.assigned_to === admin.admin_id
+          ) {
+            lead.assigned_to = assignedRM!.name;
+            lead.updated_at = new Date().toISOString();
+            transferredLeadsCount++;
+          }
+        });
+
+        // 2. Reassign CRM Opportunities
+        this.crmOpportunities.forEach((opp) => {
+          if (
+            opp.assigned_to === admin.name ||
+            opp.assigned_to === admin.email ||
+            opp.assigned_to === admin.admin_id
+          ) {
+            opp.assigned_to = assignedRM!.name;
+            transferredOppsCount++;
+          }
+        });
+
+        // 3. Reassign PMS Admin Tasks
+        this.adminTasks.forEach((task) => {
+          if (
+            task.assigned_admin_id === admin.admin_id ||
+            task.assigned_admin_name === admin.name
+          ) {
+            task.assigned_admin_id = assignedRM!.admin_id;
+            task.assigned_admin_name = assignedRM!.name;
+            task.assigned_admin_role = assignedRM!.level_title || assignedRM!.role;
+            transferredTasksCount++;
+          }
+        });
+
+        // 4. Reassign Customer Care Tickets
+        this.customerCareTickets.forEach((ticket) => {
+          if (
+            ticket.assigned_agent === admin.name ||
+            ticket.assigned_agent === admin.email
+          ) {
+            ticket.assigned_agent = assignedRM!.name;
+            transferredTicketsCount++;
+          }
+        });
+
+        // Alert the Reporting Manager
+        this.addNotification({
+          recipient_id: assignedRM.email,
+          title: `Asset Handover: ${admin.name} Assets Assigned`,
+          message: `${admin.name} account has been ${status}. All associated assets (${transferredLeadsCount} Leads, ${transferredOppsCount} Opportunities, ${transferredTasksCount} Tasks, ${transferredTicketsCount} Tickets) have been automatically transferred to your desk for review and action.`,
+          type: 'SYSTEM',
+        });
+      }
+    }
+
+    // Sync with corresponding regularUsers account so login is locked immediately
+    const regUser = this.regularUsers.find(
+      (u) => u.email.toLowerCase() === admin.email.toLowerCase() || u.user_id === admin.admin_id
+    );
+    if (regUser) {
+      if (status === 'ACTIVE') {
+        regUser.account_status = 'ACTIVE';
+        regUser.employment_status = 'Active Employee';
+      } else {
+        regUser.account_status = 'SUSPENDED';
+        regUser.employment_status = 'Alumni';
+      }
+    }
+
+    this.persist();
+
+    const handoverDetails = assignedRM
+      ? ` Transferred ${transferredLeadsCount} leads, ${transferredOppsCount} opportunities, ${transferredTasksCount} tasks, and ${transferredTicketsCount} tickets to Reporting Manager ${assignedRM.name}.`
+      : '';
+
+    this.logAdminActivity({
+      category: 'SECURITY_AUDIT',
+      title: `Employee Account ${status === 'DISABLED' ? 'Disabled & Data Safeguarded' : status === 'ACTIVE' ? 'Activated' : status}`,
+      description: `Employee ${admin.name} (${admin.email}) transitioned from ${previousStatus} to ${status} by ${actorName} (${actorRole}). Reason: ${admin.status_reason}.${handoverDetails} Immediate login cutoff enacted to protect organization data.`,
+      actor_name: actorName,
+      actor_role: actorRole,
+      target_id: admin.admin_id,
+      target_name: admin.name,
+      severity: status === 'ACTIVE' ? 'success' : 'warning',
+    });
+
+    return {
+      success: true,
+      message: `Employee account ${admin.name} (${admin.email}) updated to ${status}.${handoverDetails}`,
+      admin,
+    };
+  }
+
+  public recoverEmployeeAccount(
+    adminId: string,
+    actorName: string,
+    actorRole: string
+  ): { success: boolean; message: string; admin?: AdminUser } {
+    return this.setEmployeeAccountLifecycleStatus(
+      adminId,
+      'ACTIVE',
+      'Account successfully recovered and restored by administration.',
+      actorName,
+      actorRole
+    );
+  }
+
 
   // --- Hierarchy Promotion & Demotion (Requirement: Add promotion & demotion option) ---
   public demoteAdminLevel(
@@ -9725,7 +9990,414 @@ Automated Compliance & Balance Monitoring System`;
     this.storeInventory = [...initialStoreInventory];
     this.businessPosts = [...initialBusinessPosts];
     this.businessFollowers = { ...initialBusinessFollowers };
+    this.flashNewsItems = [...initialFlashNewsItems];
+    this.flashNewsConfig = { ...initialFlashNewsConfig };
+    this.adminProjects = [...initialAdminProjects];
+    this.adminTasks = [...initialAdminTasks];
+    this.platformModuleControls = [...initialPlatformModuleControls];
+    this.globalCrisisMode = false;
+    this.customUserTypes = [...initialCustomUserTypes];
+    this.businessReports = [];
+    this.postReports = [];
+    this.publishSanctions = {};
+    this.customerCareTickets = [...initialCustomerCareTickets];
+    this.crmSales = [...initialCRMSales];
+    this.broadcastNotifications = [...initialBroadcastNotifications];
+    this.activeSessions = {};
+    this.singleSessionAudits = [];
+    this.agentVerificationAudits = [];
+    this.directServiceOffers = [];
+    this.customCategoryRequests = [];
+    this.dispatchedThresholdAlerts = [];
+    this.transactionReportSubscriptions = {};
+    this.dispatchedTransactionReports = [];
+    this.suspendedCategories = [];
+    this.suspendedSubCategories = {};
+    this.storyCategories = [...initialStoryCategories];
+    this.regionalZones = [...initialRegionalZones];
+    this.countryMappings = [...initialCountryMappings];
     this.persist();
+  }
+
+  /**
+   * Super Admin Exclusive Factory Master Reset.
+   * Completely purges all browser storage (localStorage and sessionStorage)
+   * across all application namespaces, reinitializes all database collections
+   * to immaculate factory presets, writes pristine storage, and returns confirmation.
+   */
+  public fullMasterSystemReset(): { success: boolean; message: string; timestamp: string } {
+    try {
+      if (typeof window !== 'undefined') {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (
+            k &&
+            (k.startsWith('truvaer_') ||
+              k.startsWith('flashnews_') ||
+              k.startsWith('mock_db_') ||
+              k.startsWith('wallet_') ||
+              k.startsWith('activeUser') ||
+              k.startsWith('currentUser'))
+          ) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+        sessionStorage.clear();
+      }
+    } catch (e) {
+      console.warn('Storage purge warning during master reset:', e);
+    }
+
+    this.resetToDefaults();
+    return {
+      success: true,
+      message: 'Master application reset completed successfully. All databases, queues, and credentials restored to factory defaults.',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Option 1: Settings reset only.
+   * Restores centralized pricing matrix, operational configurations, module toggles,
+   * commission splits, and default taxonomy while PRESERVING all user accounts,
+   * business profiles, stories, job postings, CRM leads, and transactions.
+   */
+  public resetSettingsOnly(): { success: boolean; message: string; timestamp: string } {
+    this.pricingMatrix = [...initialPricingMatrix];
+    this.suspendedSubCategories = {};
+    this.resetToDefaultTaxonomy('Platform Administrator');
+    this.globalSettings = { ...initialGlobalSettings };
+    this.platformModuleControls = [...initialPlatformModuleControls];
+    this.flashNewsConfig = { ...initialFlashNewsConfig };
+    this.persist();
+
+    this.logAdminActivity({
+      category: 'SECURITY_AUDIT',
+      title: 'Settings Reset Enacted',
+      description: 'System configurations, pricing matrices, and module operational parameters reset to factory default. All user accounts, listings, and operational records preserved.',
+      actor_name: 'Platform Administrator',
+      actor_role: 'L8 Super Admin',
+      severity: 'info',
+    });
+
+    return {
+      success: true,
+      message: 'Settings reset completed successfully. Operational parameters and pricing matrix restored to factory defaults without affecting account data.',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Option 2: Full Reset - Without Data (Clean Slate Factory Reset).
+   * Purges all test businesses, mock CRM leads, sample jobs, and non-admin accounts,
+   * leaving only the primary Sovereign Administrator (B Aditya Narayana - aditya@yarifly.com)
+   * and clean baseline configurations ready for live production entry.
+   */
+  public fullResetWithoutData(): { success: boolean; message: string; timestamp: string } {
+    try {
+      if (typeof window !== 'undefined') {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (
+            k &&
+            (k.startsWith('truvaer_') ||
+              k.startsWith('flashnews_') ||
+              k.startsWith('mock_db_') ||
+              k.startsWith('wallet_'))
+          ) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+        sessionStorage.clear();
+      }
+    } catch (e) {
+      console.warn('Storage purge warning during clean reset:', e);
+    }
+
+    // Restore baseline settings
+    this.pricingMatrix = [...initialPricingMatrix];
+    this.suspendedSubCategories = {};
+    this.resetToDefaultTaxonomy('Platform Administrator');
+    this.globalSettings = { ...initialGlobalSettings };
+    this.platformModuleControls = [...initialPlatformModuleControls];
+    this.flashNewsConfig = { ...initialFlashNewsConfig };
+    this.storyCategories = [...initialStoryCategories];
+    this.regionalZones = [...initialRegionalZones];
+    this.countryMappings = [...initialCountryMappings];
+
+    // Clear mock business listings, sales, jobs, and chat messages
+    this.businesses = [];
+    this.serviceListings = [];
+    this.crmSales = [];
+    this.crmLeads = [];
+    this.crmOpportunities = [];
+    this.crmQuotations = [];
+    this.crmTickets = [];
+    this.commissions = [];
+    this.jobs = [];
+    this.news = [];
+    this.businessPosts = [];
+    this.broadcastNotifications = [];
+    this.customerCareTickets = [];
+
+    // Retain only the Sovereign Super Administrator account
+    const sovereignAdmin = initialAdminUsers.find((a) => a.email.toLowerCase() === 'aditya@yarifly.com') || initialAdminUsers[0];
+    this.adminUsers = [{ ...sovereignAdmin, status: 'ACTIVE', employment_status: 'Active Sovereign Administrator' }];
+    const sovereignRegular = initialRegularUsers.find((u) => u.email.toLowerCase() === 'aditya@yarifly.com') || initialRegularUsers[0];
+    this.regularUsers = [{ ...sovereignRegular, account_status: 'ACTIVE' }];
+
+    this.persist();
+
+    this.logAdminActivity({
+      category: 'SECURITY_AUDIT',
+      title: 'Full Application Reset - Without Data Enacted',
+      description: 'Clean Slate reset executed. All demo businesses, leads, and listings purged. Root Sovereign Admin account preserved.',
+      actor_name: 'Platform Administrator',
+      actor_role: 'L8 Super Admin',
+      severity: 'warning',
+    });
+
+    return {
+      success: true,
+      message: 'Clean Slate Full Reset completed. All test businesses, leads, and listings purged. Ready for fresh production setup.',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // -------------------------------------------------------------
+  // STORY CATEGORY MANAGEMENT METHODS
+  // -------------------------------------------------------------
+  public getStoryCategories(): StoryCategory[] {
+    return [...this.storyCategories].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  public saveStoryCategory(payload: Partial<StoryCategory>): { success: boolean; message: string; category: StoryCategory } {
+    const cleanName = payload.name?.trim() || 'Aviation Category';
+    const cleanSlug = (payload.slug?.trim() || cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')) || 'aviation-category';
+    
+    if (payload.id) {
+      const idx = this.storyCategories.findIndex((c) => c.id === payload.id);
+      if (idx !== -1) {
+        this.storyCategories[idx] = {
+          ...this.storyCategories[idx],
+          name: cleanName,
+          slug: cleanSlug,
+          description: payload.description !== undefined ? payload.description : this.storyCategories[idx].description,
+          status: payload.status || this.storyCategories[idx].status,
+          colorBadge: payload.colorBadge || this.storyCategories[idx].colorBadge,
+          updated_at: new Date().toISOString(),
+        };
+        this.persist();
+        return { success: true, message: `Story category "${cleanName}" updated successfully.`, category: this.storyCategories[idx] };
+      }
+    }
+
+    const newCategory: StoryCategory = {
+      id: `scat_${Date.now()}`,
+      name: cleanName,
+      slug: cleanSlug,
+      description: payload.description || '',
+      story_count: 0,
+      status: 'ACTIVE',
+      colorBadge: payload.colorBadge || 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    this.storyCategories.push(newCategory);
+    this.persist();
+    return { success: true, message: `Story category "${cleanName}" created successfully.`, category: newCategory };
+  }
+
+  public deleteStoryCategory(id: string): { success: boolean; message: string } {
+    const prevLen = this.storyCategories.length;
+    this.storyCategories = this.storyCategories.filter((c) => c.id !== id);
+    if (this.storyCategories.length !== prevLen) {
+      this.persist();
+      return { success: true, message: 'Story category removed successfully.' };
+    }
+    return { success: false, message: 'Category not found.' };
+  }
+
+  // -------------------------------------------------------------
+  // REGIONAL AUTHORITY & COUNTRY MAPPING METHODS
+  // -------------------------------------------------------------
+  public getRegionalZones(): RegionalAuthorityZone[] {
+    return [...this.regionalZones];
+  }
+
+  public saveRegionalZone(payload: Partial<RegionalAuthorityZone>): { success: boolean; message: string; zone: RegionalAuthorityZone } {
+    const cleanCode = (payload.code || 'ZONE').trim().toUpperCase();
+    const cleanName = payload.name?.trim() || `${cleanCode} Regional Zone`;
+
+    if (payload.id) {
+      const idx = this.regionalZones.findIndex((z) => z.id === payload.id || z.code === cleanCode);
+      if (idx !== -1) {
+        this.regionalZones[idx] = {
+          ...this.regionalZones[idx],
+          name: cleanName,
+          description: payload.description !== undefined ? payload.description : this.regionalZones[idx].description,
+          headquarters: payload.headquarters !== undefined ? payload.headquarters : this.regionalZones[idx].headquarters,
+          primaryAuthority: payload.primaryAuthority !== undefined ? payload.primaryAuthority : this.regionalZones[idx].primaryAuthority,
+        };
+        this.persist();
+        return { success: true, message: `Regional Zone ${cleanCode} updated successfully.`, zone: this.regionalZones[idx] };
+      }
+    }
+
+    const newZone: RegionalAuthorityZone = {
+      id: `zone_${cleanCode.toLowerCase()}_${Date.now()}`,
+      code: cleanCode,
+      name: cleanName,
+      description: payload.description || 'Global Aviation Sector Corridors',
+      headquarters: payload.headquarters || 'Executive Aviation Operations Desk',
+      primaryAuthority: payload.primaryAuthority || 'Civil Aviation Authority',
+      isSystem: false,
+    };
+    this.regionalZones.push(newZone);
+    this.persist();
+    return { success: true, message: `New Regional Zone "${cleanCode}" registered.`, zone: newZone };
+  }
+
+  public deleteRegionalZone(id: string): { success: boolean; message: string } {
+    const zone = this.regionalZones.find((z) => z.id === id);
+    if (!zone) return { success: false, message: 'Regional zone not found.' };
+    if (zone.isSystem) return { success: false, message: 'Cannot delete default system regional zones.' };
+    
+    // Check if countries are mapped
+    const hasCountries = this.countryMappings.some((c) => c.regionCode === zone.code);
+    if (hasCountries) {
+      return { success: false, message: `Cannot delete region "${zone.code}" because countries are mapped to it. Please reassign or delete those countries first.` };
+    }
+
+    this.regionalZones = this.regionalZones.filter((z) => z.id !== id);
+    this.persist();
+    return { success: true, message: `Regional zone "${zone.name}" removed.` };
+  }
+
+  public getCountryRegionMappings(): RegionCountryMapping[] {
+    return [...this.countryMappings].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  public saveCountryRegionMapping(payload: Partial<RegionCountryMapping>): { success: boolean; message: string; mapping: RegionCountryMapping } {
+    const cleanName = payload.name?.trim() || 'New Aviation Territory';
+    const cleanCode = (payload.code || cleanName.slice(0, 2)).trim().toUpperCase();
+    const regionCode = (payload.regionCode || 'APAC').trim().toUpperCase();
+
+    if (payload.id) {
+      const idx = this.countryMappings.findIndex((c) => c.id === payload.id);
+      if (idx !== -1) {
+        this.countryMappings[idx] = {
+          ...this.countryMappings[idx],
+          name: cleanName,
+          code: cleanCode,
+          regionCode,
+          regionalAuthorityAgency: payload.regionalAuthorityAgency || this.countryMappings[idx].regionalAuthorityAgency,
+          currency: payload.currency || this.countryMappings[idx].currency,
+          status: payload.status || this.countryMappings[idx].status,
+          updated_at: new Date().toISOString(),
+        };
+        this.persist();
+        return { success: true, message: `Country mapping for "${cleanName}" (${regionCode}) updated.`, mapping: this.countryMappings[idx] };
+      }
+    }
+
+    // Check duplicate code
+    const existing = this.countryMappings.find((c) => c.code === cleanCode);
+    if (existing) {
+      existing.regionCode = regionCode;
+      existing.name = cleanName;
+      if (payload.regionalAuthorityAgency) existing.regionalAuthorityAgency = payload.regionalAuthorityAgency;
+      existing.updated_at = new Date().toISOString();
+      this.persist();
+      return { success: true, message: `Country ${cleanName} reassigned to ${regionCode}.`, mapping: existing };
+    }
+
+    const newMapping: RegionCountryMapping = {
+      id: `cmap_${cleanCode.toLowerCase()}_${Date.now()}`,
+      code: cleanCode,
+      name: cleanName,
+      regionCode,
+      regionalAuthorityAgency: payload.regionalAuthorityAgency || 'Civil Aviation Authority',
+      currency: payload.currency || 'USD',
+      status: 'ACTIVE',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    this.countryMappings.push(newMapping);
+    this.persist();
+    return { success: true, message: `Country "${cleanName}" successfully mapped to ${regionCode}.`, mapping: newMapping };
+  }
+
+  public deleteCountryRegionMapping(id: string): { success: boolean; message: string } {
+    const prevLen = this.countryMappings.length;
+    this.countryMappings = this.countryMappings.filter((c) => c.id !== id);
+    if (this.countryMappings.length !== prevLen) {
+      this.persist();
+      return { success: true, message: 'Country unmapped and removed successfully.' };
+    }
+    return { success: false, message: 'Country mapping not found.' };
+  }
+
+  public reassignCountryRegion(id: string, newRegionCode: string): { success: boolean; message: string } {
+    const country = this.countryMappings.find((c) => c.id === id);
+    if (!country) return { success: false, message: 'Country record not found.' };
+    const oldRegion = country.regionCode;
+    country.regionCode = newRegionCode.trim().toUpperCase();
+    country.updated_at = new Date().toISOString();
+    this.persist();
+    return { success: true, message: `${country.name} successfully reassigned from ${oldRegion} to ${country.regionCode}.` };
+  }
+
+  public syncAndFixCountryMappings(): { success: boolean; message: string; verifiedCount: number } {
+    const validZoneCodes = new Set(this.regionalZones.map((z) => z.code.toUpperCase()));
+    let fixedCount = 0;
+
+    // Ensure all standard zones exist
+    initialRegionalZones.forEach((stdZone) => {
+      if (!this.regionalZones.some((z) => z.code.toUpperCase() === stdZone.code.toUpperCase())) {
+        this.regionalZones.push({ ...stdZone });
+        validZoneCodes.add(stdZone.code.toUpperCase());
+        fixedCount++;
+      }
+    });
+
+    // Ensure baseline country mappings exist
+    initialCountryMappings.forEach((stdMap) => {
+      if (!this.countryMappings.some((c) => c.code.toUpperCase() === stdMap.code.toUpperCase())) {
+        this.countryMappings.push({ ...stdMap });
+        fixedCount++;
+      }
+    });
+
+    // Validate and heal existing country mappings
+    this.countryMappings.forEach((c) => {
+      c.code = (c.code || c.name.slice(0, 2)).trim().toUpperCase();
+      c.regionCode = (c.regionCode || 'APAC').trim().toUpperCase();
+      if (!validZoneCodes.has(c.regionCode)) {
+        c.regionCode = 'APAC';
+        fixedCount++;
+      }
+      if (!c.regionalAuthorityAgency || c.regionalAuthorityAgency === 'Civil Aviation Authority') {
+        const foundStd = initialCountryMappings.find((s) => s.code.toUpperCase() === c.code.toUpperCase());
+        if (foundStd) {
+          c.regionalAuthorityAgency = foundStd.regionalAuthorityAgency;
+          c.currency = foundStd.currency;
+        }
+      }
+      c.status = 'ACTIVE';
+      c.updated_at = new Date().toISOString();
+    });
+
+    this.persist();
+    return {
+      success: true,
+      message: `Regional & country authority mappings verified and synchronized! ${this.countryMappings.length} countries mapped across ${this.regionalZones.length} regional aviation zones.`,
+      verifiedCount: this.countryMappings.length,
+    };
   }
 
   // -------------------------------------------------------------
@@ -14680,6 +15352,38 @@ Automated Compliance & Balance Monitoring System`;
 
     this.persist();
     return { success: true, message: 'Flashnews restored to live feed.' };
+  }
+
+  public toggleFlashNewsStatus(
+    id: string,
+    actorName = 'Publication Desk'
+  ): { success: boolean; message: string; newStatus?: FlashNewsStatus } {
+    const item = this.flashNewsItems.find((i) => i.id === id);
+    if (!item) return { success: false, message: 'Flashnews record not found.' };
+
+    const nextStatus: FlashNewsStatus = item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    item.status = nextStatus;
+    if (nextStatus === 'ACTIVE') {
+      item.published_at = new Date().toISOString();
+    }
+    this.persist();
+
+    this.logAdminActivity({
+      category: 'BUSINESS_APPROVAL',
+      title: `Flashnews Status Toggled: ${nextStatus}`,
+      description: `Flashnews "${item.headline}" status changed to ${nextStatus} by ${actorName}.`,
+      actor_name: actorName,
+      actor_role: 'Operations Lead',
+      target_id: item.id,
+      target_name: item.headline,
+      severity: nextStatus === 'ACTIVE' ? 'success' : 'info',
+    });
+
+    return {
+      success: true,
+      message: `Flashnews broadcast status switched to ${nextStatus === 'ACTIVE' ? 'Live Active' : 'Inactive / Paused'}.`,
+      newStatus: nextStatus,
+    };
   }
 
   public updateFlashNews(
