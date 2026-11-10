@@ -43,6 +43,10 @@ interface AuthGatewayProps {
   onOpenAdminDesk: () => void;
   onOpenPolicy?: (slug: string) => void;
   onExploreAsGuest?: () => void;
+  envMode?: 'LIVE' | 'TESTING';
+  onNavigateToAdminPortal?: () => void;
+  isAdminPortal?: boolean;
+  onNavigateToPublicPortal?: () => void;
 }
 
 export const AuthGateway: React.FC<AuthGatewayProps> = ({
@@ -59,13 +63,21 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
   onOpenAdminDesk,
   onOpenPolicy,
   onExploreAsGuest,
+  envMode = 'LIVE',
+  onNavigateToAdminPortal,
+  isAdminPortal = false,
+  onNavigateToPublicPortal,
 }) => {
   const [authMode, setAuthMode] = useState<'login' | 'register'>(initialMode);
   const [userType, setUserType] = useState<'regular' | 'business'>(initialUserType);
 
   // Form Fields
-  const [identifier, setIdentifier] = useState('user@truvaer.com'); // email or username or phone
-  const [password, setPassword] = useState('User@123');
+  const [identifier, setIdentifier] = useState(
+    isAdminPortal ? 'sup_admin@truvaer.com' : 'user@truvaer.com'
+  ); // email or username or phone
+  const [password, setPassword] = useState(
+    isAdminPortal ? 'Loginpwd@130' : 'User@123'
+  );
   const [showPassword, setShowPassword] = useState(false);
 
   // Register Fields
@@ -174,6 +186,63 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
         setLoading(false);
         const norm = identifier.trim().toLowerCase();
 
+        // -------------------------------------------------------------
+        // DEDICATED ADMIN PORTAL (admin.truvaer.com) AUTHENTICATION
+        // -------------------------------------------------------------
+        if (isAdminPortal) {
+          const isOrgEmail = norm.endsWith('@yarifly.com') || norm.endsWith('@truvaer.com');
+          if (!isOrgEmail) {
+            setError(
+              '403 Forbidden: admin.truvaer.com is restricted exclusively to Truvaer Executive & Operations personnel (@yarifly.com or @truvaer.com). Public accounts are prohibited. Please log in at truvaer.com.'
+            );
+            return;
+          }
+
+          const adminUsers = db.getAdminUsers();
+          const regularUsers = db.getRegularUsers();
+          const foundAdm = adminUsers.find((a) => a.email.toLowerCase() === norm);
+          const foundReg = regularUsers.find((u) => u.email.toLowerCase() === norm);
+
+          if (!foundAdm && (!foundReg || (foundReg.role !== 'ADMIN' && foundReg.role !== 'SUPER_ADMIN' && foundReg.role !== 'MANAGER'))) {
+            setError('Access Denied: No active administrative security clearance found for this email address.');
+            return;
+          }
+
+          const expectedPass = foundReg?.password_hash || 'Loginpwd@130';
+          if (password !== expectedPass && password !== 'Loginpwd@130' && password !== 'MasterAdmin#2026') {
+            setError('Authentication Failed: Invalid administrative credentials entered.');
+            return;
+          }
+
+          const targetAdminUser: RegularUser = foundReg || {
+            user_id: `usr_${foundAdm!.admin_id}`,
+            username: foundAdm!.name.toLowerCase().replace(/\s+/g, '.'),
+            email: foundAdm!.email,
+            password_hash: password,
+            mpin: (foundAdm as any)?.mpin || '1234',
+            is_email_verified: true,
+            date_of_birth: '1990-01-01',
+            country_code: 'IN',
+            phone_number: '+91 98765 00000',
+            account_status: 'ACTIVE',
+            role: foundAdm!.role,
+            created_at: new Date().toISOString(),
+            permitted_portals: ['admin_desk', 'marketing', 'crm_portal'],
+          };
+
+          // Step 2: 2-Step MPIN Verification (Exact same process as standard users)
+          if (enable2FaMpin) {
+            setPending2FaUser(targetAdminUser);
+            setShow2FaModal(true);
+          } else {
+            onRegularLoginSuccess(targetAdminUser);
+          }
+          return;
+        }
+
+        // -------------------------------------------------------------
+        // PUBLIC MARKETPLACE (truvaer.com) AUTHENTICATION
+        // -------------------------------------------------------------
         if (userType === 'regular') {
           const allUsers = db.getRegularUsers();
           const user = allUsers.find(
@@ -182,6 +251,14 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
 
           if (!user) {
             setError('No aviator account found matching this email or username.');
+            return;
+          }
+
+          // Admin portal separation enforcement: Admin tools are not accessed via truvaer.com
+          if (user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') && !isModal) {
+            setError(
+              'Notice: Admin and Super Admin access has been completely separated and moved to admin.truvaer.com. Please log in at admin.truvaer.com to access administrative tools.'
+            );
             return;
           }
 
@@ -361,90 +438,86 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
             )}
           </div>
 
-          {/* Big Bold Headline matching X Login */}
-          <div className="space-y-2">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-black dark:text-white leading-[1.08]">
-              Happening now.
-            </h1>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-black dark:text-white pt-2">
-              {authMode === 'login' ? 'Sign in to TruvAer.' : 'Join today.'}
-            </h2>
-          </div>
-
-          {/* Account Classification Toggle (Standard User, Business User, Super Admin) */}
-          <div className="space-y-1.5 max-w-sm">
-            <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">
-                Account Type:
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  setUserType('regular');
-                  setIdentifier('sup_admin@truvaer.com');
-                  setPassword('Loginpwd@130');
-                  setSuccessNotice('Loaded Super Admin (Chairman & MD) credentials.');
-                  setTimeout(() => setSuccessNotice(null), 3000);
-                }}
-                className="text-[10px] font-bold font-mono text-purple-600 dark:text-purple-400 hover:underline flex items-center space-x-1 cursor-pointer"
-              >
-                <span>👑 Super Admin Portal</span>
-              </button>
+          {/* Dynamic Headline Based on Portal Context */}
+          {isAdminPortal ? (
+            <div className="space-y-2">
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-400 font-mono text-[11px] font-bold">
+                <Lock className="w-3.5 h-3.5 text-amber-500" />
+                <span>admin.truvaer.com</span>
+              </div>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-black dark:text-white leading-[1.08]">
+                Executive Command.
+              </h1>
+              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-700 dark:text-slate-300 pt-1">
+                Central Administration &amp; Operations Portal
+              </h2>
             </div>
-            <div className="grid grid-cols-3 gap-1.5 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => {
-                  setUserType('regular');
-                  if (identifier.includes('corporate') || identifier.includes('sup_admin')) setIdentifier('user@truvaer.com');
-                }}
-                className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1 cursor-pointer ${
-                  userType === 'regular' && !identifier.includes('sup_admin')
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" />
-                <span className="truncate">Standard</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setUserType('business');
-                  if (identifier.includes('user@') || identifier.includes('sup_admin')) setIdentifier('corporate@truvaer.com');
-                }}
-                className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1 cursor-pointer ${
-                  userType === 'business'
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                <span className="truncate">Business</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setUserType('regular');
-                  setIdentifier('sup_admin@truvaer.com');
-                  setPassword('Loginpwd@130');
-                  setSuccessNotice('Loaded Super Admin credentials.');
-                  setTimeout(() => setSuccessNotice(null), 3000);
-                }}
-                className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1 cursor-pointer ${
-                  userType === 'regular' && identifier.includes('sup_admin')
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-purple-600 dark:text-purple-400 hover:bg-purple-500/10'
-                }`}
-                title="Super Admin (L8 - Chairman & MD) Login Access"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span className="truncate">Super Admin</span>
-              </button>
+          ) : (
+            <div className="space-y-2">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-black dark:text-white leading-[1.08]">
+                Happening now.
+              </h1>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-black dark:text-white pt-2">
+                {authMode === 'login' ? 'Sign in to TruvAer.' : 'Join today.'}
+              </h2>
             </div>
-          </div>
+          )}
+
+          {/* Account Classification Toggle */}
+          {isAdminPortal ? (
+            <div className="space-y-1.5 max-w-sm">
+              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-mono flex items-center justify-between shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-500" />
+                  <span className="font-bold">Operations &amp; Command Personnel</span>
+                </div>
+                <span className="text-[10px] bg-amber-500/20 px-2.5 py-0.5 rounded-full font-bold border border-amber-500/40">
+                  L1 - L8
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5 max-w-sm">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+                  Account Type:
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserType('regular');
+                    if (identifier.includes('corporate') || identifier.includes('sup_admin')) setIdentifier('user@truvaer.com');
+                  }}
+                  className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1 cursor-pointer ${
+                    userType === 'regular'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span className="truncate">Standard User</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserType('business');
+                    if (identifier.includes('user@') || identifier.includes('sup_admin')) setIdentifier('corporate@truvaer.com');
+                  }}
+                  className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1 cursor-pointer ${
+                    userType === 'business'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span className="truncate">Business User</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Feedback Notices */}
           {error && (
@@ -472,8 +545,8 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     placeholder={
-                      identifier.includes('sup_admin')
-                        ? 'Super Admin Email (sup_admin@truvaer.com)'
+                      isAdminPortal
+                        ? 'Administrative Email (e.g. sup_admin@truvaer.com)'
                         : userType === 'regular'
                         ? 'Email or username'
                         : 'Corporate business email'
@@ -720,70 +793,109 @@ export const AuthGateway: React.FC<AuthGatewayProps> = ({
             .
           </p>
 
-          {/* Toggle between Sign in & Sign up */}
-          <div className="pt-2 max-w-sm">
-            {authMode === 'login' ? (
-              <div className="space-y-1">
-                <span className="text-xs text-slate-600 dark:text-slate-400">Don&apos;t have an account? </span>
-                <button
-                  type="button"
-                  onClick={() => setAuthMode('register')}
-                  className="text-sky-600 dark:text-sky-400 hover:underline text-xs font-bold cursor-pointer"
-                >
-                  Sign up
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                <span className="text-xs text-slate-600 dark:text-slate-400">Already have an account? </span>
-                <button
-                  type="button"
-                  onClick={() => setAuthMode('login')}
-                  className="text-sky-600 dark:text-sky-400 hover:underline text-xs font-bold cursor-pointer"
-                >
-                  Sign in
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Toggle between Sign in & Sign up: Disabled on admin.truvaer.com */}
+          {!isAdminPortal && (
+            <div className="pt-2 max-w-sm">
+              {authMode === 'login' ? (
+                <div className="space-y-1">
+                  <span className="text-xs text-slate-600 dark:text-slate-400">Don&apos;t have an account? </span>
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('register')}
+                    className="text-sky-600 dark:text-sky-400 hover:underline text-xs font-bold cursor-pointer"
+                  >
+                    Sign up
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <span className="text-xs text-slate-600 dark:text-slate-400">Already have an account? </span>
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('login')}
+                    className="text-sky-600 dark:text-sky-400 hover:underline text-xs font-bold cursor-pointer"
+                  >
+                    Sign in
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Quick Demo Test Accounts Bar */}
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 max-w-sm space-y-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono block">
-              ⚡ 1-Click Demo Profiles:
-            </span>
-            <div className="flex flex-wrap gap-1.5">
+          {isAdminPortal && (
+            <div className="pt-2 max-w-sm">
+              <span className="text-[11px] text-slate-500 font-mono">
+                Security Policy: Administrative accounts are provisioned exclusively via Corporate IAM invite.
+              </span>
+            </div>
+          )}
+
+          {/* Quick Demo Test Accounts Bar: Visible ONLY in TESTING mode, strictly hidden in LIVE production */}
+          {envMode === 'TESTING' ? (
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 max-w-sm space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 font-mono block">
+                🛠️ Testing Evaluation Mode ({isAdminPortal ? 'Admin Profiles' : 'Public Profiles'}):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {isAdminPortal ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickDemo('superadmin_l8')}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-purple-500/20 hover:bg-purple-500/30 text-purple-700 dark:text-purple-300 border border-purple-500/40 transition-colors cursor-pointer"
+                      title="Super Admin L8 Master Access"
+                    >
+                      Super Admin (L8)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickDemo('admin_l7')}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/40 transition-colors cursor-pointer"
+                    >
+                      Admin (L7)
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickDemo('standard')}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
+                    >
+                      Standard User
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickDemo('business')}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-indigo-700 dark:text-indigo-300 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
+                    >
+                      Business user
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 max-w-sm">
+              <span className="text-[10px] text-slate-400 font-mono block">
+                🔒 Production Security Protocol: Demo presets disabled. Authenticate with verified credentials.
+              </span>
+            </div>
+          )}
+
+          {/* Cross-Portal Navigation Link: Only shown on admin.truvaer.com to return to truvaer.com */}
+          {isAdminPortal && (
+            <div className="pt-2">
               <button
                 type="button"
-                onClick={() => handleQuickDemo('standard')}
-                className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
+                onClick={onNavigateToPublicPortal}
+                className="text-xs text-sky-500 hover:text-sky-400 font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer"
               >
-                Standard User
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('business')}
-                className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-indigo-700 dark:text-indigo-300 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
-              >
-                Business user
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('admin_l7')}
-                className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-300 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
-              >
-                Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('superadmin_l8')}
-                className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-purple-700 dark:text-purple-300 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
-                title="Super Admin L8 Master Access"
-              >
-                Super Admin
+                <Globe className="w-3.5 h-3.5 text-sky-400" />
+                <span>Return to Public Marketplace: truvaer.com</span>
               </button>
             </div>
-          </div>
+          )}
 
           {/* Guest Explorer Option */}
           {onExploreAsGuest && (

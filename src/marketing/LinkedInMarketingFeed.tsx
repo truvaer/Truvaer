@@ -38,12 +38,14 @@ import {
   Ban,
   ShieldAlert,
   Zap,
+  RefreshCw,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
 import {
   BusinessPost,
   BusinessPostType,
   PostMarketingCampaign,
+  CampaignTargetScope,
   RegularUser,
   BusinessProfile,
   PostReportReason,
@@ -52,6 +54,19 @@ import {
 import { COUNTRIES, CATEGORIES } from './MarketingPortal';
 import { FlashNewsBlinkFeed } from '../components/FlashNewsBlinkFeed';
 import { FlashNewsPublicationDesk } from '../erp/FlashNewsPublicationDesk';
+import { QuantitativeReportingInterface } from './QuantitativeReportingInterface';
+import { BusinessProfileDetailModal } from '../business/BusinessProfileDetailModal';
+
+// Aviation Regions for Dynamic Dependent Dropdown (Renew and Extend trigger)
+export const AVIATION_REGIONS = [
+  { code: 'APAC', name: 'Asia-Pacific (APAC) Flight Corridor', flag: '🌏' },
+  { code: 'EMEA', name: 'Europe, Middle East & Africa (EMEA)', flag: '🌍' },
+  { code: 'NA', name: 'North America (FAA Airspace & Canada)', flag: '🌎' },
+  { code: 'LATAM', name: 'Latin America & Caribbean (LATAM)', flag: '🌎' },
+  { code: 'MENA', name: 'Middle East & North Africa (MENA)', flag: '🌍' },
+  { code: 'SAIO', name: 'South Asia & Indian Ocean (SAIO)', flag: '🌏' },
+  { code: 'GLOBAL', name: 'Global High-Altitude Flight Corridor', flag: '🌐' },
+];
 
 interface LinkedInMarketingFeedProps {
   currentUser: RegularUser | null;
@@ -129,14 +144,35 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
   );
   const [tagsInput, setTagsInput] = useState('Aviation, FleetOps, PilotTraining');
 
-  // Marketing Campaign Sponsored Boost Options
+  // Marketing Campaign Sponsored Boost Options (Requirement 3)
   const [isMarketed, setIsMarketed] = useState(false);
-  const [campaignRadiusKm, setCampaignRadiusKm] = useState<number>(100);
+  const [campaignTargetScope, setCampaignTargetScope] = useState<CampaignTargetScope>('Country');
   const [campaignCountry, setCampaignCountry] = useState<string>(currentBusiness?.country || 'IN');
-  const [campaignDurationDays, setCampaignDurationDays] = useState<number>(7);
+  const [isMultipleCountries, setIsMultipleCountries] = useState(false);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([currentBusiness?.country || 'IN']);
+  const [campaignDurationDays, setCampaignDurationDays] = useState<number>(1); // numeric 1-30, default 1
   const [campaignCategory, setCampaignCategory] = useState<string>(
     currentBusiness?.category || 'Pilot Training & Academies'
   );
+  // Dynamic Dependent Dropdown for Locations: switches between Countries and Regions
+  const [campaignLifecycleMode, setCampaignLifecycleMode] = useState<'NEW_CAMPAIGN' | 'RENEW_AND_EXTEND'>('NEW_CAMPAIGN');
+  const [renewalLifecycleMode, setRenewalLifecycleMode] = useState<'RENEW_AND_EXTEND' | 'NEW_CAMPAIGN'>('RENEW_AND_EXTEND');
+  // Business Profile Modal State (Triggered on click of recommended businesses)
+  const [viewingBusinessProfile, setViewingBusinessProfile] = useState<BusinessProfile | null>(null);
+
+  // Lifecycle & Notification Engine States (Requirement 1 & 2)
+  const [dailyAlert, setDailyAlert] = useState<{ show: boolean; message: string; daysRemaining?: number } | null>(null);
+  const [twelveHourWarnings, setTwelveHourWarnings] = useState<any[]>([]);
+  const [completionAlert, setCompletionAlert] = useState<{ show: boolean; message: string } | null>(null);
+  const [showQuantReports, setShowQuantReports] = useState(false);
+  const [selectedReportPostId, setSelectedReportPostId] = useState<string | undefined>(undefined);
+
+  // Renewal Modal State (Requirement 1 - 12h renewal flow preserving existing record)
+  const [renewalCampaign, setRenewalCampaign] = useState<{ post: BusinessPost; campaign: PostMarketingCampaign } | null>(null);
+  const [renewalDurationDays, setRenewalDurationDays] = useState<number>(1);
+  const [renewalScope, setRenewalScope] = useState<CampaignTargetScope>('Country');
+  const [renewalCountries, setRenewalCountries] = useState<string[]>(['IN']);
+  const [renewalIsMultiCountries, setRenewalIsMultiCountries] = useState(false);
 
   // Active Comment Thread state
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
@@ -187,6 +223,102 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
     });
     return () => unsub();
   }, [currentUserId]);
+
+  // Requirement 1: Campaign Lifecycle & Notification Engine
+  useEffect(() => {
+    const activeTarget = currentUser || currentBusiness;
+    if (activeTarget) {
+      // 1. Daily Status Alert (First Login of calendar day, timezone-dependent, remaining > 3 days)
+      const dailyRes = db.checkDailyCampaignAlert(activeTarget);
+      if (dailyRes.shouldAlert && dailyRes.message) {
+        setDailyAlert({
+          show: true,
+          message: dailyRes.message,
+          daysRemaining: dailyRes.daysRemaining,
+        });
+      }
+
+      // 2. 12-Hour Expiry Warning & Renewal Flow
+      const warningsResult = db.check12HourCampaignWarnings();
+      if (warningsResult.warnings && warningsResult.warnings.length > 0) {
+        setTwelveHourWarnings(warningsResult.warnings);
+      }
+
+      // 3. Post-Campaign Completion Alert
+      const compRes = db.checkPostCampaignCompletionAlerts(activeTarget);
+      if (compRes.completedCampaigns && compRes.completedCampaigns.length > 0) {
+        const first = compRes.completedCampaigns[0];
+        setCompletionAlert({
+          show: true,
+          message: `Campaign "${first.title}" has concluded. Final stats: ${first.views.toLocaleString()} views, ${first.clicks.toLocaleString()} clicks, ${first.creditsUsed} credits utilized. Directing to quantitative reporting.`,
+        });
+      }
+    }
+  }, [currentUser, currentBusiness]);
+
+  // Handler to open Renewal Modal pre-populated with campaign's current state
+  const handleOpenRenewalForPost = (post: BusinessPost) => {
+    if (!post.marketing_campaign) return;
+    const c = post.marketing_campaign;
+    setRenewalCampaign({ post, campaign: c });
+    setRenewalScope(c.target_scope || 'Region');
+    setRenewalLifecycleMode('RENEW_AND_EXTEND');
+    const countries = c.target_countries || [c.country || 'APAC'];
+    setRenewalCountries(countries);
+    setRenewalIsMultiCountries(countries.length > 1);
+    setRenewalDurationDays(1);
+  };
+
+  const handleConfirmRenewal = () => {
+    if (!renewalCampaign) return;
+    if (renewalDurationDays < 1 || renewalDurationDays > 30 || !Number.isInteger(renewalDurationDays)) {
+      showToast('Extension duration must be an integer between 1 and 30 days.');
+      return;
+    }
+    const finalCountries = renewalIsMultiCountries && renewalCountries.length > 0 ? renewalCountries : [renewalCountries[0] || 'IN'];
+    const res = db.extendCampaignDuration(
+      renewalCampaign.post.id,
+      renewalDurationDays,
+      renewalScope,
+      finalCountries
+    );
+    showToast(res.message);
+    if (res.success) {
+      refreshPosts();
+      setRenewalCampaign(null);
+      setTwelveHourWarnings((prev) => prev.filter((w) => w.postId !== renewalCampaign.post.id));
+    }
+  };
+
+  // Helper to open full Business Profile modal on click from recommended feed or post
+  const handleOpenBusinessProfile = (bizId?: string, bizName?: string) => {
+    const allBiz = db.getBusinesses();
+    const found = allBiz.find(
+      (b) =>
+        (bizId && b.business_id === bizId) ||
+        (bizName && b.organization_name.toLowerCase() === bizName.toLowerCase())
+    );
+    if (found) {
+      setViewingBusinessProfile(found);
+    } else if (bizName) {
+      setViewingBusinessProfile({
+        business_id: bizId || `biz_${Date.now()}`,
+        business_email: 'office@corporate-aviation.com',
+        organization_name: bizName,
+        category: 'Aviation Operator',
+        contact_number: '+91 98765 43210',
+        city: 'Global Aviation Hub',
+        state: 'Corporate Headquarters',
+        country: 'IN',
+        address: 'Executive Aviation Complex, Terminal 3',
+        created_at: new Date().toISOString(),
+        verification_status: 'VERIFIED',
+        verification_tier: 'ENTERPRISE_TIER_1',
+        bio: 'Premier aviation corporation offering commercial charters, training, MRO services, and executive logistics across global flight corridors.',
+        credit_wallet_balance: 500,
+      } as unknown as BusinessProfile);
+    }
+  };
 
   // Handle Edit Post
   const handleStartEditPost = (post: BusinessPost) => {
@@ -377,11 +509,19 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
 
     let marketingCampaign: PostMarketingCampaign | undefined = undefined;
     if (isMarketed && currentBusiness) {
-      // Calculate credits cost
-      const creditsCost = campaignDurationDays * 15;
+      if (campaignDurationDays < 1 || campaignDurationDays > 30 || !Number.isInteger(campaignDurationDays)) {
+        showToast('Campaign duration must be an integer between 1 and 30 days.');
+        return;
+      }
+      const finalCountries = isMultipleCountries && selectedCountries.length > 0 ? selectedCountries : [campaignCountry];
+      // Multi-location credit calculation: count individual countries/regions selected and multiply by daily rate
+      const locationCount = Math.max(1, finalCountries.length);
+      const creditsCost = locationCount * campaignDurationDays * 15;
       marketingCampaign = {
-        radius_km: campaignRadiusKm,
-        country: campaignCountry,
+        radius_km: campaignTargetScope === 'City' ? 25 : campaignTargetScope === 'Country' ? 250 : campaignTargetScope === 'Region' ? 500 : -1,
+        country: finalCountries[0] || 'IN',
+        target_scope: campaignTargetScope,
+        target_countries: finalCountries,
         duration_days: campaignDurationDays,
         category: campaignCategory,
         start_date: new Date().toISOString(),
@@ -390,6 +530,11 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
         credits_invested: creditsCost,
         impressions: 1,
         clicks: 0,
+        views: 1,
+        target_audience_reached: 120 * campaignDurationDays * locationCount,
+        engagement_rate: 4.8,
+        total_credit_usage: creditsCost,
+        status: 'ACTIVE',
       };
     }
 
@@ -713,6 +858,45 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
         {/* CENTER COLUMN: Stories for you Feed & Post Composer (6 cols)              */}
         {/* ========================================================================= */}
         <div className="lg:col-span-6 space-y-5">
+          {/* Requirement 1: 12-Hour Expiry Warning Banner with [Renew / Extend] CTA */}
+          {twelveHourWarnings.length > 0 && (
+            <div className="bg-amber-950/70 border border-amber-500/60 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                    <Clock className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-amber-200">
+                      12-Hour Campaign Expiry Warning ({twelveHourWarnings.length} Active Notice)
+                    </h4>
+                    <p className="text-xs text-amber-300/80 mt-0.5">
+                      Targeted sponsored campaign is set to expire within 12 hours. Renew now to extend duration with full data continuity.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 shrink-0 flex-wrap">
+                  {twelveHourWarnings.map((w) => {
+                    const post = posts.find((p) => p.id === w.postId);
+                    return (
+                      <button
+                        key={w.postId}
+                        type="button"
+                        onClick={() => {
+                          if (post) handleOpenRenewalForPost(post);
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs flex items-center space-x-1.5 shadow-md cursor-pointer transition-all active:scale-95"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Renew / Extend</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Post Creation Box (LinkedIn Top Composer) - Enabled for Business Pages and Admins */}
           {(publishCheck.isSuspended || currentBusiness || isAdmin) && (
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xl space-y-3">
@@ -793,6 +977,21 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                         <Sparkles className="w-3.5 h-3.5" />
                         <span>Executive Admin Author</span>
                       </span>
+                    )}
+
+                    {(currentBusiness || isAdmin) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedReportPostId(undefined);
+                          setShowQuantReports(true);
+                        }}
+                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-amber-300 border border-amber-500/30 cursor-pointer transition-colors shadow-xs"
+                        title="Open Pure Quantitative Reporting Interface (Zero-Clutter KPI Engine)"
+                      >
+                        <TrendingUp className="w-4 h-4 text-amber-400" />
+                        <span>Quantitative Analytics</span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -879,18 +1078,22 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                   >
                     {/* Header: Business Info + Management (Edit, Delete) or Follow Button */}
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start space-x-3 min-w-0">
+                      <div
+                        className="flex items-start space-x-3 min-w-0 cursor-pointer group"
+                        onClick={() => handleOpenBusinessProfile(post.business_id, post.business_name)}
+                        title="View Business Profile"
+                      >
                         <img
                           src={
                             post.business_logo ||
                             'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=200&q=80'
                           }
                           alt={post.business_name}
-                          className="w-12 h-12 rounded-2xl object-cover ring-1 ring-slate-800 shrink-0"
+                          className="w-12 h-12 rounded-2xl object-cover ring-1 ring-slate-800 shrink-0 group-hover:ring-blue-400 transition-all"
                         />
                         <div className="min-w-0">
                           <div className="flex items-center space-x-1.5 flex-wrap">
-                            <span className="font-bold text-sm text-white hover:text-blue-400 cursor-pointer">
+                            <span className="font-bold text-sm text-white group-hover:text-blue-400 transition-colors">
                               {post.business_name}
                             </span>
                             {post.business_verified && (
@@ -983,22 +1186,46 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                       </div>
                     )}
 
-                    {/* Sponsored Campaign Badge (Condition 4) */}
+                    {/* Sponsored Campaign Badge (Condition 4 & Req 1, 2) */}
                     {post.is_marketed && post.marketing_campaign && (
-                      <div className="px-3.5 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between text-xs text-amber-300">
+                      <div className="px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-amber-300 gap-2">
                         <div className="flex items-center space-x-2">
-                          <Megaphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <Megaphone className="w-4 h-4 text-amber-400 shrink-0" />
                           <span>
-                            <strong>Promoted Campaign:</strong> Targeted within{' '}
-                            {post.marketing_campaign.radius_km > 0
-                              ? `${post.marketing_campaign.radius_km} Kms`
-                              : 'Worldwide'}{' '}
-                            in {post.marketing_campaign.country} for {post.marketing_campaign.category}
+                            <strong>Promoted Campaign:</strong> Scope:{' '}
+                            <span className="font-bold text-white">{post.marketing_campaign.target_scope || 'Country'}</span> •{' '}
+                            Countries: <span className="font-bold text-white">{(post.marketing_campaign.target_countries || [post.marketing_campaign.country]).join(', ')}</span> •{' '}
+                            Duration: <span className="font-bold text-white">{post.marketing_campaign.duration_days} Days</span>
                           </span>
                         </div>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 font-bold uppercase tracking-wider">
-                          Standard Users Only
-                        </span>
+                        <div className="flex items-center space-x-2 shrink-0 flex-wrap">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 font-bold uppercase tracking-wider">
+                            Standard Aviators Only
+                          </span>
+                          {canManage && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedReportPostId(post.id);
+                                  setShowQuantReports(true);
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-200 hover:text-white font-bold text-[10px] transition-colors cursor-pointer shadow-xs"
+                                title="Open Pure-Data Analytics for this campaign"
+                              >
+                                View Pure Analytics
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenRenewalForPost(post)}
+                                className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] transition-colors cursor-pointer shadow-xs"
+                                title="Extend duration of this active campaign"
+                              >
+                                Renew / Extend
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -1206,8 +1433,12 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                     key={biz.business_id}
                     className="flex items-start justify-between space-x-2.5 pb-3 border-b border-slate-800/60 last:border-none last:pb-0"
                   >
-                    <div className="flex items-start space-x-2.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-indigo-300 shrink-0 mt-0.5 overflow-hidden">
+                    <div
+                      className="flex items-start space-x-2.5 min-w-0 cursor-pointer group"
+                      onClick={() => setViewingBusinessProfile(biz)}
+                      title="View full Business Profile page"
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-indigo-300 shrink-0 mt-0.5 overflow-hidden group-hover:border-blue-400 transition-colors">
                         {biz.photos?.[0] ? (
                           <img src={biz.photos[0]} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -1215,7 +1446,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                         )}
                       </div>
                       <div className="min-w-0">
-                        <div className="font-bold text-xs text-white truncate hover:text-blue-300 cursor-pointer">
+                        <div className="font-bold text-xs text-white truncate group-hover:text-blue-300 transition-colors">
                           {biz.organization_name}
                         </div>
                         <div className="text-[10px] text-slate-400 truncate">
@@ -1459,69 +1690,187 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* 1. Range in Kms */}
-                      <div className="space-y-1">
-                        <label className="block text-[11px] font-semibold text-slate-300">
-                          Target Range Radius (Kms)
-                        </label>
+                      {/* Campaign Operation / Lifecycle Mode: Dynamic Dependent Trigger */}
+                      <div className="space-y-1 sm:col-span-2">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-[11px] font-semibold text-slate-300">
+                            Campaign Lifecycle Mode (Dependent Dropdown Trigger)
+                          </label>
+                          <span className="text-[10px] font-mono text-amber-300 font-bold bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
+                            {campaignLifecycleMode === 'RENEW_AND_EXTEND' ? 'Regions Active (Corridor)' : 'Countries Active'}
+                          </span>
+                        </div>
                         <select
-                          value={campaignRadiusKm}
-                          onChange={(e) => setCampaignRadiusKm(Number(e.target.value))}
-                          className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                          value={campaignLifecycleMode}
+                          onChange={(e) => {
+                            const newMode = e.target.value as 'NEW_CAMPAIGN' | 'RENEW_AND_EXTEND';
+                            setCampaignLifecycleMode(newMode);
+                            if (newMode === 'RENEW_AND_EXTEND') {
+                              setCampaignTargetScope('Region');
+                              setSelectedCountries(['APAC']);
+                            } else {
+                              setCampaignTargetScope('Country');
+                              setSelectedCountries([currentBusiness?.country || 'IN']);
+                            }
+                          }}
+                          className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-amber-500 font-bold cursor-pointer"
                         >
-                          <option value={25}>25 Kms (Local Aerodrome Hub)</option>
-                          <option value={50}>50 Kms (Metro Sector)</option>
-                          <option value={100}>100 Kms (Regional Reach)</option>
-                          <option value={250}>250 Kms (Statewide Corridor)</option>
-                          <option value={500}>500 Kms (Interstate Flight Zone)</option>
-                          <option value={-1}>Worldwide / Global Radius</option>
+                          <option value="NEW_CAMPAIGN">Standard New Publication (Country-Specific)</option>
+                          <option value="RENEW_AND_EXTEND">Renew and Extend (Region Corridor Flight Path)</option>
                         </select>
                       </div>
 
-                      {/* 2. Target Country */}
+                      {/* 1. Target Scope (City, Country, Region, World Wide) */}
                       <div className="space-y-1">
                         <label className="block text-[11px] font-semibold text-slate-300">
-                          Target Country
+                          Target Scope
                         </label>
                         <select
-                          value={campaignCountry}
-                          onChange={(e) => setCampaignCountry(e.target.value)}
-                          className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                          value={campaignTargetScope}
+                          onChange={(e) => {
+                            const newScope = e.target.value as CampaignTargetScope;
+                            setCampaignTargetScope(newScope);
+                            if (newScope === 'Region' && campaignLifecycleMode !== 'RENEW_AND_EXTEND') {
+                              setCampaignLifecycleMode('RENEW_AND_EXTEND');
+                              setSelectedCountries(['APAC']);
+                            } else if (newScope !== 'Region' && campaignLifecycleMode === 'RENEW_AND_EXTEND') {
+                              setCampaignLifecycleMode('NEW_CAMPAIGN');
+                              setSelectedCountries([currentBusiness?.country || 'IN']);
+                            }
+                          }}
+                          className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-blue-500"
                         >
-                          {COUNTRIES.map((c) => (
-                            <option key={c.code} value={c.code}>
-                              {c.flag} {c.name}
-                            </option>
-                          ))}
+                          <option value="City">City (Local Aerodrome Hub &amp; Metro)</option>
+                          <option value="Country">Country (Single Sovereign Airspace)</option>
+                          <option value="Region">Region (Continental Flight Corridor)</option>
+                          <option value="World Wide">World Wide (Global Aviation Reach)</option>
                         </select>
                       </div>
 
-                      {/* 3. Time Duration */}
+                      {/* 2. Numeric Campaign Duration (1 - 30 Days) */}
                       <div className="space-y-1">
                         <label className="block text-[11px] font-semibold text-slate-300">
-                          Campaign Duration
+                          Campaign Duration (1 - 30 Days)
                         </label>
-                        <select
+                        <input
+                          type="number"
+                          min={1}
+                          max={30}
+                          step={1}
                           value={campaignDurationDays}
-                          onChange={(e) => setCampaignDurationDays(Number(e.target.value))}
-                          className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
-                        >
-                          <option value={3}>3 Days (Flash Blast)</option>
-                          <option value={7}>7 Days (Weekly Push)</option>
-                          <option value={14}>14 Days (Standard Campaign)</option>
-                          <option value={30}>30 Days (Full Month Sponsor)</option>
-                        </select>
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            setCampaignDurationDays(isNaN(val) ? 1 : Math.max(1, Math.min(30, val)));
+                          }}
+                          className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-blue-500 font-mono font-bold"
+                          placeholder="Days (1 - 30)"
+                        />
                       </div>
+
+                      {/* 3. Dynamic Location Dropdown: Countries vs Regions (Dependent on Renew and Extend) */}
+                      {(() => {
+                        const isRegionSource = campaignLifecycleMode === 'RENEW_AND_EXTEND' || campaignTargetScope === 'Region';
+                        const locationDataSource = isRegionSource ? AVIATION_REGIONS : COUNTRIES;
+                        const locationLabel = isRegionSource ? 'Target Flight Region' : 'Target Country';
+                        const locationCount = isMultipleCountries ? Math.max(1, selectedCountries.length) : 1;
+                        const totalCalculatedCredits = locationCount * campaignDurationDays * 15;
+
+                        return (
+                          <div className="space-y-1 sm:col-span-2">
+                            <div className="flex items-center justify-between">
+                              <label className="block text-[11px] font-semibold text-slate-300">
+                                {locationLabel} {isMultipleCountries && `(${selectedCountries.length} Selected)`}
+                                {isRegionSource && (
+                                  <span className="ml-1.5 text-[10px] font-mono text-amber-400">
+                                    [Dynamic: Regions Populated via Renew and Extend]
+                                  </span>
+                                )}
+                              </label>
+                              <label className="flex items-center space-x-1.5 text-[11px] text-amber-300 cursor-pointer font-semibold">
+                                <input
+                                  type="checkbox"
+                                  checked={isMultipleCountries}
+                                  onChange={(e) => {
+                                    setIsMultipleCountries(e.target.checked);
+                                    if (!e.target.checked && selectedCountries.length === 0) {
+                                      setSelectedCountries([locationDataSource[0].code]);
+                                    }
+                                  }}
+                                  className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
+                                />
+                                <span>Multiple {isRegionSource ? 'Regions' : 'Countries'}</span>
+                              </label>
+                            </div>
+
+                            {isMultipleCountries ? (
+                              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 max-h-36 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                                {locationDataSource.map((loc) => {
+                                  const isChecked = selectedCountries.includes(loc.code);
+                                  return (
+                                    <label
+                                      key={loc.code}
+                                      className={`flex items-center space-x-1.5 p-1 rounded-lg text-[11px] cursor-pointer transition-colors ${
+                                        isChecked
+                                          ? 'text-amber-300 font-bold bg-amber-500/10 border border-amber-500/30'
+                                          : 'text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent'
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedCountries([...selectedCountries, loc.code]);
+                                          } else {
+                                            if (selectedCountries.length > 1) {
+                                              setSelectedCountries(selectedCountries.filter((code) => code !== loc.code));
+                                            }
+                                          }
+                                        }}
+                                        className="rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-0 cursor-pointer"
+                                      />
+                                      <span>{loc.flag} {loc.name}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <select
+                                value={selectedCountries[0] || locationDataSource[0]?.code}
+                                onChange={(e) => {
+                                  setCampaignCountry(e.target.value);
+                                  setSelectedCountries([e.target.value]);
+                                }}
+                                className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-blue-500"
+                              >
+                                {locationDataSource.map((loc) => (
+                                  <option key={loc.code} value={loc.code}>
+                                    {loc.flag} {loc.name}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+
+                            {/* Multi-Location Credit Calculation Notice */}
+                            <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1 font-mono">
+                              <span>Total Credit Investment:</span>
+                              <span className="font-bold text-amber-400">
+                                {totalCalculatedCredits} Credits ({locationCount} {isRegionSource ? 'region(s)' : 'country(ies)'} × {campaignDurationDays} days @ 15 Cr/day)
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* 4. Specific Category Section */}
-                      <div className="space-y-1">
+                      <div className="space-y-1 sm:col-span-2">
                         <label className="block text-[11px] font-semibold text-slate-300">
                           Specific Category Section
                         </label>
                         <select
                           value={campaignCategory}
                           onChange={(e) => setCampaignCategory(e.target.value)}
-                          className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                          className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-blue-500"
                         >
                           {dynamicStoryCategories.map((cat) => (
                             <option key={cat} value={cat}>
@@ -1532,10 +1881,10 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                       </div>
                     </div>
 
-                    <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1">
+                    <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1 font-mono">
                       <span>Estimated Corporate Wallet Investment:</span>
                       <span className="font-bold text-amber-400">
-                        {campaignDurationDays * 15} Credits
+                        {campaignDurationDays * 15} Credits ({campaignDurationDays} days @ 15 Cr/day)
                       </span>
                     </div>
                   </div>
@@ -1783,10 +2132,358 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
         </div>
       )}
 
-      {/* FLASHNEWS PUBLICATION DESK MODAL: Add, Remove, Archive, & Super Admin Limit Calibration */}
+      {/* Requirement 1: Daily Status Alert Modal (First Login of Day, > 3 days remaining) */}
+      {dailyAlert?.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-slate-900 border border-amber-500/50 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-center">
+            <div className="w-14 h-14 mx-auto rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+              <Calendar className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Daily Campaign Status
+              </span>
+              <h3 className="text-lg font-black text-white">Campaign Expiry Alert</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {dailyAlert.message}
+              </p>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 font-mono text-left space-y-1">
+              <div className="flex justify-between">
+                <span>Timezone Engine:</span>
+                <span className="text-white font-bold">User Local Timezone</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Evaluation Gate:</span>
+                <span className="text-emerald-400 font-bold">&gt; 3 Days Remaining Verified</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Frequency:</span>
+                <span className="text-amber-400">First Login of Calendar Day</span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDailyAlert(null)}
+                className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer transition-colors"
+              >
+                Acknowledge &amp; Dismiss
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDailyAlert(null);
+                  const activePost = posts.find((p) => p.is_marketed && p.marketing_campaign);
+                  if (activePost) handleOpenRenewalForPost(activePost);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs cursor-pointer shadow-md transition-all active:scale-95"
+              >
+                Renew Early
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Requirement 1: Post-Campaign Completion Alert Modal */}
+      {completionAlert?.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-slate-900 border border-blue-500/50 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-center">
+            <div className="w-14 h-14 mx-auto rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400">
+              <TrendingUp className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                Campaign Cycle Concluded
+              </span>
+              <h3 className="text-lg font-black text-white">Campaign Run Completed</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {completionAlert.message}
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCompletionAlert(null)}
+                className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer transition-colors"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCompletionAlert(null);
+                  setShowQuantReports(true);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold text-xs cursor-pointer shadow-md transition-all active:scale-95"
+              >
+                Open Quantitative Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Requirement 1: Campaign Renewal Modal (Pre-populated with campaign's current state) */}
+      {renewalCampaign && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-slate-900 border border-amber-500/60 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold">
+                  <RefreshCw className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Renew &amp; Extend Campaign</h3>
+                  <div className="text-[11px] text-slate-400">
+                    Campaign ID: <span className="font-mono text-amber-300 font-bold">{renewalCampaign.post.id}</span> • Data Continuity Preserved
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRenewalCampaign(null)}
+                className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1 text-xs">
+              <div className="text-slate-400">Campaign Publication:</div>
+              <div className="font-bold text-white leading-snug">
+                {renewalCampaign.post.title || renewalCampaign.post.content.slice(0, 90)}...
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {/* Campaign Lifecycle Mode: Dynamic Dependent Dropdown Trigger */}
+              <div className="space-y-1">
+                <label className="block font-semibold text-slate-300">
+                  Lifecycle Action (Dependent Location Trigger)
+                </label>
+                <select
+                  value={renewalLifecycleMode}
+                  onChange={(e) => {
+                    const mode = e.target.value as 'RENEW_AND_EXTEND' | 'NEW_CAMPAIGN';
+                    setRenewalLifecycleMode(mode);
+                    if (mode === 'RENEW_AND_EXTEND') {
+                      setRenewalScope('Region');
+                      setRenewalCountries(['APAC']);
+                    } else {
+                      setRenewalScope('Country');
+                      setRenewalCountries(['IN']);
+                    }
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-slate-950 border border-amber-500/60 text-amber-300 outline-none font-bold text-xs"
+                >
+                  <option value="RENEW_AND_EXTEND">🔄 Renew and Extend (Auto-Populates Regions)</option>
+                  <option value="NEW_CAMPAIGN">📍 Standard Renewal (Populates Sovereign Countries)</option>
+                </select>
+                <div className="text-[10px] text-amber-400 font-mono">
+                  {renewalLifecycleMode === 'RENEW_AND_EXTEND'
+                    ? '⚡ Active dependent trigger: Location dropdown automatically populated with Continental Aviation Regions.'
+                    : '⚡ Active dependent trigger: Location dropdown populated with Sovereign Country Codes.'}
+                </div>
+              </div>
+
+              {/* Target Scope */}
+              <div className="space-y-1">
+                <label className="block font-semibold text-slate-300">Target Scope</label>
+                <select
+                  value={renewalScope}
+                  onChange={(e) => {
+                    const scope = e.target.value as CampaignTargetScope;
+                    setRenewalScope(scope);
+                    if (scope === 'Region') {
+                      setRenewalCountries(['APAC']);
+                    } else {
+                      setRenewalCountries(['IN']);
+                    }
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 font-medium"
+                >
+                  <option value="City">City (Local Aerodrome Hub &amp; Metro)</option>
+                  <option value="Country">Country (Single Sovereign Airspace)</option>
+                  <option value="Region">Region (Continental Corridor)</option>
+                  <option value="World Wide">World Wide (Global Aviation Reach)</option>
+                </select>
+              </div>
+
+              {/* Dynamic Dependent Location Dropdown / Checklist */}
+              {(() => {
+                const isRegionMode = renewalLifecycleMode === 'RENEW_AND_EXTEND' || renewalScope === 'Region';
+                const locationOptions = isRegionMode ? AVIATION_REGIONS : COUNTRIES;
+                const locCount = renewalIsMultiCountries && renewalCountries.length > 0 ? renewalCountries.length : 1;
+                const totalCredits = locCount * renewalDurationDays * 15;
+
+                return (
+                  <>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="block font-semibold text-slate-300">
+                          {isRegionMode ? 'Target Regions (Dynamic Corridors)' : 'Target Countries'}
+                        </label>
+                        <label className="flex items-center space-x-1.5 text-amber-300 cursor-pointer font-semibold text-[11px]">
+                          <input
+                            type="checkbox"
+                            checked={renewalIsMultiCountries}
+                            onChange={(e) => setRenewalIsMultiCountries(e.target.checked)}
+                            className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
+                          />
+                          <span>Multiple {isRegionMode ? 'Regions' : 'Countries'}</span>
+                        </label>
+                      </div>
+
+                      {renewalIsMultiCountries ? (
+                        <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 max-h-36 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                          {locationOptions.map((c) => {
+                            const isChecked = renewalCountries.includes(c.code);
+                            return (
+                              <label
+                                key={c.code}
+                                className={`flex items-center space-x-1.5 p-1 rounded-lg text-[11px] cursor-pointer transition-colors ${
+                                  isChecked
+                                    ? 'text-amber-300 font-bold bg-amber-500/10 border border-amber-500/30'
+                                    : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setRenewalCountries([...renewalCountries, c.code]);
+                                    } else {
+                                      if (renewalCountries.length > 1) {
+                                        setRenewalCountries(renewalCountries.filter((code) => code !== c.code));
+                                      }
+                                    }
+                                  }}
+                                  className="rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-0 cursor-pointer"
+                                />
+                                <span className="truncate">{c.flag} {c.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <select
+                          value={renewalCountries[0] || (isRegionMode ? 'APAC' : 'IN')}
+                          onChange={(e) => setRenewalCountries([e.target.value])}
+                          className="w-full py-2.5 px-3 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500"
+                        >
+                          {locationOptions.map((c) => (
+                            <option key={c.code} value={c.code}>
+                              {c.flag} {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    {/* Additional Duration (Numeric 1-30) */}
+                    <div className="space-y-1">
+                      <label className="block font-semibold text-slate-300">
+                        Additional Duration to Extend (1 - 30 Days)
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        step={1}
+                        value={renewalDurationDays}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          setRenewalDurationDays(isNaN(val) ? 1 : Math.max(1, Math.min(30, val)));
+                        }}
+                        className="w-full py-2 px-3 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 font-mono font-bold"
+                        placeholder="1 - 30 days"
+                      />
+                    </div>
+
+                    {/* Precise Credit Calculation per individual country/region */}
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300 font-mono">
+                      <div>
+                        <span>Wallet Debit Required:</span>
+                        <div className="text-[10px] text-slate-400">
+                          {locCount} location(s) × {renewalDurationDays} day(s) × 15 Cr/day
+                        </div>
+                      </div>
+                      <span className="font-bold text-sm text-amber-400">
+                        {totalCredits} Credits
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="flex items-center justify-end space-x-2.5 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setRenewalCampaign(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRenewal}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs cursor-pointer shadow-md transition-all active:scale-95 flex items-center space-x-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Confirm Renewal &amp; Extend</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Requirement 2: Quantitative Reporting Interface Modal */}
+      {showQuantReports && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn">
+          <div className="w-full max-w-6xl my-auto">
+            <QuantitativeReportingInterface
+              currentBusiness={currentBusiness}
+              currentUser={currentUser}
+              initialPostId={selectedReportPostId}
+              onClose={() => setShowQuantReports(false)}
+              onOpenRenewalModal={(postId) => {
+                const post = posts.find((p) => p.id === postId);
+                if (post) {
+                  setShowQuantReports(false);
+                  handleOpenRenewalForPost(post);
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* FLASHNEWS PUBLICATION DESK MODAL: Whole-Window Pop-up with full desktop width and prominent close option */}
       {showFlashDeskModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-          <div className="w-full max-w-5xl my-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex flex-col p-2 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="w-full max-w-[1720px] mx-auto min-h-full flex flex-col">
+            {/* Top Close Header Bar */}
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <div className="flex items-center space-x-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                  FlashNews &amp; Live Blink Feed Publication Desk (Full Window Access)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFlashDeskModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center space-x-1.5 transition-colors cursor-pointer shadow-lg border border-slate-700"
+              >
+                <span>✕</span>
+                <span>Close Window</span>
+              </button>
+            </div>
+
             <FlashNewsPublicationDesk
               currentUser={currentUser}
               currentBusiness={currentBusiness}
@@ -1796,6 +2493,20 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
             />
           </div>
         </div>
+      )}
+
+      {/* Business Profile Detail Modal (Opened on Click on Recommended Businesses or Post Authors) */}
+      {viewingBusinessProfile && (
+        <BusinessProfileDetailModal
+          business={viewingBusinessProfile}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          onClose={() => setViewingBusinessProfile(null)}
+          onFollowToggle={(bizId: string) => {
+            handleToggleFollow(bizId);
+          }}
+          isFollowing={followedBizIds.includes(viewingBusinessProfile.business_id)}
+        />
       )}
     </div>
   );

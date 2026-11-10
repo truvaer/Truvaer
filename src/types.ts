@@ -453,6 +453,20 @@ export interface AdminUser {
   data_handover_status?: 'COMPLETED' | 'PENDING' | 'TRANSFERRED_TO_RM' | 'NA';
 }
 
+export interface AdminWelcomeEmail {
+  id: string;
+  recipient_email: string;
+  recipient_name: string;
+  portal_url: string;
+  username: string;
+  activation_token: string;
+  password_setup_link: string;
+  clearance_level: string;
+  dispatched_at: string;
+  dispatched_by: string;
+  purpose: 'NEW_ACCOUNT_WELCOME' | 'PASSWORD_RESET_DISPATCH';
+}
+
 export type PublicationStatus = 'PUBLISHED' | 'RESTRICTED' | 'PENDING_APPROVAL' | 'SUSPENDED';
 
 export interface UnlockedContactRecord {
@@ -1242,17 +1256,50 @@ export interface PostComment {
   timestamp: string;
 }
 
+export type CampaignTargetScope = 'City' | 'Country' | 'Region' | 'World Wide';
+
 export interface PostMarketingCampaign {
-  radius_km: number; // e.g. 25, 50, 100, 500, or -1 for worldwide
+  id?: string;
+  radius_km?: number; // legacy backwards compatibility
+  target_scope?: CampaignTargetScope; // 'City', 'Country', 'Region', 'World Wide'
   country: string; // 'All' or specific ISO-2 like 'IN', 'AE', 'US'
-  duration_days: number; // e.g. 3, 7, 14, 30
+  target_countries?: string[]; // Multiple countries array when multi-country is selected
+  duration_days: number; // 1 to 30
   category: string; // e.g. 'Pilot Training & Academies', 'Private Air Charter', 'MRO & Avionics', etc.
   start_date: string;
-  end_date: string;
+  end_date: string; // campaign_end_timestamp
   target_audience: 'STANDARD_USERS_ONLY'; // Condition 4: Strictly standard users only, never B2B
   credits_invested: number;
   impressions: number;
   clicks: number;
+  // Quantitative Reporting & Lifecycle fields
+  views?: number;
+  target_audience_reached?: number;
+  engagement_rate?: number; // e.g. 4.78 (%)
+  total_credit_usage?: number;
+  last_notified_12h?: boolean;
+  last_daily_alert_date?: string; // YYYY-MM-DD in user's local timezone
+  completed_alert_seen?: boolean;
+  status?: 'ACTIVE' | 'EXPIRED' | 'EXTENDED';
+}
+
+export interface HelpArticle {
+  id: string;
+  title: string;
+  category: 'OPERATIONS' | 'HR' | 'FINANCE' | 'PUBLICATION' | 'REPORTS' | 'GENERAL';
+  moduleId: string; // e.g. 'mod_marketing', 'mod_wallet', 'mod_crm', 'mod_pms', 'mod_flashnews', 'mod_reserves', 'mod_rbac', 'mod_safeguard'
+  requiredRoleLevels?: number[]; // e.g. [1,2,3,4,5,6,7,8] or [7,8] for high security
+  allowedUserRoles?: ('STANDARD_USER' | 'BUSINESS' | 'MANAGER' | 'ADMIN' | 'SUPER_ADMIN')[];
+  summary: string;
+  content: string;
+  navigationRoute?: string; // Click-by-click navigation path (e.g. Home > C-Panel > Sector: Operations > Module)
+  steps?: string[]; // Clear ordered step-by-step procedure
+  keywords: string[];
+  routeAction?: {
+    tab?: string;
+    subTab?: string;
+    label: string;
+  };
 }
 
 export type BusinessPostType = 'POST' | 'ARTICLE';
@@ -1718,3 +1765,6 @@ export interface RegionCountryMapping {
   created_at?: string;
   updated_at?: string;
 }
+
+export type AppTab = 'dashboard' | 'marketing' | 'crm_portal' | 'admin_desk' | 'wallet';
+

@@ -3,3 +3,4 @@ export * from './BusinessRegisterForm';
 export * from './BusinessLogin';
 export * from './BusinessVerificationModal';
 export * from './BusinessCorporateWalletModal';
+export * from './BusinessProfileDetailModal';

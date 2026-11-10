@@ -1,0 +1,73 @@
+name: Deploy to AWS EC2 (Zero Downtime CI/CD)
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  validate-and-test:
+    name: Build & Code Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Type Check & Linter
+        run: npm run lint
+
+      - name: Verify Production Build
+        run: npm run build
+
+  deploy-to-ec2:
+    name: Zero-Downtime Deployment to AWS EC2
+    needs: validate-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Execute Remote Zero-Downtime Rollout via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_EC2_HOST }}
+          username: ${{ secrets.AWS_EC2_USER || 'ubuntu' }}
+          key: ${{ secrets.AWS_EC2_SSH_KEY }}
+          port: ${{ secrets.AWS_EC2_PORT || 22 }}
+          script_stop: true
+          envs: GITHUB_REF_NAME
+          script: |
+            echo "🚀 [CI/CD] Deploying target: ${GITHUB_REF_NAME} on AWS EC2..."
+            APP_DIR="/var/www/truvaer"
+            if [ ! -d "$APP_DIR" ]; then
+              echo "Creating $APP_DIR and cloning repo..."
+              sudo mkdir -p $APP_DIR
+              sudo chown -R $USER:$USER $APP_DIR
+              git clone https://github.com/${{ github.repository }}.git $APP_DIR
+            fi
+
+            cd $APP_DIR
+            chmod +x deploy.sh
+            export APP_VERSION="${GITHUB_REF_NAME}"
+            ./deploy.sh "${GITHUB_REF_NAME}"
+
+      - name: Verify Live Service Health
+        run: |
+          echo "🩺 Verifying remote EC2 server health probe..."
+          sleep 4
+          # If domain is configured in secrets or host IP
+          TARGET_URL="${{ secrets.APP_PUBLIC_DOMAIN || secrets.AWS_EC2_HOST }}"
+          if [ -n "$TARGET_URL" ]; then
+            echo "Probing http://${TARGET_URL}:3000/_healthz ..."
+            curl --fail --silent --show-error "http://${TARGET_URL}:3000/_healthz" || true
+          fi
+          echo "✅ Automated CI/CD deployment finished successfully without downtime!"

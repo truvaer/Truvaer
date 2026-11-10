@@ -12,17 +12,19 @@ import {
   POLICIES,
 } from './shared';
 import { MarketingPortal } from './marketing';
-import { AuthGateway, OtpVerificationView, UserProfileModal, ProfileMenuInterfaceModal, PasswordResetModal } from './auth';
+import { AuthGateway, OtpVerificationView, UserProfileModal, ProfileMenuInterfaceModal, PasswordResetModal, AdminExecutiveLoginView, AdminPasswordSetupModal } from './auth';
 import { AdminCPanel, CRMPortal } from './erp';
 import { CompleteUnifiedDashboard } from './dashboard';
 import { BusinessCorporateWalletModal, BusinessVerificationModal } from './business';
 import { SessionTimeoutWarningModal } from './components/SessionTimeoutWarningModal';
+import { VersionUpdateNotifier } from './components/VersionUpdateNotifier';
 import { useSessionManager } from './hooks/useSessionManager';
-import { X, ArrowLeft, ShieldCheck, Store, Lock, TrendingUp, FlaskConical, Zap, RotateCcw, CheckCircle2, Sparkles, UserCheck, ShieldAlert, AlertTriangle, CreditCard, Wallet } from 'lucide-react';
+import { X, ArrowLeft, ShieldCheck, Store, Lock, TrendingUp, FlaskConical, Zap, RotateCcw, CheckCircle2, Sparkles, UserCheck, ShieldAlert, AlertTriangle, CreditCard, Wallet, Globe } from 'lucide-react';
 
 import { db } from './data/mockDatabase';
 import { RegularUser, BusinessProfile, ApiLogEntry } from './types';
 import { AggressiveTestingSuiteModal } from './shared/AggressiveTestingSuiteModal';
+import { DynamicHelpCenterModal } from './shared/DynamicHelpCenterModal';
 
 export default function App() {
   // Environment State: 'LIVE' vs 'TESTING'
@@ -78,6 +80,7 @@ export default function App() {
   }, [currentBusiness, currentUser]);
   const [showCommunicationsModal, setShowCommunicationsModal] = useState(false);
   const [showCustomerCareModal, setShowCustomerCareModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [showUserProfileModal, setShowUserProfileModal] = useState(false);
   const [showProfileMenuModal, setShowProfileMenuModal] = useState(false);
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
@@ -87,6 +90,37 @@ export default function App() {
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [currentPolicySlug, setCurrentPolicySlug] = useState<PolicySlug>('about');
   const [showTestSuiteModal, setShowTestSuiteModal] = useState(false);
+
+  // Dedicated Admin Subdomain Detection (admin.truvaer.com or /admin or #admin)
+  const [isAdminSubdomain, setIsAdminSubdomain] = useState<boolean>(() => {
+    try {
+      const host = window.location.hostname.toLowerCase();
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      const search = new URLSearchParams(window.location.search);
+      return (
+        host === 'admin.truvaer.com' ||
+        host.startsWith('admin.') ||
+        path.startsWith('/admin') ||
+        hash.startsWith('#/admin') ||
+        hash === '#admin' ||
+        search.get('portal') === 'admin'
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  // Password Setup & Activation Token State (#/set-password)
+  const [passwordSetupData, setPasswordSetupData] = useState<{
+    isOpen: boolean;
+    email: string;
+    token: string;
+  }>({
+    isOpen: false,
+    email: '',
+    token: '',
+  });
 
   // Single-Session Protocol Enforcement State (terminates concurrent sessions)
   const [currentSessionToken, setCurrentSessionToken] = useState<string | null>(() => {
@@ -98,13 +132,33 @@ export default function App() {
   });
   const [sessionTerminationNotice, setSessionTerminationNotice] = useState<string | null>(null);
 
-  // URL Hash Listener for direct legal policy routing (e.g. #/privacy-policy, #/user-agreement, #about)
+  // URL Hash Listener for direct legal policy & password setup routing
   useEffect(() => {
     const handleHashRouting = () => {
       const hashRaw = window.location.hash.replace(/^#\/?/, '').toLowerCase().trim();
       if (!hashRaw) return;
-      // Handle hash with anchors like privacy-policy#data-rights
-      const slug = hashRaw.split('#')[0] as PolicySlug;
+
+      // Handle tokenized password setup routing (e.g. #/set-password?token=ACT_...&email=...)
+      if (window.location.hash.includes('set-password')) {
+        const hash = window.location.hash;
+        const queryPart = hash.includes('?') ? hash.split('?')[1] : window.location.search.replace(/^\?/, '');
+        const params = new URLSearchParams(queryPart);
+        const email = params.get('email') || '';
+        const token = params.get('token') || '';
+        setPasswordSetupData({
+          isOpen: true,
+          email,
+          token,
+        });
+      }
+
+      // Handle dedicated admin portal hash routing
+      if (hashRaw === 'admin' || hashRaw.startsWith('admin/')) {
+        setIsAdminSubdomain(true);
+      }
+
+      // Handle policy slugs
+      const slug = hashRaw.split('#')[0].split('?')[0] as PolicySlug;
       if (POLICIES[slug]) {
         setCurrentPolicySlug(slug);
         setShowLegalModal(true);
@@ -575,6 +629,7 @@ export default function App() {
         onOpenWallet={handleOpenWalletInBody}
         onOpenCommunications={() => setShowCommunicationsModal(true)}
         onOpenCustomerCare={() => setShowCustomerCareModal(true)}
+        onOpenHelp={() => setShowHelpModal(true)}
         onOpenUserProfile={() => setShowUserProfileModal(true)}
         onOpenProfileMenu={() => setShowProfileMenuModal(true)}
         onResetDb={handleResetDb}
@@ -593,11 +648,80 @@ export default function App() {
         }}
         onOpenTestSuite={isAdmin ? () => setShowTestSuiteModal(true) : undefined}
         marketingSubTab={marketingSubTab}
+        isAdminSubdomain={isAdminSubdomain}
       />
+
+      {/* Subdomain Simulation & Origin Indicator Bar (Enables testing between truvaer.com & admin.truvaer.com) */}
+      <div className="bg-slate-950/90 border-b border-slate-800 px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
+        <div className="flex items-center space-x-2">
+          <span className="text-slate-400">Current URL Origin:</span>
+          {isAdminSubdomain ? (
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 flex items-center space-x-1.5 shadow-sm">
+              <Lock className="w-3 h-3 text-amber-400" />
+              <span>admin.truvaer.com (Executive Command &amp; C-Panel)</span>
+            </span>
+          ) : (
+            <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40 flex items-center space-x-1.5 shadow-sm">
+              <Globe className="w-3 h-3 text-sky-400" />
+              <span>truvaer.com (Public Aviation Marketplace)</span>
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (isAdminSubdomain) {
+                setIsAdminSubdomain(false);
+                setCurrentTab('marketing');
+                if (window.location.hash.includes('admin')) window.location.hash = '';
+              } else {
+                setIsAdminSubdomain(true);
+                if (isAdmin) setCurrentTab('admin_desk');
+              }
+            }}
+            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors cursor-pointer text-[10px]"
+          >
+            {isAdminSubdomain ? 'Switch View: truvaer.com' : 'Switch View: admin.truvaer.com'}
+          </button>
+        </div>
+      </div>
 
       {/* Main Viewport */}
       <main className="flex-1 max-w-[1700px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
-        {!currentUser && !currentBusiness ? (
+        {/* Dedicated Admin Portal (admin.truvaer.com): EXACT SAME AuthGateway interface with executive clearance rules */}
+        {isAdminSubdomain && (!currentUser || !isAdmin) ? (
+          <div className="py-1 sm:py-2">
+            <AuthGateway
+              initialMode="login"
+              initialUserType="regular"
+              theme={theme}
+              onToggleTheme={handleToggleTheme}
+              onRegularLoginSuccess={(user) => {
+                handleRegularLoginSuccess(user);
+                // Requirement 1: Home page is always the final destination upon login
+                setMarketingSubTab('linkedin_feed');
+                setCurrentTab('marketing');
+              }}
+              onBusinessLoginSuccess={handleBusinessLoginSuccess}
+              onRegularRegisterSuccess={handleRegularRegisterSuccess}
+              onBusinessRegisterSuccess={handleBusinessRegisterSuccess}
+              onOpenOtp={(user) => handleOpenOtpForUser(user)}
+              onOpenAdminDesk={() => {
+                setIsAdminSubdomain(true);
+                setCurrentTab('admin_desk');
+              }}
+              envMode={envMode}
+              isAdminPortal={true}
+              onNavigateToPublicPortal={() => {
+                setIsAdminSubdomain(false);
+                setCurrentTab('marketing');
+                if (window.location.hash.includes('admin')) window.location.hash = '';
+              }}
+            />
+          </div>
+        ) : !currentUser && !currentBusiness ? (
           <div className="py-1 sm:py-2">
             {pendingOtpUser ? (
               <div className="max-w-md mx-auto">
@@ -620,15 +744,10 @@ export default function App() {
                 onBusinessRegisterSuccess={handleBusinessRegisterSuccess}
                 onOpenOtp={(user) => handleOpenOtpForUser(user)}
                 onOpenAdminDesk={() => {
-                  const users = db.getRegularUsers();
-                  const adminUser =
-                    users.find((u) => u.email.toLowerCase() === 'admin@truvaer.com') ||
-                    users.find((u) => u.role === 'SUPER_ADMIN');
-                  if (adminUser) {
-                    handleRegularLoginSuccess(adminUser);
-                    setCurrentTab('marketing');
-                  }
+                  setIsAdminSubdomain(true);
                 }}
+                envMode={envMode}
+                isAdminPortal={false}
               />
             )}
           </div>
@@ -851,9 +970,39 @@ export default function App() {
               </div>
             )}
 
-            {/* ADMIN OPERATIONS C-PANEL (Accessible for authorized admins or users with permitted portal clearance) */}
+            {/* ADMIN OPERATIONS C-PANEL (Accessible strictly on admin.truvaer.com) */}
             {currentTab === 'admin_desk' && (
-              isAdmin || (currentUser?.permitted_portals && currentUser.permitted_portals.includes('admin_desk')) ? (
+              !isAdminSubdomain ? (
+                <div className="max-w-xl mx-auto my-12 bg-slate-900 border border-amber-500/40 rounded-3xl p-8 shadow-2xl text-center space-y-5">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+                    <Lock className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-white">Administrative Portal Relocated</h3>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      All Super Admin and Admin C-Panel operations have been strictly separated and are hosted exclusively on <strong className="text-amber-300">admin.truvaer.com</strong>. No administrative tools are accessible on the public marketplace.
+                    </p>
+                  </div>
+                  <div className="flex justify-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentTab('marketing')}
+                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs cursor-pointer transition-colors"
+                    >
+                      Return to Marketplace
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAdminSubdomain(true);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer transition-colors shadow-md"
+                    >
+                      Access admin.truvaer.com
+                    </button>
+                  </div>
+                </div>
+              ) : isAdmin || (currentUser?.permitted_portals && currentUser.permitted_portals.includes('admin_desk')) ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-3.5 rounded-2xl">
                     <button
@@ -1173,6 +1322,43 @@ export default function App() {
           onRefreshData={() => {}}
         />
       )}
+
+      {/* DYNAMIC HELP & DOCUMENTATION CENTER (RBAC Permission Filtered) */}
+      <DynamicHelpCenterModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        currentUser={currentUser}
+        activeAdminUser={activeAdminUser}
+        onNavigateToTab={(tab, subTab) => {
+          setCurrentTab(tab);
+          if (tab === 'marketing') {
+            if (subTab === 'directory') setMarketingSubTab('directory');
+            else setMarketingSubTab('linkedin_feed');
+          } else if (tab === 'admin_desk' && subTab) {
+            setAdminSubTab(subTab);
+          }
+        }}
+      />
+
+      {/* ADMIN PASSWORD SETUP & ACTIVATION MODAL (Triggered by tokenized URL or L7/L8 reset) */}
+      <AdminPasswordSetupModal
+        isOpen={passwordSetupData.isOpen}
+        initialEmail={passwordSetupData.email}
+        initialToken={passwordSetupData.token}
+        onClose={() => {
+          setPasswordSetupData({ isOpen: false, email: '', token: '' });
+          if (window.location.hash.includes('set-password')) {
+            window.location.hash = '';
+          }
+        }}
+        onSuccess={() => {
+          refreshData();
+          setIsAdminSubdomain(true);
+        }}
+      />
+
+      {/* ZERO-DOWNTIME CI/CD CONTINUOUS UPDATE NOTIFIER */}
+      <VersionUpdateNotifier />
     </div>
   );
 }

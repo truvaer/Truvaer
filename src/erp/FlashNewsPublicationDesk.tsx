@@ -115,8 +115,9 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
     'publish' | 'verification_queue' | 'active_queue' | 'pricing_matrix' | 'business_permissions' | 'archived' | 'capacity_settings'
   >('publish');
 
-  // Queue toggle filter: Active, Inactive, Rejected (Task 3)
-  const [queueFilter, setQueueFilter] = useState<'ACTIVE' | 'INACTIVE' | 'REJECTED'>('ACTIVE');
+  // Queue toggle filter: All, Active, Inactive, Rejected
+  const [queueFilter, setQueueFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE' | 'REJECTED'>('ALL');
+  const [queueNotification, setQueueNotification] = useState<string | null>(null);
 
   // Traffic Rates CRUD State exclusively for L7/L8 (Task 5)
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
@@ -178,9 +179,10 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
       );
     }
     return {
+      all: list.length,
       active: list.filter((i) => i.status === 'ACTIVE').length,
       inactive: list.filter(
-        (i) => i.status === 'ARCHIVED' || i.status === 'PENDING_LEVEL_1' || i.status === 'PENDING_LEVEL_2'
+        (i) => i.status === 'INACTIVE' || i.status === 'ARCHIVED' || i.status === 'PENDING_LEVEL_1' || i.status === 'PENDING_LEVEL_2'
       ).length,
       rejected: list.filter((i) => i.status === 'REJECTED').length,
     };
@@ -196,11 +198,13 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
           item.published_by_name?.toLowerCase() === currentBusiness.organization_name.toLowerCase()
       );
     }
-    if (queueFilter === 'ACTIVE') {
+    if (queueFilter === 'ALL') {
+      return list;
+    } else if (queueFilter === 'ACTIVE') {
       return list.filter((i) => i.status === 'ACTIVE');
     } else if (queueFilter === 'INACTIVE') {
       return list.filter(
-        (i) => i.status === 'ARCHIVED' || i.status === 'PENDING_LEVEL_1' || i.status === 'PENDING_LEVEL_2'
+        (i) => i.status === 'INACTIVE' || i.status === 'ARCHIVED' || i.status === 'PENDING_LEVEL_1' || i.status === 'PENDING_LEVEL_2'
       );
     } else {
       return list.filter((i) => i.status === 'REJECTED');
@@ -1460,8 +1464,21 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
               </p>
             </div>
 
-            {/* Toggle Filters: Active, Inactive, Rejected (Task 3) */}
-            <div className="flex items-center space-x-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800">
+            {/* Toggle Filters: All, Active, Inactive/Paused, Rejected */}
+            <div className="flex items-center space-x-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 flex-wrap gap-y-1">
+              <button
+                type="button"
+                onClick={() => setQueueFilter('ALL')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  queueFilter === 'ALL'
+                    ? 'bg-sky-600 text-white shadow font-black'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>All ({queueCounts.all})</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setQueueFilter('ACTIVE')}
@@ -1484,8 +1501,8 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
                     : 'text-slate-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
-                <Clock className="w-3.5 h-3.5" />
-                <span>Inactive ({queueCounts.inactive})</span>
+                <PauseCircle className="w-3.5 h-3.5" />
+                <span>Paused / Inactive ({queueCounts.inactive})</span>
               </button>
 
               <button
@@ -1502,6 +1519,22 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
               </button>
             </div>
           </div>
+
+          {queueNotification && (
+            <div className="p-3 rounded-2xl bg-sky-950/80 border border-sky-500/50 text-xs text-sky-200 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
+                <span>{queueNotification}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQueueNotification(null)}
+                className="text-sky-400 hover:text-white text-xs font-bold cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {queueItemsForViewer.length === 0 ? (
             <div className="py-12 text-center text-slate-500 text-xs italic bg-slate-950/40 rounded-2xl border border-slate-800/60 space-y-2">
@@ -1629,6 +1662,7 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
                           onClick={() => {
                             const res = db.toggleFlashNewsStatus(item.id, publisherName);
                             refreshData();
+                            setQueueNotification(res.message);
                           }}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm ${
                             item.status === 'ACTIVE'

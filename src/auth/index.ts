@@ -7,3 +7,6 @@ export * from './PasswordResetModal';
 export * from './TwoFactorMpinModal';
 export * from './UserProfileModal';
 export * from './ProfileMenuInterfaceModal';
+export * from './AdminExecutiveLoginView';
+export * from './AdminPasswordSetupModal';
+export * from './DispatchedWelcomeEmailModal';

@@ -2,6 +2,7 @@ import {
   RegularUser,
   BusinessProfile,
   AdminUser,
+  AdminWelcomeEmail,
   AdminDepartment,
   AdminLevel,
   PublicationStatus,
@@ -104,6 +105,8 @@ import {
   StoryCategory,
   RegionalAuthorityZone,
   RegionCountryMapping,
+  CampaignTargetScope,
+  HelpArticle,
 } from '../types';
 import {
   FLASH_NEWS_KEY,
@@ -4304,9 +4307,33 @@ class MockDatabase {
     return { success: true, message: 'Profile updated successfully.', user };
   }
 
-  public switchUserRole(userId: string, newRole: 'STANDARD_USER' | 'ADMIN' | 'MANAGER' | string): { success: boolean; message: string } {
+  public switchUserRole(
+    userId: string,
+    newRole: 'STANDARD_USER' | 'ADMIN' | 'MANAGER' | 'SUPER_ADMIN' | string,
+    actorLevel: number = 8,
+    actorRole: string = 'SUPER_ADMIN'
+  ): { success: boolean; message: string } {
     const user = this.regularUsers.find((u) => u.user_id === userId);
     if (!user) return { success: false, message: 'User not found.' };
+
+    const email = (user.email || '').toLowerCase().trim();
+    const hasOrgDomain = email.endsWith('@yarifly.com') || email.endsWith('@truvaer.com');
+
+    // Strict condition: any Admin / Super Admin account must have a mandatory email ending with @yarifly.com or @truvaer.com
+    if ((newRole === 'ADMIN' || newRole === 'SUPER_ADMIN') && !hasOrgDomain) {
+      return {
+        success: false,
+        message: `Policy Violation: Admin and Super Admin accounts must have a mandatory domain email ending with @yarifly.com or @truvaer.com. User email is "${user.email}".`,
+      };
+    }
+
+    // Super Admin can be changed only if an L8 user permits conversion to L8 / Super Admin
+    if (newRole === 'SUPER_ADMIN' && actorLevel < 8 && actorRole !== 'SUPER_ADMIN') {
+      return {
+        success: false,
+        message: 'Permission Denied: Promoting an account to Super Admin is strictly reserved to Level 8 (L8) Sovereign Executives.',
+      };
+    }
 
     user.role = newRole;
     // If switched to STANDARD_USER, automatically enforce standard baseline modules
@@ -5899,14 +5926,80 @@ class MockDatabase {
     return this.pricingMatrix;
   }
 
-  public updatePricingItem(id: string, debitCredits: number, minThreshold: number): { success: boolean; message: string } {
+  public updatePricingItem(
+    id: string,
+    debitCredits: number,
+    minThreshold: number,
+    actorRole?: string,
+    actorLevel?: number
+  ): { success: boolean; message: string; statusCode?: number } {
+    // Condition 4: IF user_role NOT IN ('L7', 'L8') THEN return 403 Forbidden
+    if (actorRole || actorLevel !== undefined) {
+      const isAuthorized =
+        actorRole === 'L8' ||
+        actorRole === 'L7' ||
+        actorRole === 'SUPER_ADMIN' ||
+        (actorLevel !== undefined && actorLevel >= 7);
+
+      if (!isAuthorized) {
+        return {
+          success: false,
+          statusCode: 403,
+          message: '403 Forbidden: Insufficient IAM clearance. Only Level 7 and Level 8 Administrators can modify credit pricing policies.',
+        };
+      }
+    }
+
     const item = this.pricingMatrix.find((p) => p.id === id);
-    if (!item) return { success: false, message: 'Item not found.' };
+    if (!item) return { success: false, statusCode: 404, message: 'Pricing record not found.' };
 
     item.defaultDebitCredits = debitCredits;
     item.minimumThreshold = minThreshold;
     this.persist();
-    return { success: true, message: `Updated debit value for ${item.actionType} to ${debitCredits} credits.` };
+
+    this.logAdminActivity({
+      category: 'WALLET_DEBIT',
+      title: `Pricing Calibrated: ${item.actionType}`,
+      description: `Default debit adjusted to ${debitCredits} Cr (Min Threshold: ${minThreshold} Cr). Authenticated under L7/L8 IAM protocol.`,
+      actor_name: actorRole || 'Platform Controller',
+      actor_role: actorRole || 'L7_ADMIN',
+      severity: 'info',
+    });
+
+    return {
+      success: true,
+      statusCode: 200,
+      message: `Updated debit value for ${item.actionType} to ${debitCredits} credits.`,
+    };
+  }
+
+  // --- Credit Transparency View (Formulas & Current Ledger Logic) ---
+  public getCreditCalculationFormulas() {
+    return {
+      campaign_rules: {
+        base_rate_per_day: 15, // Credits per day
+        scope_multipliers: {
+          'City': 1.0,
+          'Country': 1.25,
+          'Region': 1.75,
+          'World Wide': 2.5,
+        },
+        formula: 'Total Credits = Duration (Days) * Base Rate (15 Cr) * Scope Multiplier * Country Count',
+        audience_restriction: 'Strictly Standard Users (Condition 4: B2B Competitors Excluded)',
+        max_duration_days: 30,
+        min_duration_days: 1,
+      },
+      lead_generation_rules: {
+        phone_unlock_fee: 10, // Credits
+        validity_days: 30, // Days unlocked
+        rfq_quotation_fee: 25, // Credits
+      },
+      flash_news_rules: {
+        base_fee: 50, // Credits
+        word_count_tier: 'Tiers scale by +10 Cr per 50 words above 100 words',
+      },
+      ledger_verification: 'HMAC-SHA256 Single-Session Concurrency Guard Active',
+    };
   }
 
   // --- Contact Unlock & 30-Day Validity (Conditions 4 & 5) ---
@@ -10451,7 +10544,7 @@ Automated Compliance & Balance Monitoring System`;
           type: 'USAGE',
           credits: creditsCost,
           description: `Marketing Campaign Blast: ${newPost.title || 'Sponsored Post'} targeted within ${
-            newPost.marketing_campaign.radius_km > 0 ? `${newPost.marketing_campaign.radius_km} Kms` : 'Worldwide'
+            (newPost.marketing_campaign.radius_km ?? 0) > 0 ? `${newPost.marketing_campaign.radius_km} Kms` : 'Worldwide'
           } in ${newPost.marketing_campaign.country} for ${newPost.marketing_campaign.category} (Standard Users)`,
           timestamp: new Date().toISOString(),
           actionType: 'MARKETING_SPONSORED_BOOST',
@@ -10463,7 +10556,7 @@ Automated Compliance & Balance Monitoring System`;
         category: 'PUBLICATION_COMPLIANCE',
         title: `Sponsored Marketing Campaign Boosted`,
         description: `${newPost.business_name} initiated targeted marketing campaign within ${
-          newPost.marketing_campaign.radius_km > 0 ? `${newPost.marketing_campaign.radius_km} Kms` : 'Worldwide'
+          (newPost.marketing_campaign.radius_km ?? 0) > 0 ? `${newPost.marketing_campaign.radius_km} Kms` : 'Worldwide'
         } in ${newPost.marketing_campaign.country} directed strictly to Standard Aviators.`,
         actor_name: newPost.business_name,
         actor_role: 'Business Verified Publisher',
@@ -10479,6 +10572,608 @@ Automated Compliance & Balance Monitoring System`;
     this.persist();
     this.notifyPostListeners();
     return newPost;
+  }
+
+  // --- Campaign Lifecycle & Notification Engine (Requirements 1 & 2) ---
+  public extendCampaignDuration(
+    postId: string,
+    additionalDays: number,
+    targetScope?: CampaignTargetScope,
+    targetCountries?: string[]
+  ): { success: boolean; message: string; updatedPost?: BusinessPost } {
+    if (
+      typeof additionalDays !== 'number' ||
+      !Number.isInteger(additionalDays) ||
+      additionalDays < 1 ||
+      additionalDays > 30
+    ) {
+      return { success: false, message: 'Validation Error: Renewal extension must be between 1 and 30 days.' };
+    }
+
+    const post = this.businessPosts.find((p) => p.id === postId);
+    if (!post || !post.marketing_campaign) {
+      return { success: false, message: 'Active campaign record not found for this publication.' };
+    }
+
+    const camp = post.marketing_campaign;
+    const currentEnd = new Date(camp.end_date).getTime();
+    const baseStartTime = currentEnd > Date.now() ? currentEnd : Date.now();
+    const newEndMs = baseStartTime + additionalDays * 24 * 60 * 60 * 1000;
+    const locationCount = targetCountries && Array.isArray(targetCountries) && targetCountries.length > 0 
+      ? targetCountries.length 
+      : 1;
+    const addedCredits = additionalDays * 15 * locationCount;
+
+    // Deduct from business corporate wallet if available
+    const biz = this.businesses.find((b) => b.business_id === post.business_id);
+    if (biz?.corporate_wallet) {
+      biz.corporate_wallet.credit_balance = Math.max(0, biz.corporate_wallet.credit_balance - addedCredits);
+      biz.corporate_wallet.transactions.unshift({
+        id: `tx_${Date.now()}`,
+        type: 'USAGE',
+        credits: addedCredits,
+        description: `Campaign Extension: "${post.title || 'Official Publication'}" renewed for +${additionalDays} days across ${locationCount} location(s) (Data continuity under ID: ${post.id}).`,
+        timestamp: new Date().toISOString(),
+        actionType: 'CAMPAIGN_RENEWAL_EXTENSION',
+      });
+    }
+
+    // Preserve data continuity on existing ID
+    camp.end_date = new Date(newEndMs).toISOString();
+    camp.duration_days = (camp.duration_days || 0) + additionalDays;
+    camp.credits_invested = (camp.credits_invested || 0) + addedCredits;
+    camp.total_credit_usage = (camp.total_credit_usage || 0) + addedCredits;
+    if (targetScope) camp.target_scope = targetScope;
+    if (targetCountries && targetCountries.length > 0) camp.target_countries = targetCountries;
+    camp.last_notified_12h = false;
+    camp.status = 'EXTENDED';
+
+    this.logAdminActivity({
+      category: 'PUBLICATION_COMPLIANCE',
+      title: `Campaign Renewed & Extended: +${additionalDays} Days`,
+      description: `${post.business_name} renewed campaign "${post.title || post.id}" for +${additionalDays} days. Data continuity preserved.`,
+      actor_name: post.business_name,
+      actor_role: 'Verified Partner',
+      target_id: post.id,
+      amount: addedCredits,
+      currency: 'CREDITS',
+      severity: 'success',
+    });
+
+    this.persist();
+    this.notifyPostListeners();
+
+    return {
+      success: true,
+      message: `Campaign renewed successfully! Duration extended by +${additionalDays} days through ${new Date(newEndMs).toLocaleDateString()}. Data continuity preserved under ID: ${post.id}.`,
+      updatedPost: post,
+    };
+  }
+
+  // Daily Status Alert (First Login): fires ONLY if duration_remaining > 3 days on user's first login of current calendar day in local timezone
+  public checkDailyCampaignAlert(user: RegularUser | BusinessProfile): {
+    shouldAlert: boolean;
+    message?: string;
+    daysRemaining?: number;
+    campaignTitle?: string;
+    postId?: string;
+    campaign?: PostMarketingCampaign;
+  } {
+    const bizId = 'business_id' in user ? user.business_id : undefined;
+    const authorId = 'user_id' in user ? user.user_id : undefined;
+
+    // Determine user's local timezone (based on country of login / profile settings)
+    const country = ('country' in user ? user.country : undefined) || 'IN';
+    let todayStr: string;
+    try {
+      let tz = 'Asia/Kolkata';
+      const c = country.toUpperCase();
+      if (c === 'IN' || c === 'INDIA') tz = 'Asia/Kolkata';
+      else if (c === 'AE' || c === 'UAE') tz = 'Asia/Dubai';
+      else if (c === 'US' || c === 'USA') tz = 'America/New_York';
+      else if (c === 'GB' || c === 'UK') tz = 'Europe/London';
+      else if (c === 'SG' || c === 'SINGAPORE') tz = 'Asia/Singapore';
+      else if (c === 'AU' || c === 'AUSTRALIA') tz = 'Australia/Sydney';
+      else if (c === 'FR' || c === 'DE' || c === 'EU') tz = 'Europe/Paris';
+      else tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+      todayStr = new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date());
+    } catch {
+      todayStr = new Date().toISOString().slice(0, 10);
+    }
+
+    const now = Date.now();
+    for (const post of this.businessPosts) {
+      const isOwner =
+        (bizId && post.business_id === bizId) ||
+        (authorId && post.author_id === authorId) ||
+        (!bizId && !authorId);
+
+      if (isOwner && post.is_marketed && post.marketing_campaign) {
+        const camp = post.marketing_campaign;
+        const endMs = new Date(camp.end_date).getTime();
+        const diffMs = endMs - now;
+        const daysRemaining = Math.ceil(diffMs / 86400000);
+
+        // Condition 1: campaign_duration_remaining > 3 days
+        // Condition 2: Must fire only on the user's first login of the current calendar day in local timezone
+        if (daysRemaining > 3 && camp.last_daily_alert_date !== todayStr) {
+          camp.last_daily_alert_date = todayStr;
+          this.persist();
+          return {
+            shouldAlert: true,
+            daysRemaining,
+            campaignTitle: post.title || post.content.slice(0, 35),
+            postId: post.id,
+            campaign: camp,
+            message: `Your campaign "${post.title || 'Official Publication'}" expires in ${daysRemaining} days.`,
+          };
+        }
+      }
+    }
+
+    return { shouldAlert: false };
+  }
+
+  // 12-Hour Expiry Warning: triggers notification exactly 12 hours prior to campaign_end_timestamp with [Renew / Extend] CTA
+  public check12HourCampaignWarnings(): {
+    alertsSent: number;
+    warnings: { postId: string; campaignTitle: string; hoursRemaining: number }[];
+  } {
+    const now = Date.now();
+    const warnings: { postId: string; campaignTitle: string; hoursRemaining: number }[] = [];
+
+    for (const post of this.businessPosts) {
+      if (post.is_marketed && post.marketing_campaign) {
+        const camp = post.marketing_campaign;
+        const endMs = new Date(camp.end_date).getTime();
+        const diffMs = endMs - now;
+
+        // Exactly 12 hours prior to campaign_end_timestamp
+        if (diffMs > 0 && diffMs <= 12 * 3600 * 1000 && !camp.last_notified_12h) {
+          camp.last_notified_12h = true;
+          const hoursRemaining = Math.max(1, Math.round(diffMs / (3600 * 1000)));
+
+          this.addNotification({
+            recipient_id: post.business_id || 'all_admins',
+            title: `⚠️ 12-Hour Expiry Warning: ${post.title || 'Sponsored Campaign'}`,
+            message: `Your campaign "${post.title || post.content.slice(0, 30)}" expires in approximately ${hoursRemaining} hours. Renew now to maintain priority delivery without interruption.`,
+            type: 'SYSTEM',
+            action_link: '/marketing',
+          });
+
+          warnings.push({
+            postId: post.id,
+            campaignTitle: post.title || 'Campaign',
+            hoursRemaining,
+          });
+        }
+      }
+    }
+
+    if (warnings.length > 0) this.persist();
+    return { alertsSent: warnings.length, warnings };
+  }
+
+  // Post-Campaign Alert: fires upon campaign completion timestamp or user's next subsequent login, routes directly to Quantitative Reporting Interface
+  public checkPostCampaignCompletionAlerts(user?: RegularUser | BusinessProfile): {
+    completedCampaigns: { postId: string; title: string; views: number; clicks: number; creditsUsed: number }[];
+  } {
+    const now = Date.now();
+    const completedCampaigns: { postId: string; title: string; views: number; clicks: number; creditsUsed: number }[] = [];
+    const bizId = user && 'business_id' in user ? user.business_id : undefined;
+
+    for (const post of this.businessPosts) {
+      if (post.is_marketed && post.marketing_campaign) {
+        const camp = post.marketing_campaign;
+        const endMs = new Date(camp.end_date).getTime();
+        const isOwner = !bizId || post.business_id === bizId;
+
+        if (isOwner && now >= endMs && !camp.completed_alert_seen) {
+          camp.completed_alert_seen = true;
+          camp.status = 'EXPIRED';
+
+          completedCampaigns.push({
+            postId: post.id,
+            title: post.title || 'Official Publication Campaign',
+            views: camp.views ?? (camp.impressions || 14250),
+            clicks: camp.clicks ?? 680,
+            creditsUsed: camp.total_credit_usage ?? (camp.credits_invested || 105),
+          });
+
+          // Dispatch notification pointing to Quantitative Reporting Interface
+          this.addNotification({
+            recipient_id: post.business_id || 'all_admins',
+            title: `📊 Campaign Completed: ${post.title || 'Official Publication'}`,
+            message: `Your sponsored aviation campaign has concluded. View verified ROI analytics in the Quantitative Reporting Interface.`,
+            type: 'SYSTEM',
+            action_link: '/marketing',
+          });
+        }
+      }
+    }
+
+    if (completedCampaigns.length > 0) this.persist();
+    return { completedCampaigns };
+  }
+
+  // Quantitative Reporting Interface data endpoint (pure-data analytics, no fluff)
+  public getCampaignQuantitativeReport(postId?: string, businessId?: string) {
+    let posts = this.businessPosts.filter((p) => p.is_marketed && p.marketing_campaign);
+    if (postId) {
+      posts = posts.filter((p) => p.id === postId);
+    } else if (businessId) {
+      posts = posts.filter((p) => p.business_id === businessId);
+    }
+
+    const campaigns = posts.map((p) => {
+      const camp = p.marketing_campaign!;
+      const views = camp.views ?? (camp.impressions || 18450);
+      const reach = camp.target_audience_reached ?? Math.round(views * 0.76);
+      const clicks = camp.clicks ?? Math.round(views * 0.048);
+      const engagementRate = camp.engagement_rate ?? Number(((clicks / (views || 1)) * 100).toFixed(2));
+      const credits = camp.total_credit_usage ?? (camp.credits_invested || camp.duration_days * 15);
+
+      return {
+        postId: p.id,
+        title: p.title || 'Sponsored Official Publication',
+        businessName: p.business_name,
+        businessId: p.business_id,
+        targetScope: camp.target_scope || (camp.radius_km && camp.radius_km > 0 ? 'Region' : 'World Wide'),
+        targetCountry: camp.country,
+        targetCountries: camp.target_countries || [camp.country],
+        durationDays: camp.duration_days,
+        startDate: camp.start_date,
+        endDate: camp.end_date,
+        isExpired: new Date(camp.end_date).getTime() < Date.now(),
+        // Required Quantitative Endpoints:
+        totalViews: views,
+        targetAudienceReached: reach,
+        clicks,
+        engagementRate,
+        totalCreditUsage: credits,
+        status: new Date(camp.end_date).getTime() < Date.now() ? 'COMPLETED' : (camp.status || 'ACTIVE'),
+      };
+    });
+
+    const totalViews = campaigns.reduce((acc, c) => acc + c.totalViews, 0);
+    const targetAudienceReached = campaigns.reduce((acc, c) => acc + c.targetAudienceReached, 0);
+    const totalClicks = campaigns.reduce((acc, c) => acc + c.clicks, 0);
+    const totalCreditUsage = campaigns.reduce((acc, c) => acc + c.totalCreditUsage, 0);
+    const avgEngagementRate =
+      campaigns.length > 0 ? Number(((totalClicks / (totalViews || 1)) * 100).toFixed(2)) : 0;
+
+    return {
+      totalViews,
+      targetAudienceReached,
+      totalClicks,
+      avgEngagementRate,
+      totalCreditUsage,
+      campaigns,
+    };
+  }
+
+  // Dynamic Help Center Directory (Permission-based RBAC cross-referenced indexing)
+  public getHelpDirectory(user: RegularUser | null, adminUser?: AdminUser | null): HelpArticle[] {
+    const isSuperAdmin =
+      user?.role === 'SUPER_ADMIN' ||
+      user?.email?.toLowerCase() === 'aditya@yarifly.com' ||
+      adminUser?.role === 'SUPER_ADMIN' ||
+      adminUser?.level === 8;
+
+    const isAdmin =
+      isSuperAdmin ||
+      user?.role === 'ADMIN' ||
+      user?.role === 'MANAGER' ||
+      (adminUser && (adminUser.level ?? 0) >= 1);
+
+    const adminLevel = isSuperAdmin ? 8 : (adminUser?.level ?? (user?.role === 'ADMIN' ? 7 : 0));
+    const isBusiness = Boolean(user && 'business_id' in user);
+
+    const masterArticles: HelpArticle[] = [
+      {
+        id: 'help_marketing_feed',
+        title: 'Publishing Official Publications & Sponsored Campaigns',
+        category: 'PUBLICATION',
+        moduleId: 'mod_marketing',
+        summary: 'How to compose official aviation articles, broadcast updates, and launch targeted marketing campaigns to standard aviators.',
+        navigationRoute: 'Home Top Nav > Stories & Feed > Create Official Publication',
+        steps: [
+          'Navigate to the "Stories & Feed" tab in the top navigation bar.',
+          'Locate the "Create Official Publication" card at the top of the feed.',
+          'Select publication type: choose "Article" for long-form editorial or "Post" for standard updates.',
+          'Toggle "Sponsored Marketing Campaign" to enable targeted distribution to verified aviators.',
+          'Select Target Scope: choose City, Country, Region, or World Wide.',
+          'Under Target Country, check "Multiple Countries" to check off specific international territories.',
+          'Enter Campaign Duration in whole days (minimum 1 day, maximum 30 days).',
+          'Review calculated credit cost and click "Publish Official Notice".'
+        ],
+        content: `Create Official Publication allows verified enterprises to post articles or sponsor targeted campaigns. Condition 4 enforces that campaigns only serve standard consumer aviators and exclude competitor accounts. Targeting options include City, Country, Region, and World Wide scopes with multiple country support.`,
+        keywords: ['marketing', 'campaign', 'publication', 'scope', 'targeting', 'official publication', 'sponsor'],
+        routeAction: { tab: 'marketing', subTab: 'linkedin_feed', label: 'Go to Stories & Feed' },
+      },
+      {
+        id: 'help_quant_reporting',
+        title: 'Quantitative Campaign Reporting Interface',
+        category: 'REPORTS',
+        moduleId: 'mod_marketing',
+        summary: 'Understand your pure-data KPI metrics: total impressions, unique verified audience reached, clicks, and wallet credit spend.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: Reports > Quantitative Campaign Analytics',
+        steps: [
+          'Open "Operations & C-Panel" from the top navigation bar.',
+          'Click the "Reports" sector in the C-Panel sector navigation bar.',
+          'Select "Quantitative Campaign Analytics" from the sub-navigation options.',
+          'Review the pure-data KPI cards: Total Views / Impressions, Target Audience Reached, Clicks & Engagement Rate, and Credit Spend.',
+          'Click [Renew / Extend Campaign] if you want to extend duration while preserving the same campaign ID and data continuity.'
+        ],
+        content: `The Quantitative Reporting Interface provides pure, verified analytics for sponsored campaigns. It displays Total Views, Target Audience Reached, Clicks & Engagement Rate, and Total Credit Usage with zero clutter. Data updates asynchronously directly from the platform broadcast engine.`,
+        keywords: ['reporting', 'quantitative', 'roi', 'impressions', 'reach', 'clicks', 'engagement', 'analytics'],
+        routeAction: { tab: 'admin_desk', subTab: 'quant_reports', label: 'Open Quantitative Reports' },
+      },
+      {
+        id: 'help_regional_mapping',
+        title: 'Regional & Country Authority Mapping Desk (L8 Super Admin)',
+        category: 'OPERATIONS',
+        moduleId: 'mod_regional_mapping',
+        requiredRoleLevels: [8],
+        summary: 'Map sovereign nations, civil aviation authorities (DGCA, FAA, EASA, GCAA), and regional airspace corridors.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: Operations > Regional & Country Mapping',
+        steps: [
+          'Open "Operations & C-Panel" from the top navigation bar.',
+          'Click the "Operations" sector, then select "Regional & Country Mapping".',
+          'Expand any continental authority zone: APAC, EMEA, LATAM, NA, ANZ, or MENA.',
+          'Level 8 Super Admins can click "Add Country Mapping" or edit civil aviation regulatory agencies (DGCA, FAA, EASA, etc.). Non-L8 users hold read-only audit access.'
+        ],
+        content: `Regional & Country Mapping assigns sovereign territories to regional compliance clusters. Only Level 8 Super Admins hold cryptographic authority to add or modify country bindings and regulatory agency oversight.`,
+        keywords: ['regional', 'mapping', 'country', 'dgca', 'faa', 'easa', 'authority', 'l8'],
+        routeAction: { tab: 'admin_desk', subTab: 'regional_mapping', label: 'Open Regional Mapping' },
+      },
+      {
+        id: 'help_story_categories',
+        title: 'Story Categories & Feed Taxonomy Governance (L8 Only)',
+        category: 'OPERATIONS',
+        moduleId: 'mod_story_categories',
+        requiredRoleLevels: [8],
+        summary: 'Configure official story categories, color badge palettes, and topic indexing across the global aviation feed.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: Operations > Story Categories',
+        steps: [
+          'Open "Operations & C-Panel" from the top navigation bar.',
+          'Select the "Operations" sector, then click "Story Categories".',
+          'Review active and archived editorial taxonomies and custom badge styles.',
+          'Level 8 Super Admins can click "Add New Category" to create new categories or archive deprecated tags. Lower levels have read-only view.'
+        ],
+        content: `Story Category Manager organizes global aviation publications into structured taxonomies. Modification rights are restricted strictly to Level 8 Super Admins to protect feed consistency and regulatory tagging.`,
+        keywords: ['categories', 'stories', 'taxonomy', 'badges', 'l8', 'super admin'],
+        routeAction: { tab: 'admin_desk', subTab: 'story_categories', label: 'Open Story Categories' },
+      },
+      {
+        id: 'help_safeguard_offboarding',
+        title: 'Employee Offboarding & Data Safeguard Lifecycle (L6-L8 & HR)',
+        category: 'HR',
+        moduleId: 'mod_safeguard',
+        requiredRoleLevels: [6, 7, 8],
+        summary: 'Safe offboarding protocols, instant access suspension, and automatic handover of CRM leads and tasks to Reporting Managers.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: HR > Account Safeguard & Offboarding',
+        steps: [
+          'Open "Operations & C-Panel" and select the "HR" sector.',
+          'Click "Account Safeguard & Offboarding (L6-L8 & HR)".',
+          'Locate the departing employee in the organization directory.',
+          'Select action: "Suspend Access" (temporary security freeze), "Disable Account" (formal departure), or "Delete with Recovery".',
+          'Select a Reporting Manager from the dropdown to automatically inherit all active CRM Leads, Opportunities, and open Tasks.',
+          'Click "Execute Safe Offboarding Protocol". If needed, use the 1-click "Recover Account" button to restore all assets.'
+        ],
+        content: `Account Safeguard protects corporate aviation data when personnel depart. Disabling or suspending an employee immediately cuts portal access and automatically reassigns all their active CRM Leads, Opportunities, Project Tasks, and Tickets to their Reporting Manager. Includes instant 1-click recovery.`,
+        keywords: ['safeguard', 'offboarding', 'lifecycle', 'handover', 'employee', 'hr', 'reporting manager'],
+        routeAction: { tab: 'admin_desk', subTab: 'safeguard', label: 'Open Account Safeguard' },
+      },
+      {
+        id: 'help_role_governance',
+        title: 'Role Switch & IAM Governance (@yarifly.com / @truvaer.com)',
+        category: 'HR',
+        moduleId: 'mod_roles',
+        requiredRoleLevels: [5, 6, 7, 8],
+        summary: 'Staff promotion rules, mandatory domain email verification, and sovereign Super Admin elevation checks.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: HR > Role Switch & IAM Governance',
+        steps: [
+          'Open "Operations & C-Panel", select the "HR" sector, and click "Role Switch & IAM Governance".',
+          'Review the registered users table and their current RBAC tier.',
+          'To promote any user to Admin or Super Admin, verify that their email ends with "@yarifly.com" or "@truvaer.com". Accounts with external domains are rejected with policy violations.',
+          'Select the desired classification in the dropdown to trigger the IAM update. Promoting to Super Admin requires Level 8 Executive clearance.'
+        ],
+        content: `IAM Governance enforces strict administrative security. Any Admin or Super Admin account must have a verified organizational email ending with @yarifly.com or @truvaer.com. Elevation to Super Admin is strictly reserved to Level 8 Executives.`,
+        keywords: ['roles', 'iam', 'governance', 'admin', 'super admin', 'domain', 'clearance'],
+        routeAction: { tab: 'admin_desk', subTab: 'roles', label: 'Open Role Governance' },
+      },
+      {
+        id: 'help_wallet_credits',
+        title: 'Corporate Credit Wallet & Centralized Pricing Matrix',
+        category: 'FINANCE',
+        moduleId: 'mod_wallet',
+        summary: 'Managing corporate credits, daily auto-renewals, threshold alerts, and understanding platform debit formulas.',
+        navigationRoute: 'Home Top Nav > Corporate Credit Wallet OR C-Panel > Finance > Pricing Matrix',
+        steps: [
+          'Open the Corporate Credit Wallet modal from the top navigation bar.',
+          'View your organization\'s live credit balance, escrow reserves, and monthly transaction statement.',
+          'Click "Add Credits" to initiate a secure top-up via Razorpay or corporate wire invoice.',
+          'Review the Centralized Pricing Matrix under C-Panel > Finance to view exact debit rates for campaign boosts and lead unlocks.'
+        ],
+        content: `Corporate wallets power enterprise actions including campaign boosts (15 Cr/day base), phone lead unlocks (10 Cr for 30-day validity), and RFQ submissions (25 Cr). Razorpay webhook relays allow instant credit top-ups with HMAC-SHA256 signature verification.`,
+        keywords: ['wallet', 'credits', 'pricing', 'debit', 'razorpay', 'balance', 'topup'],
+        routeAction: { tab: 'admin_desk', subTab: 'pricing', label: 'View Credit Matrix' },
+      },
+      {
+        id: 'help_pricing_calibration',
+        title: 'Credit Matrix & Pricing Calibration Governance (L7/L8 Only)',
+        category: 'FINANCE',
+        moduleId: 'mod_pricing',
+        requiredRoleLevels: [7, 8],
+        summary: 'Sovereign IAM calibration of credit debit values, minimum thresholds, and formula rate transparency.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: Finance > Centralized Pricing Matrix',
+        steps: [
+          'Open "Operations & C-Panel" and select the "Finance" sector.',
+          'Click "Centralized Pricing Matrix".',
+          'Level 7 and Level 8 Administrators click "Edit Matrix" on any portal action line item.',
+          'Adjust the Debit Value and Minimum Threshold, then click "Save". Lower tiers are locked with 403 Forbidden.'
+        ],
+        content: `Only Level 7 and Level 8 Administrators hold cryptographic IAM clearance to adjust default credit deductions and minimum balance thresholds across all platform modules. Any modification by lower levels returns 403 Forbidden.`,
+        keywords: ['pricing', 'calibration', 'l7', 'l8', 'debit', 'matrix', 'rbac'],
+        routeAction: { tab: 'admin_desk', subTab: 'pricing', label: 'Open Pricing Calibration' },
+      },
+      {
+        id: 'help_credit_transparency',
+        title: 'Credit Transparency & Ledger Architecture Dashboard',
+        category: 'FINANCE',
+        moduleId: 'mod_transparency',
+        requiredRoleLevels: [1, 2, 3, 4, 5, 6, 7, 8],
+        summary: 'Read-only dashboard displaying credit calculation formulas, duration scaling multipliers, and double-entry ledger logic.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: Finance > Credit Transparency & Ledger',
+        steps: [
+          'Open "Operations & C-Panel", select the "Finance" sector.',
+          'Click "Credit Transparency & Ledger".',
+          'Inspect mathematical formulas for base cost, duration scaling, scope multipliers (City: 1.0x, Country: 1.5x, Region: 2.2x, Worldwide: 3.5x), and double-entry ledger audit trails.',
+          'Verify active database rates directly reflected from live runtime configuration.'
+        ],
+        content: `Credit Transparency Dashboard provides complete audit visibility into platform billing logic. It displays mathematical formulas, duration multipliers, scope multipliers, and double-entry ledger debit/credit balances without allowing direct rate alterations.`,
+        keywords: ['transparency', 'formulas', 'ledger', 'multipliers', 'audit', 'credits'],
+        routeAction: { tab: 'admin_desk', subTab: 'credit_transparency', label: 'Open Credit Transparency' },
+      },
+      {
+        id: 'help_flashnews_desk',
+        title: 'FlashNews & 2-Step Verification Queue Desk',
+        category: 'PUBLICATION',
+        moduleId: 'mod_flashnews',
+        requiredRoleLevels: [4, 5, 6, 7, 8],
+        summary: 'Emergency NOTAM dispatch, corporate announcements, FIFO queue capacity limits, and 2-step editorial sign-offs.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: Publication > FlashNews & Blink Feed Desk',
+        steps: [
+          'Open "Operations & C-Panel", select "Publication", then click "FlashNews & Blink Feed Desk".',
+          'To publish: fill in Headline, content message (max 200 words), timing (5s, 10s, 15s, 30s), slot position, and category.',
+          'Level 1 Approvers review editorial integrity; Level 2 Operations signs off to push live to the top ticker.',
+          'Under the Queue tab, manage broadcasts in-line: Pause Status, Edit, Archive, or Delete without horizontal sliding.'
+        ],
+        content: `FlashNews broadcasts priority aviation notices to the top ticker across all user portals. Submissions undergo 2-Step Verification (Editorial Check & Operations Signoff) before entering the live FIFO active queue with auto-refund guarantees for rejected broadcasts.`,
+        keywords: ['flashnews', 'blink', 'notam', 'broadcast', 'queue', 'verification', 'fifo'],
+        routeAction: { tab: 'admin_desk', subTab: 'flashnews', label: 'Open FlashNews Desk' },
+      },
+      {
+        id: 'help_audit_logs',
+        title: 'Sovereign SIEM Audit Trail & Compliance Export',
+        category: 'REPORTS',
+        moduleId: 'mod_audit',
+        requiredRoleLevels: [6, 7, 8],
+        summary: 'Immutable cryptographically-signed records of every administrative action, RBAC escalation, Razorpay payment webhook, and sensitive PII masking event.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: Reports > Sovereign Audit Logs (SIEM)',
+        steps: [
+          'Open "Operations & C-Panel", select the "Reports" sector.',
+          'Click "Sovereign Audit Logs (SIEM)".',
+          'Filter cryptographic event streams by Security, Compliance, Financial, Privacy, or IAM.',
+          'Click "Export Audit Trail (CSV)" to download an immutable compliance ledger.'
+        ],
+        content: `Sovereign Audit Trail records every administrative operation, clearance escalation, Razorpay transaction verification, and data export. Cryptographic signatures ensure compliance with civil aviation authorities and enterprise security requirements.`,
+        keywords: ['audit', 'siem', 'security', 'compliance', 'logs', 'csv', 'export'],
+        routeAction: { tab: 'admin_desk', subTab: 'audit', label: 'Open Audit Logs' },
+      },
+      {
+        id: 'help_full_reset',
+        title: 'Full Application Reset Protocols (Super Admin Only)',
+        category: 'OPERATIONS',
+        moduleId: 'mod_reset',
+        requiredRoleLevels: [8],
+        summary: 'Three-stage disaster recovery reset: Settings reset only, Full reset without data, and complete bootstrap wipe.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: Operations > Full Application Reset',
+        steps: [
+          'Open "Operations & C-Panel", select "Operations", and click "Full Application Reset".',
+          'Confirm you are logged in as a Level 8 Sovereign Super Admin.',
+          'Select the desired recovery tier: 1. "Settings Reset Only", 2. "Full Reset Without Data", or 3. "Full Reset With Data".',
+          'Type the exact required passphrase into the confirmation field.',
+          'Click "Execute Sovereign Application Reset" to apply.'
+        ],
+        content: `Located under Ops & ERP, Full Application Reset provides 3 recovery levels: 1. Settings Reset Only (credit policies and configs); 2. Full Reset Without Data (security & RBAC reset preserving businesses and accounts); 3. Full Reset With Data (complete factory restore).`,
+        keywords: ['reset', 'recovery', 'system reset', 'factory wipe', 'super admin', 'settings reset'],
+        routeAction: { tab: 'admin_desk', subTab: 'system_reset', label: 'Open Application Reset' },
+      },
+      {
+        id: 'help_treasury_reserves',
+        title: 'Statutory Escrow Reserves & Liquidity Desk (L8 Super Admin)',
+        category: 'FINANCE',
+        moduleId: 'mod_reserves',
+        requiredRoleLevels: [8],
+        summary: 'Platform treasury oversight, charter escrow reserves, sovereign stress tests, and liquidity adjustments.',
+        navigationRoute: 'Home Top Nav > Cockpit Bar > ( Treasury & Reserves )',
+        steps: [
+          'On the Home Dashboard Cockpit portal bar, locate the "( Treasury & Reserves )" button positioned directly after Chat.',
+          'Click to open the in-body Statutory Aviation Escrow Reserves console.',
+          'Review mandatory 80% payout reserves, liquidity buffers, and stress test ratios.',
+          'Adjust statutory escrow reserve allocations under Level 8 cryptographic signature.'
+        ],
+        content: `Statutory Aviation Escrow Reserves desk is strictly gated to Level 8 sovereign members. Adjusting reserves and liquidity ratios is restricted exclusively to Super Admin to ensure total fund security and regulatory escrow compliance.`,
+        keywords: ['treasury', 'reserves', 'escrow', 'liquidity', 'l8', 'sovereign', 'super admin'],
+        routeAction: { tab: 'admin_desk', subTab: 'treasury', label: 'Open Treasury Desk' },
+      },
+      {
+        id: 'help_crm_sales',
+        title: 'Commercial Sales Portal: Leads, Quotations & Commissions',
+        category: 'FINANCE',
+        moduleId: 'mod_crm',
+        summary: 'Tracking high-value charter inquiries, quotation generation, automated commission calculations, and net settlements.',
+        navigationRoute: 'Home Top Nav > Commercial Sales (CRM) Portal',
+        steps: [
+          'Click "Sale" or "CRM Portal" in the main top navigation bar.',
+          'Review incoming charter and service leads in the Kanban and list views.',
+          'Generate quotations and track client status through negotiation to deal completion.',
+          'Review automatic 5% platform commission calculations and net operator settlements.'
+        ],
+        content: `Commercial Sales Portal centralizes aviation deal flows. Track incoming charter requests from lead inception through quotation dispatch, deal closure, and automatic platform commission ledger deductions with real-time net operator balance calculations.`,
+        keywords: ['crm', 'leads', 'sales', 'quotations', 'pipeline', 'commission', 'settlements'],
+        routeAction: { tab: 'crm_portal', label: 'Open Sale Portal' },
+      },
+      {
+        id: 'help_pms_tasks',
+        title: 'Admin Project Management System (PMS Desk)',
+        category: 'OPERATIONS',
+        moduleId: 'mod_pms',
+        requiredRoleLevels: [1, 2, 3, 4, 5, 6, 7, 8],
+        summary: 'Collaborative task allocation, flight dispatch milestones, safety audit deliverables, and team sprint tracking.',
+        navigationRoute: 'Home Top Nav > Operations & C-Panel > Sector: Operations > Admin PMS',
+        steps: [
+          'Open "Operations & C-Panel", select "Operations", and click "Admin PMS".',
+          'Track aviation task deliverables across flight operations, safety audits, and MRO maintenance.',
+          'Update task status (To-Do, In-Progress, Review, Completed) and log resolution notes.'
+        ],
+        content: `Admin PMS empowers aviation teams to track regulatory compliance, safety audits, dispatch procedures, and maintenance deadlines. Assign tasks by department, set priority levels, and log immutable resolution notes.`,
+        keywords: ['pms', 'projects', 'tasks', 'operations', 'compliance', 'sprints'],
+        routeAction: { tab: 'admin_desk', subTab: 'pms', label: 'Open Admin PMS' },
+      },
+    ];
+
+    // Permission-Based Rendering: Users only see documentation for modules they actively have permission to view/edit
+    return masterArticles.filter((art) => {
+      if (isSuperAdmin) return true;
+
+      if (art.requiredRoleLevels && art.requiredRoleLevels.length > 0) {
+        if (!isAdmin || !art.requiredRoleLevels.includes(adminLevel)) {
+          return false;
+        }
+      }
+
+      if (art.allowedUserRoles && art.allowedUserRoles.length > 0) {
+        const userRole = user?.role || (isBusiness ? 'BUSINESS' : 'STANDARD_USER');
+        if (!art.allowedUserRoles.includes(userRole as any)) {
+          return false;
+        }
+      }
+
+      if (!isAdmin && (art.category === 'HR' || art.moduleId === 'mod_reset' || art.moduleId === 'mod_reserves')) {
+        return false;
+      }
+
+      return true;
+    });
   }
 
   public likeBusinessPost(postId: string, actorId: string): BusinessPost | null {
@@ -15493,6 +16188,236 @@ Automated Compliance & Balance Monitoring System`;
     this.flashNewsItems.splice(idx, 1);
     this.persist();
     return { success: true, message: 'Flashnews permanently deleted.' };
+  }
+
+  // =========================================================================
+  // ADMIN TEAM ONBOARDING & WELCOME NOTIFICATION EMAIL ENGINE
+  // =========================================================================
+  private dispatchedAdminEmails: AdminWelcomeEmail[] = [];
+
+  public getDispatchedAdminEmails(): AdminWelcomeEmail[] {
+    return [...this.dispatchedAdminEmails];
+  }
+
+  public createAdminTeamAccount(
+    params: {
+      name: string;
+      email: string;
+      role: 'ADMIN' | 'SUPER_ADMIN';
+      level: AdminLevel;
+      department?: AdminDepartment;
+    },
+    actorLevel: number = 8,
+    actorName: string = 'Super Admin'
+  ): { success: boolean; message: string; emailRecord?: AdminWelcomeEmail } {
+    const emailNorm = params.email.trim().toLowerCase();
+    const isDomainValid = emailNorm.endsWith('@yarifly.com') || emailNorm.endsWith('@truvaer.com');
+    if (!isDomainValid) {
+      return {
+        success: false,
+        message: 'Security Policy Violation: Administrative personnel accounts must strictly use an authorized organizational domain (@yarifly.com or @truvaer.com).',
+      };
+    }
+
+    if (params.level === 8 || params.role === 'SUPER_ADMIN') {
+      if (actorLevel < 8) {
+        return {
+          success: false,
+          message: 'Security Clearance Denied: Elevating or creating a Level 8 Super Admin account requires Level 8 Executive clearance.',
+        };
+      }
+    }
+
+    const existing = this.adminUsers.find((a) => a.email.toLowerCase() === emailNorm);
+    if (existing) {
+      return {
+        success: false,
+        message: `An administrative record with email ${emailNorm} already exists.`,
+      };
+    }
+
+    const adminId = `adm_${generateUUID().substring(0, 8)}`;
+    const activationToken = `ACT_${generateUUID().substring(0, 10).toUpperCase()}`;
+    const passwordSetupLink = `https://admin.truvaer.com/#/set-password?token=${activationToken}&email=${encodeURIComponent(emailNorm)}`;
+
+    const newAdmin: AdminUser = {
+      admin_id: adminId,
+      name: params.name,
+      email: emailNorm,
+      role: params.role,
+      level: params.level,
+      level_title: `Level ${params.level} ${params.role === 'SUPER_ADMIN' ? 'Executive Command' : 'Operations Officer'}`,
+      department: params.department || 'Operations',
+      assigned_modules: ['all'],
+      permitted_portals: ['admin_desk', 'marketing', 'crm_portal'],
+      status: 'ACTIVE',
+      historical_passwords: ['CommandPass#2026'],
+      last_password_reset_at: new Date().toISOString(),
+    };
+
+    this.adminUsers.push(newAdmin);
+
+    const regUser: RegularUser = {
+      user_id: `usr_${adminId}`,
+      username: emailNorm.split('@')[0],
+      first_name: params.name.split(' ')[0] || params.name,
+      last_name: params.name.split(' ').slice(1).join(' ') || 'Admin',
+      email: emailNorm,
+      password_hash: 'CommandPass#2026',
+      is_email_verified: true,
+      date_of_birth: '1990-01-01',
+      country_code: 'IN',
+      phone_number: '+91 98765 00000',
+      account_status: 'ACTIVE',
+      role: params.role,
+      created_at: new Date().toISOString(),
+      permitted_portals: ['admin_desk', 'marketing', 'crm_portal'],
+    };
+    this.regularUsers.push(regUser);
+
+    const emailRecord: AdminWelcomeEmail = {
+      id: `eml_${generateUUID().substring(0, 8)}`,
+      recipient_email: emailNorm,
+      recipient_name: params.name,
+      portal_url: 'https://admin.truvaer.com',
+      username: emailNorm,
+      activation_token: activationToken,
+      password_setup_link: passwordSetupLink,
+      clearance_level: `Level ${params.level} (${params.role})`,
+      dispatched_at: new Date().toISOString(),
+      dispatched_by: actorName,
+      purpose: 'NEW_ACCOUNT_WELCOME',
+    };
+
+    this.dispatchedAdminEmails.unshift(emailRecord);
+
+    this.logAdminActivity({
+      category: 'BUSINESS_APPROVAL',
+      title: 'New Admin Personnel Onboarded & Welcome Notification Dispatched',
+      description: `Administrative account ${emailNorm} created with Level ${params.level} clearance. Password setup dispatch link sent: ${passwordSetupLink}`,
+      actor_name: actorName,
+      actor_role: `L${actorLevel} Executive Command`,
+      target_id: adminId,
+      target_name: params.name,
+      severity: 'success',
+    });
+
+    this.persist();
+    return {
+      success: true,
+      message: `Admin account for ${params.name} (${emailNorm}) created. Welcome email with password activation link dispatched.`,
+      emailRecord,
+    };
+  }
+
+  public dispatchAdminPasswordResetLink(
+    email: string,
+    actorLevel: number = 8,
+    actorRole: string = 'SUPER_ADMIN',
+    actorName: string = 'Super Admin'
+  ): { success: boolean; message: string; emailRecord?: AdminWelcomeEmail } {
+    if (actorLevel < 7 && actorRole !== 'SUPER_ADMIN') {
+      return {
+        success: false,
+        message: '403 Forbidden: Only Level 7 (L7) and Level 8 (L8) Super Administrators have authorization to dispatch administrative password reset links.',
+      };
+    }
+
+    const emailNorm = email.trim().toLowerCase();
+    const admin = this.adminUsers.find((a) => a.email.toLowerCase() === emailNorm);
+    const regUser = this.regularUsers.find((u) => u.email.toLowerCase() === emailNorm);
+
+    if (!admin && !regUser) {
+      return { success: false, message: `Account with email ${emailNorm} not found.` };
+    }
+
+    const recipientName = admin?.name || regUser?.first_name || 'Administrator';
+    const activationToken = `RST_${generateUUID().substring(0, 10).toUpperCase()}`;
+    const passwordSetupLink = `https://admin.truvaer.com/#/set-password?token=${activationToken}&email=${encodeURIComponent(emailNorm)}`;
+
+    const emailRecord: AdminWelcomeEmail = {
+      id: `eml_${generateUUID().substring(0, 8)}`,
+      recipient_email: emailNorm,
+      recipient_name: recipientName,
+      portal_url: 'https://admin.truvaer.com',
+      username: emailNorm,
+      activation_token: activationToken,
+      password_setup_link: passwordSetupLink,
+      clearance_level: admin ? `Level ${admin.level || 7} (${admin.role})` : 'Administrator',
+      dispatched_at: new Date().toISOString(),
+      dispatched_by: actorName,
+      purpose: 'PASSWORD_RESET_DISPATCH',
+    };
+
+    this.dispatchedAdminEmails.unshift(emailRecord);
+
+    this.logAdminActivity({
+      category: 'BUSINESS_APPROVAL',
+      title: 'Admin Password Reset Notification Dispatched',
+      description: `Password reset link dispatched for ${emailNorm} by ${actorName} (Clearance Level ${actorLevel}).`,
+      actor_name: actorName,
+      actor_role: `L${actorLevel} ${actorRole}`,
+      target_id: admin?.admin_id || 'admin',
+      target_name: recipientName,
+      severity: 'info',
+    });
+
+    this.persist();
+    return {
+      success: true,
+      message: `Password setup link dispatched for ${emailNorm}.`,
+      emailRecord,
+    };
+  }
+
+  public completeAdminPasswordSetup(
+    email: string,
+    token: string,
+    newPassword: string
+  ): { success: boolean; message: string } {
+    if (!token || (!token.startsWith('ACT_') && !token.startsWith('RST_'))) {
+      return { success: false, message: 'Invalid or expired security token.' };
+    }
+    if (!newPassword || newPassword.length < 8) {
+      return { success: false, message: 'New password must contain at least 8 characters.' };
+    }
+
+    const emailNorm = email.trim().toLowerCase();
+    const admin = this.adminUsers.find((a) => a.email.toLowerCase() === emailNorm);
+    const regUser = this.regularUsers.find((u) => u.email.toLowerCase() === emailNorm);
+
+    if (!admin && !regUser) {
+      return { success: false, message: 'Account not found for email provided.' };
+    }
+
+    if (admin) {
+      admin.historical_passwords = [newPassword, ...(admin.historical_passwords || [])].slice(0, 3);
+      admin.last_password_reset_at = new Date().toISOString();
+      admin.status = 'ACTIVE';
+    }
+    if (regUser) {
+      regUser.password_hash = newPassword;
+      regUser.historical_passwords = [newPassword, ...(regUser.historical_passwords || [])].slice(0, 3);
+      regUser.last_password_reset_at = new Date().toISOString();
+      regUser.account_status = 'ACTIVE';
+    }
+
+    this.logAdminActivity({
+      category: 'BUSINESS_APPROVAL',
+      title: 'Admin Password Successfully Initialized / Reset',
+      description: `Credentials updated for ${emailNorm} via tokenized activation link.`,
+      actor_name: admin?.name || regUser?.first_name || 'Admin',
+      actor_role: 'Operations Administration',
+      target_id: admin?.admin_id || 'admin',
+      target_name: emailNorm,
+      severity: 'success',
+    });
+
+    this.persist();
+    return {
+      success: true,
+      message: 'Password initialized successfully! You can now log into admin.truvaer.com.',
+    };
   }
 }
 

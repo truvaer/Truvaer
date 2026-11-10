@@ -31,6 +31,7 @@ import {
   Headphones,
   Newspaper,
   Home,
+  HelpCircle,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
 import { RegularUser, BusinessProfile } from '../types';
@@ -51,6 +52,8 @@ interface NavbarProps {
   onOpenApiInspector: () => void;
   onOpenWallet: () => void;
   onOpenCommunications: () => void;
+  onOpenCustomerCare?: () => void;
+  onOpenHelp?: () => void;
   onOpenUserProfile?: () => void;
   onOpenProfileMenu?: () => void;
   onResetDb: () => void;
@@ -60,11 +63,11 @@ interface NavbarProps {
   onToggleEnvMode: () => void;
   onSimulateLiveEvent: () => void;
   onOpenVerificationModal?: () => void;
-  onOpenCustomerCare?: () => void;
   onNavigateToStories?: () => void;
   onNavigateToServiceScout?: () => void;
   onOpenTestSuite?: () => void;
   marketingSubTab?: 'linkedin_feed' | 'directory';
+  isAdminSubdomain?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -91,10 +94,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSimulateLiveEvent,
   onOpenVerificationModal,
   onOpenCustomerCare,
+  onOpenHelp,
   onNavigateToStories,
   onNavigateToServiceScout,
   onOpenTestSuite,
   marketingSubTab,
+  isAdminSubdomain = false,
 }) => {
   const [showPresets, setShowPresets] = useState(false);
   const [showTestingTools, setShowTestingTools] = useState(false);
@@ -343,6 +348,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>{isBusinessUser ? 'VIP Care' : 'Care'}</span>
                 </button>
               )}
+
+              {/* Dynamic Help Center - Anchored directly adjacent to Care on Home Page ONLY */}
+              {currentTab === 'dashboard' && onOpenHelp && (
+                <button
+                  id="navbar-help-center-btn"
+                  type="button"
+                  onClick={onOpenHelp}
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-amber-300 hover:text-white hover:bg-amber-950/40 border border-amber-500/30 shadow-xs"
+                  title="Aviation Platform Help & Knowledge Center"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Help</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -372,8 +391,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </button>
 
-            {/* Aggressive Test Suite Button - Only visible/accessible to Admin / Super Admin (Removed for Standard and Business Users) */}
-            {isAdmin && onOpenTestSuite && (
+            {/* Aggressive Test Suite Button - Only visible/accessible to Admin / Super Admin on admin.truvaer.com */}
+            {isAdminSubdomain && isAdmin && onOpenTestSuite && (
               <button
                 id="aggressive-test-suite-btn"
                 type="button"
@@ -385,8 +404,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="hidden md:inline font-mono">Test Suite</span>
               </button>
             )}
-            {/* Quick Profile / Demo Account Switcher (Only visible for non-business users; hidden for Business users) */}
-            {!isBusinessUser && (
+            {/* Quick Profile / Demo Account Switcher */}
+            {!isBusinessUser && (envMode === 'TESTING' || (isAdminSubdomain && isAdmin)) && (
               <div className="relative">
               <button
                 id="quick-demo-presets-btn"
@@ -406,39 +425,42 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="absolute right-0 mt-2 w-84 bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 p-2.5 z-50 text-xs text-slate-200 max-h-[85vh] overflow-y-auto"
                   onClick={() => setShowPresets(false)}
                 >
-                  {/* Category 1: Platform Administration & Command Governance */}
-                  <div className="px-2 py-1 text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
-                    <span>Admin &amp; Command Console</span>
-                    <span className="text-[10px] text-amber-500 font-mono">Operations</span>
-                  </div>
-                  {allRegularUsers
-                    .filter((u) => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'MANAGER')
-                    .map((u) => (
-                      <button
-                        key={u.user_id}
-                        type="button"
-                        onClick={() => {
-                          onQuickSelectUser(u);
-                          setCurrentTab('dashboard');
-                        }}
-                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-slate-800 flex items-center justify-between group cursor-pointer transition-colors"
-                      >
-                        <div className="truncate pr-2">
-                          <div className="font-semibold text-white group-hover:text-amber-400 flex items-center space-x-1.5">
-                            <span>@{u.username}</span>
-                            <span className="text-[10px] text-slate-400 font-normal">
-                              ({[u.first_name, u.last_name].filter(Boolean).join(' ')})
+                  {/* Category 1: Platform Administration & Command Governance (Exclusively on admin.truvaer.com) */}
+                  {isAdminSubdomain && (
+                    <>
+                      <div className="px-2 py-1 text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+                        <span>Admin &amp; Command Console</span>
+                        <span className="text-[10px] text-amber-500 font-mono">Operations</span>
+                      </div>
+                      {allRegularUsers
+                        .filter((u) => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'MANAGER')
+                        .map((u) => (
+                          <button
+                            key={u.user_id}
+                            type="button"
+                            onClick={() => {
+                              onQuickSelectUser(u);
+                              setCurrentTab('dashboard');
+                            }}
+                            className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-slate-800 flex items-center justify-between group cursor-pointer transition-colors"
+                          >
+                            <div className="truncate pr-2">
+                              <div className="font-semibold text-white group-hover:text-amber-400 flex items-center space-x-1.5">
+                                <span>@{u.username}</span>
+                                <span className="text-[10px] text-slate-400 font-normal">
+                                  ({[u.first_name, u.last_name].filter(Boolean).join(' ')})
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-slate-400 truncate">{u.email}</div>
+                            </div>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                              {u.role === 'SUPER_ADMIN' ? 'SUPER ADMIN (L8)' : 'ADMIN (L7)'}
                             </span>
-                          </div>
-                          <div className="text-[11px] text-slate-400 truncate">{u.email}</div>
-                        </div>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                          {u.role === 'SUPER_ADMIN' ? 'SUPER ADMIN (L8)' : 'ADMIN (L7)'}
-                        </span>
-                      </button>
-                    ))}
-
-                  <div className="border-t border-slate-800 my-1.5"></div>
+                          </button>
+                        ))}
+                      <div className="border-t border-slate-800 my-1.5"></div>
+                    </>
+                  )}
 
                   {/* Category 2: Standard Users */}
                   <div className="px-2 py-1 text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center justify-between">

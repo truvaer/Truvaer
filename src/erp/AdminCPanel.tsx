@@ -53,7 +53,11 @@ import { FlashNewsPublicationDesk } from './FlashNewsPublicationDesk';
 import { EmployeeAccountLifecycleDesk } from './EmployeeAccountLifecycleDesk';
 import { AdminApplicationResetDesk } from './AdminApplicationResetDesk';
 import { CRMPortal } from './CRMPortal';
-import { TrendingUp, Sliders, Layers, Tags, Zap, Globe, MapPin, UserX, Coins } from 'lucide-react';
+import { CreditTransparencyView } from './CreditTransparencyView';
+import { QuantitativeReportingInterface } from '../marketing/QuantitativeReportingInterface';
+import { TrendingUp, Sliders, Layers, Tags, Zap, Globe, MapPin, UserX, Coins, BarChart3, HelpCircle, UserPlus, Mail, KeyRound, Send } from 'lucide-react';
+import { DispatchedWelcomeEmailModal, AdminPasswordSetupModal } from '../auth';
+import { AdminWelcomeEmail, AdminLevel, AdminDepartment } from '../types';
 
 interface AdminCPanelProps {
   onRefreshAll: () => void;
@@ -91,123 +95,108 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
 
   const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<
-    | 'erp'
-    | 'pms'
-    | 'cash_flow'
-    | 'services_desk'
-    | 'rbac'
-    | 'human_resource'
-    | 'biz_desk'
-    | 'matrix'
-    | 'flashnews'
-    | 'commission_desk'
-    | 'report_generator'
-    | 'roles'
-    | 'support_desk'
-  >(
-    initialTab === 'pms'
-      ? 'pms'
-      : initialTab === 'cash_flow'
-      ? 'cash_flow'
-      : initialTab === 'services_desk' || initialTab === 'services'
-      ? 'services_desk'
-      : initialTab === 'rbac' || initialTab === 'security'
-      ? 'rbac'
-      : initialTab === 'report_generator'
-      ? 'report_generator'
-      : initialTab === 'human_resource'
-      ? 'human_resource'
-      : initialTab === 'biz_desk' || initialTab === 'verification'
-      ? 'biz_desk'
-      : initialTab === 'matrix' || initialTab === 'pricing'
-      ? 'matrix'
-      : initialTab === 'flashnews' || initialTab === 'flash_news'
-      ? 'flashnews'
-      : initialTab === 'commission_desk' || initialTab === 'commissions'
-      ? 'commission_desk'
-      : initialTab === 'roles'
-      ? 'roles'
-      : initialTab === 'support_desk'
-      ? 'support_desk'
-      : 'erp'
-  );
+  // Sector Categorization: Operations, HR, Finance, Publication, Reports, Security
+  type MainSector = 'operations' | 'hr' | 'finance' | 'publication' | 'reports' | 'security';
+  const [mainSector, setMainSection] = useState<MainSector>('operations');
 
-  const [erpSubTab, setErpSubTab] = useState<
+  // Sub-tabs per sector
+  const [opsSubTab, setOpsSubTab] = useState<
     | 'overview'
-    | 'report_generator'
-    | 'lifecycle_governance'
-    | 'content_desk'
-    | 'services_approval'
-    | 'launch_matrix'
-    | 'roles'
-    | 'flashnews_desk'
+    | 'pms'
+    | 'services'
+    | 'regional_mapping'
     | 'categories'
     | 'story_categories'
-    | 'regional_mapping'
-    | 'audit'
-    | 'module_directory'
     | 'system_reset'
-  >(
-    initialTab === 'report_generator'
-      ? 'report_generator'
-      : initialTab === 'lifecycle_governance' || initialTab === 'safeguard' || initialTab === 'employee_lifecycle'
-      ? 'lifecycle_governance'
-      : initialTab === 'content_desk'
-      ? 'content_desk'
-      : initialTab === 'services_approval'
-      ? 'services_approval'
-      : initialTab === 'launch_matrix'
-      ? 'launch_matrix'
-      : initialTab === 'roles'
-      ? 'roles'
-      : initialTab === 'flashnews_desk' || initialTab === 'flashnews'
-      ? 'flashnews_desk'
-      : 'overview'
-  );
+    | 'content_queue'
+    | 'directory'
+  >('overview');
+
+  const [hrSubTab, setHrSubTab] = useState<'hrms' | 'safeguard' | 'roles'>('hrms');
+  const [finSubTab, setFinSubTab] = useState<
+    'cash_flow' | 'crm_sales' | 'wallet' | 'pricing_matrix' | 'commission_desk' | 'credit_transparency'
+  >('cash_flow');
+  const [pubSubTab, setPubSubTab] = useState<'flashnews_desk' | 'content_desk'>('flashnews_desk');
+  const [repSubTab, setRepSubTab] = useState<'executive_reports' | 'quant_analytics' | 'audit_logs'>('executive_reports');
+  const [secSubTab, setSecSubTab] = useState<'rbac' | 'launch_matrix'>('rbac');
 
   const [rbacSubTab, setRbacSubTab] = useState<'matrix' | 'permission_page' | 'module_image' | 'roles' | 'regional_governance' | 'das'>('matrix');
 
   useEffect(() => {
-    if (initialTab === 'services_desk' || initialTab === 'services') {
-      setActiveTab('services_desk');
-    } else if (initialTab === 'flashnews' || initialTab === 'flash_news') {
-      setActiveTab('flashnews');
-    } else if (initialTab === 'commission_desk' || initialTab === 'commissions') {
-      setActiveTab('commission_desk');
-    } else if (initialTab === 'human_resource') {
-      setActiveTab('human_resource');
-    } else if (initialTab === 'pms') {
-      setActiveTab('pms');
-    } else if (initialTab === 'cash_flow') {
-      setActiveTab('cash_flow');
-    } else if (initialTab === 'rbac' || initialTab === 'security') {
-      setActiveTab('rbac');
-    } else if (initialTab === 'report_generator') {
-      setActiveTab('report_generator');
-    } else if (initialTab === 'biz_desk' || initialTab === 'verification') {
-      setActiveTab('biz_desk');
-    } else if (initialTab === 'matrix' || initialTab === 'pricing') {
-      setActiveTab('matrix');
-    } else if (initialTab === 'roles') {
-      setActiveTab('roles');
-    } else if (initialTab === 'support_desk') {
-      setActiveTab('support_desk');
-    } else if (initialTab === 'lifecycle_governance' || initialTab === 'safeguard' || initialTab === 'employee_lifecycle') {
-      setActiveTab('erp');
-      setErpSubTab('lifecycle_governance');
-    } else if (
-      initialTab === 'erp' ||
-      initialTab === 'content_desk' ||
-      initialTab === 'services_approval' ||
-      initialTab === 'launch_matrix'
-    ) {
-      setActiveTab('erp');
-      if (initialTab !== 'erp') {
-        setErpSubTab(initialTab as any);
-      }
+    if (!initialTab) return;
+    const t = initialTab.toLowerCase();
+    if (t === 'pms') {
+      setMainSection('operations');
+      setOpsSubTab('pms');
+    } else if (t === 'services' || t === 'services_desk' || t === 'biz_desk' || t === 'verification') {
+      setMainSection('operations');
+      setOpsSubTab('services');
+    } else if (t === 'regional_mapping') {
+      setMainSection('operations');
+      setOpsSubTab('regional_mapping');
+    } else if (t === 'categories') {
+      setMainSection('operations');
+      setOpsSubTab('categories');
+    } else if (t === 'story_categories') {
+      setMainSection('operations');
+      setOpsSubTab('story_categories');
+    } else if (t === 'system_reset') {
+      setMainSection('operations');
+      setOpsSubTab('system_reset');
+    } else if (t === 'human_resource' || t === 'hrms') {
+      setMainSection('hr');
+      setHrSubTab('hrms');
+    } else if (t === 'safeguard' || t === 'lifecycle_governance' || t === 'employee_lifecycle') {
+      setMainSection('hr');
+      setHrSubTab('safeguard');
+    } else if (t === 'roles') {
+      setMainSection('hr');
+      setHrSubTab('roles');
+    } else if (t === 'cash_flow') {
+      setMainSection('finance');
+      setFinSubTab('cash_flow');
+    } else if (t === 'crm' || t === 'sales' || t === 'crm_sales') {
+      setMainSection('finance');
+      setFinSubTab('crm_sales');
+    } else if (t === 'wallet') {
+      setMainSection('finance');
+      setFinSubTab('wallet');
+    } else if (t === 'matrix' || t === 'pricing') {
+      setMainSection('finance');
+      setFinSubTab('pricing_matrix');
+    } else if (t === 'commission_desk' || t === 'commissions') {
+      setMainSection('finance');
+      setFinSubTab('commission_desk');
+    } else if (t === 'credit_transparency') {
+      setMainSection('finance');
+      setFinSubTab('credit_transparency');
+    } else if (t === 'flashnews' || t === 'flash_news' || t === 'flashnews_desk') {
+      setMainSection('publication');
+      setPubSubTab('flashnews_desk');
+    } else if (t === 'content_desk' || t === 'content_queue') {
+      setMainSection('publication');
+      setPubSubTab('content_desk');
+    } else if (t === 'report_generator' || t === 'reports') {
+      setMainSection('reports');
+      setRepSubTab('executive_reports');
+    } else if (t === 'quant_analytics' || t === 'quant_reports') {
+      setMainSection('reports');
+      setRepSubTab('quant_analytics');
+    } else if (t === 'audit' || t === 'audit_logs') {
+      setMainSection('reports');
+      setRepSubTab('audit_logs');
+    } else if (t === 'rbac' || t === 'security') {
+      setMainSection('security');
+      setSecSubTab('rbac');
+    } else if (t === 'launch_matrix') {
+      setMainSection('security');
+      setSecSubTab('launch_matrix');
     }
   }, [initialTab]);
+
+  // Actor clearance level calculation
+  const actorLevel = activeAdminUser?.level ?? (isSuperAdmin ? 8 : 1);
+  const canEditPricing = actorLevel >= 7 || isSuperAdmin;
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [auditFilter, setAuditFilter] = useState<string>('ALL');
 
@@ -230,24 +219,103 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
     db.getAllNewsAdmin().filter((n) => n.status === 'Pending Verification')
   );
 
+  // Admin Onboarding & Welcome Email Dispatch States
+  const [showOnboardModal, setShowOnboardModal] = useState(false);
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminRole, setNewAdminRole] = useState<'ADMIN' | 'SUPER_ADMIN'>('ADMIN');
+  const [newAdminLevel, setNewAdminLevel] = useState<AdminLevel>(7);
+  const [newAdminDept, setNewAdminDept] = useState<AdminDepartment>('Operations');
+
+  const [showDispatchedEmailModal, setShowDispatchedEmailModal] = useState(false);
+  const [activeDispatchedEmail, setActiveDispatchedEmail] = useState<AdminWelcomeEmail | null>(null);
+
+  const [showPasswordSetupModal, setShowPasswordSetupModal] = useState(false);
+  const [passwordSetupEmail, setPasswordSetupEmail] = useState('');
+  const [passwordSetupToken, setPasswordSetupToken] = useState('');
+
+  const handleCreateAdminTeamAccount = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (actorLevel < 7 && activeAdminUser?.role !== 'SUPER_ADMIN') {
+      alert('403 Forbidden: Only Level 7 and Level 8 clearance officers have authorization to onboard administrative personnel.');
+      return;
+    }
+    const res = db.createAdminTeamAccount(
+      {
+        name: newAdminName,
+        email: newAdminEmail,
+        role: newAdminRole,
+        level: newAdminLevel,
+        department: newAdminDept,
+      },
+      actorLevel,
+      activeAdminUser?.name || 'Administrator'
+    );
+    if (res.success && res.emailRecord) {
+      setShowOnboardModal(false);
+      setNewAdminName('');
+      setNewAdminEmail('');
+      setActiveDispatchedEmail(res.emailRecord);
+      setShowDispatchedEmailModal(true);
+      setRegularUsers([...db.getRegularUsers()]);
+      onRefreshAll();
+    } else {
+      alert(res.message);
+    }
+  };
+
+  const handleDispatchResetLink = (targetEmail: string) => {
+    if (actorLevel < 7 && activeAdminUser?.role !== 'SUPER_ADMIN') {
+      alert('403 Forbidden: Only Level 7 (L7) and Level 8 (L8) Super Administrators have clearance to dispatch administrative password reset links.');
+      return;
+    }
+    const res = db.dispatchAdminPasswordResetLink(
+      targetEmail,
+      actorLevel,
+      activeAdminUser?.role || 'ADMIN',
+      activeAdminUser?.name || 'Administrator'
+    );
+    if (res.success && res.emailRecord) {
+      setActiveDispatchedEmail(res.emailRecord);
+      setShowDispatchedEmailModal(true);
+      onRefreshAll();
+    } else {
+      alert(res.message);
+    }
+  };
+
   const handleEditItem = (item: PricingMatrixItem) => {
+    if (!canEditPricing) {
+      alert('403 Forbidden: Modifying credit pricing rules is restricted to Level 7 (L7) and Level 8 (L8) Super Admins.');
+      return;
+    }
     setEditingItemId(item.id);
     setEditDebit(item.defaultDebitCredits);
     setEditMin(item.minimumThreshold);
   };
 
   const handleSaveItem = (id: string) => {
-    const res = db.updatePricingItem(id, editDebit, editMin);
+    if (!canEditPricing) {
+      alert('403 Forbidden: Modifying credit pricing rules is restricted to Level 7 (L7) and Level 8 (L8) Super Admins.');
+      return;
+    }
+    const res = db.updatePricingItem(
+      id,
+      editDebit,
+      editMin,
+      activeAdminUser?.role || (isSuperAdmin ? 'SUPER_ADMIN' : 'ADMIN'),
+      actorLevel
+    );
     alert(res.message);
     setPricingItems([...db.getPricingMatrix()]);
     setEditingItemId(null);
   };
 
   const handleSwitchRole = (userId: string, newRole: string) => {
-    const res = db.switchUserRole(userId, newRole);
+    const res = db.switchUserRole(userId, newRole, actorLevel, activeAdminUser?.role);
     setRoleChangeNotice(res.message);
     setRegularUsers([...db.getRegularUsers()]);
-    setTimeout(() => setRoleChangeNotice(null), 4000);
+    setTimeout(() => setRoleChangeNotice(null), 5000);
     onRefreshAll();
   };
 
@@ -348,7 +416,8 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            setActiveTab('biz_desk');
+                            setMainSection('operations');
+                            setOpsSubTab('services');
                             setCpanelCompanySearch('');
                           }}
                           className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
@@ -387,21 +456,24 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
         </div>
       </div>
 
-      {/* Navigation Tabs - Ops and ERP First */}
-      {/* Navigation Tabs - Central Administration & Operations Desk (C-Panel) */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-1 bg-slate-900/60 p-2 rounded-2xl border border-slate-800">
-        {/* 1. Ops & ERP */}
+      {/* Master Sector Navigation (Operations, HR, Finance, Publication, Reports, Security) */}
+      <div className="flex items-center space-x-2 overflow-x-auto pb-1 bg-slate-900/90 p-2 rounded-2xl border border-slate-800 shadow-md">
+        <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider px-2 shrink-0">
+          C-Panel Sector:
+        </span>
+
+        {/* 1. OPERATIONS */}
         <button
-          id="cpanel-tab-erp"
-          onClick={() => setActiveTab('erp')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'erp'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-slate-800'
+          id="cpanel-sector-operations"
+          onClick={() => setMainSection('operations')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            mainSector === 'operations'
+              ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
           <Crown className="w-4 h-4" />
-          <span>Ops &amp; ERP</span>
+          <span>Operations</span>
           {(pendingJobs.length + pendingNews.length) > 0 && (
             <span className="ml-1 bg-slate-950 text-amber-300 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
               {pendingJobs.length + pendingNews.length}
@@ -409,147 +481,94 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           )}
         </button>
 
-        {/* 2. Admin PMS */}
+        {/* 2. HR */}
         <button
-          id="cpanel-tab-pms"
-          onClick={() => setActiveTab('pms')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'pms'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-slate-800'
-          }`}
-        >
-          <Briefcase className="w-4 h-4" />
-          <span>Admin PMS</span>
-        </button>
-
-        {/* 3. Cash Flow */}
-        <button
-          id="cpanel-tab-cash-flow"
-          onClick={() => setActiveTab('cash_flow')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'cash_flow'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-slate-800'
-          }`}
-        >
-          <TrendingUp className="w-4 h-4" />
-          <span>Cash Flow</span>
-        </button>
-
-        {/* 4. Services */}
-        <button
-          id="cpanel-tab-services"
-          onClick={() => setActiveTab('services_desk')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'services_desk'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-cyan-300 hover:text-white hover:bg-slate-800'
-          }`}
-        >
-          <Briefcase className="w-4 h-4 text-cyan-400" />
-          <span>Services</span>
-        </button>
-
-        {/* 5. Security */}
-        <button
-          id="cpanel-tab-security"
-          onClick={() => setActiveTab('rbac')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'rbac'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-slate-800'
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          <span>Security</span>
-        </button>
-
-        {/* 6. HR+HRMS */}
-        <button
-          id="cpanel-tab-hrms"
-          onClick={() => setActiveTab('human_resource')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'human_resource'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-slate-800'
+          id="cpanel-sector-hr"
+          onClick={() => setMainSection('hr')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            mainSector === 'hr'
+              ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>HR+HRMS</span>
+          <span>HR</span>
         </button>
 
-        {/* 7. Verification */}
+        {/* 3. FINANCE */}
         <button
-          id="cpanel-tab-verification"
-          onClick={() => setActiveTab('biz_desk')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'biz_desk'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-slate-800'
-          }`}
-        >
-          <Building2 className="w-4 h-4" />
-          <span>Verification</span>
-        </button>
-
-        {/* 8. Pricing */}
-        <button
-          id="cpanel-tab-pricing"
-          onClick={() => setActiveTab('matrix')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'matrix'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-slate-800'
+          id="cpanel-sector-finance"
+          onClick={() => setMainSection('finance')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            mainSector === 'finance'
+              ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
           <DollarSign className="w-4 h-4" />
-          <span>Pricing</span>
+          <span>Finance</span>
         </button>
 
-        {/* 9. Flash News Desk */}
+        {/* 4. PUBLICATION */}
         <button
-          id="cpanel-tab-flashnews"
-          onClick={() => setActiveTab('flashnews')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'flashnews'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-amber-300 hover:text-white hover:bg-slate-800'
+          id="cpanel-sector-publication"
+          onClick={() => setMainSection('publication')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            mainSector === 'publication'
+              ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Radio className="w-4 h-4 text-amber-400" />
-          <span>Flash News Desk</span>
+          <Radio className="w-4 h-4 text-rose-400" />
+          <span>Publication</span>
         </button>
 
-        {/* 10. Finance Commission Desk */}
+        {/* 5. REPORTS */}
         <button
-          id="cpanel-tab-commission-desk"
-          onClick={() => setActiveTab('commission_desk')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
-            activeTab === 'commission_desk'
-              ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-              : 'text-emerald-300 hover:text-white hover:bg-slate-800'
+          id="cpanel-sector-reports"
+          onClick={() => setMainSection('reports')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            mainSector === 'reports'
+              ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Coins className="w-4 h-4 text-emerald-400" />
-          <span>Finance Commission Desk</span>
+          <FileText className="w-4 h-4 text-sky-400" />
+          <span>Reports</span>
+        </button>
+
+        {/* 6. SECURITY */}
+        <button
+          id="cpanel-sector-security"
+          onClick={() => setMainSection('security')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            mainSector === 'security'
+              ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <span>Security</span>
         </button>
       </div>
 
-      {/* OPS AND ERP: Housed sub-options list */}
-      {activeTab === 'erp' && (
+            {/* ========================================================================= */}
+      {/* 1. SECTOR: OPERATIONS                                                     */}
+      {/* ========================================================================= */}
+      {mainSector === 'operations' && (
         <div className="space-y-5">
-          {/* Sub-Navigation Bar inside Ops & ERP */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto">
+          {/* Operations Sub-Navigation Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
-              Ops &amp; ERP:
+              Operations:
             </span>
 
-            {/* 1. ERP Platform Overview */}
+            {/* ERP Platform Overview */}
             <button
-              onClick={() => setErpSubTab('overview')}
+              id="cpanel-ops-overview-btn"
+              onClick={() => setOpsSubTab('overview')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'overview'
+                opsSubTab === 'overview'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
@@ -558,41 +577,96 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
               <span>ERP Platform Overview</span>
             </button>
 
-            {/* 2. Report Generator */}
+            {/* Admin PMS */}
             <button
-              id="cpanel-erp-subtab-report-gen"
-              onClick={() => setErpSubTab('report_generator')}
+              id="cpanel-ops-pms-btn"
+              onClick={() => setOpsSubTab('pms')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'report_generator'
+                opsSubTab === 'pms'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
-                  : 'text-amber-300 hover:text-white hover:bg-slate-800'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Report Generator</span>
+              <Briefcase className="w-3.5 h-3.5" />
+              <span>Admin PMS</span>
             </button>
 
-            {/* 3. Account Safeguard (Level 6 to 8 & HR Only) */}
+            {/* Services & Verification */}
             <button
-              id="cpanel-erp-subtab-safeguard"
-              onClick={() => setErpSubTab('lifecycle_governance')}
+              id="cpanel-ops-services-btn"
+              onClick={() => setOpsSubTab('services')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'lifecycle_governance'
+                opsSubTab === 'services'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
-                  : 'text-rose-300 hover:text-white hover:bg-rose-950/40 border border-rose-500/20'
+                  : 'text-cyan-300 hover:text-white hover:bg-slate-800'
               }`}
-              title="Employee Offboarding & Data Safeguard Lifecycle (Level 6-8 & HR Only)"
             >
-              <UserX className="w-3.5 h-3.5 text-current" />
-              <span>Account Safeguard</span>
+              <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Services &amp; Verification</span>
             </button>
 
-            {/* 4. Content Queue */}
+            {/* Regional & Country Mapping */}
             <button
-              id="cpanel-erp-subtab-content-queue"
-              onClick={() => setErpSubTab('content_desk')}
+              id="cpanel-ops-regional-mapping-btn"
+              onClick={() => setOpsSubTab('regional_mapping')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'content_desk'
+                opsSubTab === 'regional_mapping'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-emerald-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Regional &amp; Country Mapping</span>
+            </button>
+
+            {/* Categories & Subcategories */}
+            <button
+              id="cpanel-ops-categories-btn"
+              onClick={() => setOpsSubTab('categories')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                opsSubTab === 'categories'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-indigo-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Tags className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Categories &amp; Subcategories</span>
+            </button>
+
+            {/* Story Categories */}
+            <button
+              id="cpanel-ops-story-categories-btn"
+              onClick={() => setOpsSubTab('story_categories')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                opsSubTab === 'story_categories'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-purple-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Tags className="w-3.5 h-3.5 text-purple-400" />
+              <span>Story Categories</span>
+            </button>
+
+            {/* Full Application Reset */}
+            <button
+              id="cpanel-ops-system-reset-btn"
+              onClick={() => setOpsSubTab('system_reset')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                opsSubTab === 'system_reset'
+                  ? 'bg-rose-600 text-white font-black shadow'
+                  : 'text-rose-400 hover:text-white hover:bg-rose-950/40 border border-rose-500/20'
+              }`}
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+              <span>Full Application Reset</span>
+            </button>
+
+            {/* Content Queue */}
+            <button
+              id="cpanel-ops-content-queue-btn"
+              onClick={() => setOpsSubTab('content_queue')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                opsSubTab === 'content_queue'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
@@ -606,84 +680,55 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
               )}
             </button>
 
-            {/* 5. Services */}
+            {/* Module Directory */}
             <button
-              id="cpanel-erp-subtab-services"
-              onClick={() => setErpSubTab('services_approval')}
+              id="cpanel-ops-directory-btn"
+              onClick={() => setOpsSubTab('directory')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'services_approval'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow'
-                  : 'text-cyan-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Briefcase className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Services</span>
-            </button>
-
-            {/* 6. Modules Active Status */}
-            <button
-              id="cpanel-erp-subtab-launch-matrix"
-              onClick={() => setErpSubTab('launch_matrix')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'launch_matrix'
+                opsSubTab === 'directory'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Modules Active Status</span>
-            </button>
-
-            {/* 7. Role Switch */}
-            <button
-              id="cpanel-erp-subtab-roles"
-              onClick={() => setErpSubTab('roles')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'roles'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow'
-                  : 'text-indigo-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Role Switch</span>
-            </button>
-
-            {/* 8. Publication Desk */}
-            <button
-              id="cpanel-erp-subtab-flashnews-desk"
-              onClick={() => setErpSubTab('flashnews_desk')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                erpSubTab === 'flashnews_desk'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow'
-                  : 'text-amber-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Radio className="w-3.5 h-3.5 text-amber-400" />
-              <span>Publication Desk</span>
+              <span>ERP Modules Directory</span>
             </button>
           </div>
 
-          {/* Sub-Views: Categories, Story Categories, Regional Mapping, Lifecycle, Reset, etc. */}
-          {erpSubTab === 'categories' && (
+          {/* Operations Sub-Views */}
+          {opsSubTab === 'overview' && (
+            <AdminERPPlatform
+              onRefreshAll={onRefreshAll}
+              onSelectBusinessToView={onSelectBusinessToView}
+              onOpenProfileMenu={onOpenProfileMenu}
+              onOpenApiInspector={onOpenApiInspector}
+              onOpenWallet={onOpenWallet}
+            />
+          )}
+
+          {opsSubTab === 'pms' && (
             <div className="space-y-4">
-              <CategoryHierarchyManager
-                activeAdminUser={activeAdminUser}
-                onRefreshAll={onRefreshAll}
+              <AdminPMSDesk
+                activeAdminUser={db.getAdminUsers().find((a) => a.role === 'SUPER_ADMIN') || db.getAdminUsers()[0]}
+                onRefreshData={onRefreshAll}
               />
             </div>
           )}
 
-          {erpSubTab === 'story_categories' && (
-            <div className="space-y-4">
-              <StoryCategoryManager
-                activeAdminUser={activeAdminUser}
-                currentUser={currentUser}
+          {opsSubTab === 'services' && (
+            <div className="space-y-6">
+              <AdminVerificationDesk
+                onSelectBusinessToView={onSelectBusinessToView}
+                onRefreshList={onRefreshAll}
+              />
+              <AdminServicesApprovalDesk
                 onRefreshAll={onRefreshAll}
+                onOpenBroadcastModal={() => setShowBroadcastModal(true)}
               />
             </div>
           )}
 
-          {erpSubTab === 'regional_mapping' && (
+          {opsSubTab === 'regional_mapping' && (
             <div className="space-y-4">
               <RegionalAuthorityMappingDesk
                 activeAdminUser={activeAdminUser}
@@ -693,17 +738,26 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             </div>
           )}
 
-          {erpSubTab === 'lifecycle_governance' && (
+          {opsSubTab === 'categories' && (
             <div className="space-y-4">
-              <EmployeeAccountLifecycleDesk
+              <CategoryHierarchyManager
                 activeAdminUser={activeAdminUser}
-                currentUser={currentUser}
-                onRefreshData={onRefreshAll}
+                onRefreshAll={onRefreshAll}
               />
             </div>
           )}
 
-          {erpSubTab === 'system_reset' && (
+          {opsSubTab === 'story_categories' && (
+            <div className="space-y-4">
+              <StoryCategoryManager
+                activeAdminUser={activeAdminUser}
+                currentUser={currentUser}
+                onRefreshAll={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {opsSubTab === 'system_reset' && (
             <div className="space-y-4">
               <AdminApplicationResetDesk
                 activeAdminUser={activeAdminUser}
@@ -716,18 +770,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             </div>
           )}
 
-          {/* ERP Sub-Views */}
-          {erpSubTab === 'overview' && (
-            <AdminERPPlatform
-              onRefreshAll={onRefreshAll}
-              onSelectBusinessToView={onSelectBusinessToView}
-              onOpenProfileMenu={onOpenProfileMenu}
-              onOpenApiInspector={onOpenApiInspector}
-              onOpenWallet={onOpenWallet}
-            />
-          )}
-
-          {erpSubTab === 'content_desk' && (
+          {opsSubTab === 'content_queue' && (
             <div className="space-y-6">
               {/* Pending Jobs Queue */}
               <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
@@ -758,14 +801,14 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
                         <div className="flex items-center space-x-2 shrink-0">
                           <button
                             onClick={() => handleApproveJob(j.id)}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center space-x-1"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center space-x-1 cursor-pointer"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>Approve to MSN Grid</span>
                           </button>
                           <button
                             onClick={() => handleRejectJob(j.id)}
-                            className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold flex items-center space-x-1"
+                            className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold flex items-center space-x-1 cursor-pointer"
                           >
                             <XCircle className="w-3.5 h-3.5" />
                             <span>Reject</span>
@@ -806,19 +849,19 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
                         <div className="flex items-center space-x-2 shrink-0">
                           <button
                             onClick={() => handleApproveNews(n.id, 'Primary')}
-                            className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px]"
+                            className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] cursor-pointer"
                           >
-                            Publish (Primary Slot)
+                            Approve Primary
                           </button>
                           <button
-                            onClick={() => handleApproveNews(n.id, 'None')}
-                            className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px]"
+                            onClick={() => handleApproveNews(n.id, 'Secondary')}
+                            className="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] cursor-pointer"
                           >
-                            Publish Standard
+                            Approve Secondary
                           </button>
                           <button
                             onClick={() => handleRejectNews(n.id)}
-                            className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px]"
+                            className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] cursor-pointer"
                           >
                             Reject
                           </button>
@@ -831,18 +874,875 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             </div>
           )}
 
-          {erpSubTab === 'audit' && (
+          {opsSubTab === 'directory' && (
+            <div className="space-y-4">
+              <AdminModuleDirectory
+                onSelectModuleTab={(tabKey, subTab) => {
+                  if (tabKey === 'cash_flow') {
+                    setMainSection('finance');
+                    setFinSubTab('cash_flow');
+                  } else if (tabKey === 'services_approval') {
+                    setMainSection('operations');
+                    setOpsSubTab('services');
+                  } else if (tabKey === 'rbac') {
+                    setMainSection('security');
+                    if (subTab) setRbacSubTab(subTab as any);
+                    setSecSubTab('rbac');
+                  } else if (tabKey === 'biz_desk') {
+                    setMainSection('operations');
+                    setOpsSubTab('services');
+                  } else if (tabKey === 'matrix') {
+                    setMainSection('finance');
+                    setFinSubTab('pricing_matrix');
+                  } else if (tabKey === 'human_resource') {
+                    setMainSection('hr');
+                    setHrSubTab('hrms');
+                  } else {
+                    setMainSection('operations');
+                    setOpsSubTab('overview');
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 2. SECTOR: HR                                                             */}
+      {/* ========================================================================= */}
+      {mainSector === 'hr' && (
+        <div className="space-y-5">
+          {/* HR Sub-Navigation Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
+              HR &amp; People:
+            </span>
+
+            {/* HRMS System */}
+            <button
+              id="cpanel-hr-hrms-btn"
+              onClick={() => setHrSubTab('hrms')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                hrSubTab === 'hrms'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>HR &amp; HRMS System</span>
+            </button>
+
+            {/* Account Safeguard (Level 6 to 8 & HR Only) */}
+            <button
+              id="cpanel-hr-safeguard-btn"
+              onClick={() => setHrSubTab('safeguard')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                hrSubTab === 'safeguard'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-rose-300 hover:text-white hover:bg-rose-950/40 border border-rose-500/20'
+              }`}
+              title="Employee Offboarding & Data Safeguard Lifecycle (Level 6-8 & HR Only)"
+            >
+              <UserX className="w-3.5 h-3.5 text-current" />
+              <span>Account Safeguard &amp; Offboarding (L6-L8 &amp; HR)</span>
+            </button>
+
+            {/* Role Switch & IAM Governance */}
+            <button
+              id="cpanel-hr-roles-btn"
+              onClick={() => setHrSubTab('roles')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                hrSubTab === 'roles'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-indigo-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Role Switch &amp; IAM Governance</span>
+            </button>
+          </div>
+
+          {/* HR Sub-Views */}
+          {hrSubTab === 'hrms' && (
+            <div className="space-y-4">
+              <HumanResourceHRMSModule onRefreshAll={onRefreshAll} />
+            </div>
+          )}
+
+          {hrSubTab === 'safeguard' && (
+            <div className="space-y-4">
+              <EmployeeAccountLifecycleDesk
+                activeAdminUser={activeAdminUser}
+                currentUser={currentUser}
+                onRefreshData={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {hrSubTab === 'roles' && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-base font-bold text-white">Role Classification &amp; IAM Governance</h3>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Mandatory @yarifly.com / @truvaer.com
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Any Admin or Super Admin account must have a verified organizational email ending with <strong className="text-amber-300">@yarifly.com</strong> or <strong className="text-amber-300">@truvaer.com</strong>. Super Admin elevation requires Level 8 authorization.
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowOnboardModal(true)}
+                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer flex items-center space-x-1.5 shrink-0"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Onboard Admin Personnel</span>
+                  </button>
+                </div>
+              </div>
+
+              {roleChangeNotice && (
+                <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{roleChangeNotice}</span>
+                </div>
+              )}
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-mono border-b border-slate-800">
+                    <tr>
+                      <th className="py-3 px-4">User</th>
+                      <th className="py-3 px-4">Email</th>
+                      <th className="py-3 px-4">Current Classification</th>
+                      <th className="py-3 px-4">Account Status</th>
+                      <th className="py-3 px-4 text-center">Password Setup &amp; Activation Link</th>
+                      <th className="py-3 px-4 text-right">Switch Classification</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 font-sans">
+                    {regularUsers.map((u) => {
+                      const email = (u.email || '').toLowerCase();
+                      const isOrgEmail = email.endsWith('@yarifly.com') || email.endsWith('@truvaer.com');
+                      const isAdminRole = u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'MANAGER';
+                      const canReset = actorLevel >= 7 || isSuperAdmin;
+                      return (
+                        <tr key={u.user_id} className="hover:bg-slate-800/40">
+                          <td className="py-3 px-4 font-semibold text-white">@{u.username}</td>
+                          <td className="py-3 px-4 font-mono text-slate-400">
+                            <span className={isOrgEmail ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
+                              {u.email}
+                            </span>
+                            {!isOrgEmail && (
+                              <span className="ml-2 text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded border border-slate-700">
+                                Non-Admin Domain
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                                u.role === 'SUPER_ADMIN'
+                                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                  : u.role === 'ADMIN'
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                  : u.role === 'MANAGER'
+                                  ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                  : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                              }`}
+                            >
+                              {u.role || 'STANDARD_USER'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-[10px] font-mono text-emerald-400">{u.account_status}</span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {isAdminRole || isOrgEmail ? (
+                              canReset ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDispatchResetLink(u.email)}
+                                  className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold inline-flex items-center space-x-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                                  title="Dispatch tokenized password link to admin email (L7/L8 clearance)"
+                                >
+                                  <KeyRound className="w-3 h-3 text-amber-400" />
+                                  <span>Send Password Link</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="px-2 py-1 rounded-lg bg-slate-800 text-slate-500 border border-slate-750 text-[10px] font-mono inline-flex items-center space-x-1 cursor-not-allowed opacity-50"
+                                  title="403 Forbidden: Only Level 7 (L7) and Level 8 (L8) have authorization to dispatch password links"
+                                >
+                                  <Lock className="w-3 h-3" />
+                                  <span>L7/L8 Only (403)</span>
+                                </button>
+                              )
+                            ) : (
+                              <span className="text-[10px] text-slate-600 font-mono">Standard Member</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end space-x-1.5">
+                              <select
+                                value={u.role || 'STANDARD_USER'}
+                                onChange={(e) => handleSwitchRole(u.user_id, e.target.value)}
+                                className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-white font-mono outline-none focus:border-amber-500 cursor-pointer"
+                              >
+                                {db.getCustomUserTypes().map((ct) => (
+                                  <option key={ct.id} value={ct.key}>
+                                    {ct.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Onboard New Admin Modal */}
+          {showOnboardModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in">
+              <div className="relative w-full max-w-lg bg-slate-900 border border-amber-500/50 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600"></div>
+
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                      <UserPlus className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white">Onboard Admin Team Member</h3>
+                      <p className="text-[11px] text-slate-400 font-mono">
+                        Portal: admin.truvaer.com | Mandatory @yarifly.com or @truvaer.com
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowOnboardModal(false)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-800"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreateAdminTeamAccount} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                      Full Legal Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newAdminName}
+                      onChange={(e) => setNewAdminName(e.target.value)}
+                      placeholder="e.g. Captain Rajesh Verma"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 px-3 text-white placeholder-slate-500 focus:border-amber-500 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                      Corporate Administrative Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={newAdminEmail}
+                      onChange={(e) => setNewAdminEmail(e.target.value)}
+                      placeholder="rajesh.verma@yarifly.com or verma@truvaer.com"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 px-3 text-white placeholder-slate-500 focus:border-amber-500 outline-none"
+                    />
+                    <span className="text-[10px] text-amber-400/80 mt-1 block">
+                      Strict domain requirement: must end with @yarifly.com or @truvaer.com
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                        Classification Role
+                      </label>
+                      <select
+                        value={newAdminRole}
+                        onChange={(e) => setNewAdminRole(e.target.value as 'ADMIN' | 'SUPER_ADMIN')}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 px-3 text-white focus:border-amber-500 outline-none"
+                      >
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="SUPER_ADMIN">SUPER_ADMIN (L8)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                        Security Clearance
+                      </label>
+                      <select
+                        value={newAdminLevel}
+                        onChange={(e) => setNewAdminLevel(Number(e.target.value) as AdminLevel)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 px-3 text-white focus:border-amber-500 outline-none"
+                      >
+                        <option value={7}>Level 7 (L7 Administrator)</option>
+                        <option value={8}>Level 8 (L8 Super Admin)</option>
+                        <option value={6}>Level 6 (L6 Senior Lead)</option>
+                        <option value={5}>Level 5 (L5 Department Manager)</option>
+                        <option value={4}>Level 4 (L4 Operations Officer)</option>
+                        <option value={3}>Level 3 (L3 Executive)</option>
+                        <option value={2}>Level 2 (L2 Associate)</option>
+                        <option value={1}>Level 1 (L1 Trainee)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1 font-mono">
+                      Department Assignment
+                    </label>
+                    <select
+                      value={newAdminDept}
+                      onChange={(e) => setNewAdminDept(e.target.value as AdminDepartment)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 px-3 text-white focus:border-amber-500 outline-none"
+                    >
+                      <option value="Operations">Operations Command</option>
+                      <option value="Finance">Finance &amp; Treasury</option>
+                      <option value="Human Resources">Human Resources &amp; HRMS</option>
+                      <option value="Security">Security &amp; IAM</option>
+                      <option value="Verification">Verification Desk</option>
+                      <option value="Executive Management">Executive Command (L8)</option>
+                    </select>
+                  </div>
+
+                  <div className="pt-3 flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowOnboardModal(false)}
+                      className="px-4 py-2 rounded-xl text-slate-300 hover:bg-slate-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black uppercase tracking-wider shadow-md"
+                    >
+                      Create Account &amp; Send Welcome Email
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Dispatched Welcome / Password Reset Email Modal */}
+          <DispatchedWelcomeEmailModal
+            isOpen={showDispatchedEmailModal}
+            onClose={() => setShowDispatchedEmailModal(false)}
+            emailData={activeDispatchedEmail}
+            onOpenPasswordSetup={(email, token) => {
+              setPasswordSetupEmail(email);
+              setPasswordSetupToken(token);
+              setShowPasswordSetupModal(true);
+            }}
+          />
+
+          {/* Admin Password Setup Modal */}
+          <AdminPasswordSetupModal
+            isOpen={showPasswordSetupModal}
+            onClose={() => setShowPasswordSetupModal(false)}
+            initialEmail={passwordSetupEmail}
+            initialToken={passwordSetupToken}
+            onSuccess={() => {
+              onRefreshAll();
+              setRegularUsers([...db.getRegularUsers()]);
+            }}
+          />
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. SECTOR: FINANCE                                                        */}
+      {/* ========================================================================= */}
+      {mainSector === 'finance' && (
+        <div className="space-y-5">
+          {/* Finance Sub-Navigation Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
+              Finance &amp; Treasury:
+            </span>
+
+            {/* Regional Cash Flow */}
+            <button
+              id="cpanel-fin-cashflow-btn"
+              onClick={() => setFinSubTab('cash_flow')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                finSubTab === 'cash_flow'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <DollarSign className="w-3.5 h-3.5" />
+              <span>Regional Cash Flow</span>
+            </button>
+
+            {/* Sales CRM */}
+            <button
+              id="cpanel-fin-sales-btn"
+              onClick={() => setFinSubTab('crm_sales')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                finSubTab === 'crm_sales'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Commercial Sales (CRM)</span>
+            </button>
+
+            {/* Centralized Pricing Matrix */}
+            <button
+              id="cpanel-fin-pricing-btn"
+              onClick={() => setFinSubTab('pricing_matrix')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                finSubTab === 'pricing_matrix'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-amber-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Coins className="w-3.5 h-3.5 text-amber-400" />
+              <span>Centralized Pricing Matrix</span>
+            </button>
+
+            {/* Commission Desk */}
+            <button
+              id="cpanel-fin-commissions-btn"
+              onClick={() => setFinSubTab('commission_desk')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                finSubTab === 'commission_desk'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-emerald-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Commission Desk</span>
+            </button>
+
+            {/* Credit Transparency */}
+            <button
+              id="cpanel-fin-transparency-btn"
+              onClick={() => setFinSubTab('credit_transparency')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                finSubTab === 'credit_transparency'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-sky-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
+              <span>Credit Transparency &amp; Ledger</span>
+            </button>
+          </div>
+
+          {/* Finance Sub-Views */}
+          {finSubTab === 'cash_flow' && (
+            <div className="space-y-4">
+              <RegionalCashFlowAnalytics />
+            </div>
+          )}
+
+          {finSubTab === 'crm_sales' && (
+            <div className="space-y-4">
+              <CRMPortal
+                initialTab="leads"
+                currentUser={currentUser}
+                activeAdminUser={activeAdminUser}
+                onOpenWallet={onOpenWallet}
+                onRefreshData={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {finSubTab === 'pricing_matrix' && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-white">Centralized Credit Debit Matrix</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Configure automatic credit deductions per marketing, job posting, and boutique lead action across all portals.
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span
+                    className={`text-xs font-mono font-bold px-3 py-1 rounded-full border ${
+                      canEditPricing
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                    }`}
+                  >
+                    {canEditPricing ? 'L7/L8 Edit Permitted' : 'Read Only (L7/L8 Required)'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-mono border-b border-slate-800">
+                    <tr>
+                      <th className="py-3 px-4">Portal Location</th>
+                      <th className="py-3 px-4">Action Type</th>
+                      <th className="py-3 px-4">Debit Value (Credits)</th>
+                      <th className="py-3 px-4">Minimum Threshold</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 font-sans">
+                    {pricingItems.map((item) => {
+                      const isEditing = editingItemId === item.id;
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-800/40">
+                          <td className="py-3 px-4 font-semibold text-white">{item.portal}</td>
+                          <td className="py-3 px-4 text-sky-400 font-mono">{item.actionType}</td>
+                          <td className="py-3 px-4 font-mono">
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={editDebit}
+                                onChange={(e) => setEditDebit(Number(e.target.value))}
+                                className="w-20 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-white"
+                              />
+                            ) : (
+                              <span className="font-bold text-emerald-400">{item.defaultDebitCredits} Credits</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 font-mono">
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={editMin}
+                                onChange={(e) => setEditMin(Number(e.target.value))}
+                                className="w-20 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-white"
+                              />
+                            ) : (
+                              <span>{item.minimumThreshold} Credits</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
+                              {item.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {isEditing ? (
+                              <button
+                                onClick={() => handleSaveItem(item.id)}
+                                className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center space-x-1 ml-auto cursor-pointer"
+                              >
+                                <Save className="w-3.5 h-3.5" />
+                                <span>Save</span>
+                              </button>
+                            ) : (
+                              <button
+                                disabled={!canEditPricing}
+                                onClick={() => handleEditItem(item)}
+                                className={`px-3 py-1 rounded font-medium flex items-center space-x-1 ml-auto transition-colors ${
+                                  canEditPricing
+                                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer'
+                                    : 'bg-slate-900 text-slate-600 border border-slate-800/60 cursor-not-allowed opacity-60'
+                                }`}
+                                title={
+                                  canEditPricing
+                                    ? 'Edit credit rate'
+                                    : '403 Forbidden: Modifying credit pricing is restricted to L7 and L8 Super Admins.'
+                                }
+                              >
+                                {!canEditPricing && <Lock className="w-3 h-3 text-slate-500" />}
+                                {canEditPricing && <Edit2 className="w-3 h-3" />}
+                                <span>Edit Matrix</span>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {finSubTab === 'commission_desk' && (
+            <div className="space-y-4">
+              <CRMPortal
+                initialTab="commissions"
+                currentUser={currentUser}
+                activeAdminUser={activeAdminUser}
+                onOpenWallet={onOpenWallet}
+                onRefreshData={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {finSubTab === 'credit_transparency' && (
+            <CreditTransparencyView activeAdminUser={activeAdminUser} />
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 4. SECTOR: PUBLICATION                                                    */}
+      {/* ========================================================================= */}
+      {mainSector === 'publication' && (
+        <div className="space-y-5">
+          {/* Publication Sub-Navigation Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
+              Publication:
+            </span>
+
+            {/* FlashNews & Blink Feed Desk */}
+            <button
+              id="cpanel-pub-flashnews-btn"
+              onClick={() => setPubSubTab('flashnews_desk')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                pubSubTab === 'flashnews_desk'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-amber-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5 text-rose-400" />
+              <span>FlashNews &amp; Blink Feed Desk</span>
+            </button>
+
+            {/* Content Verification Queue */}
+            <button
+              id="cpanel-pub-content-btn"
+              onClick={() => setPubSubTab('content_desk')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                pubSubTab === 'content_desk'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <FileCheck className="w-3.5 h-3.5" />
+              <span>Content Verification Queue</span>
+              {(pendingJobs.length + pendingNews.length) > 0 && (
+                <span className="ml-1 bg-slate-950 text-amber-300 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
+                  {pendingJobs.length + pendingNews.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Publication Sub-Views */}
+          {pubSubTab === 'flashnews_desk' && (
+            <div className="space-y-4">
+              <FlashNewsPublicationDesk
+                currentUser={currentUser}
+                activeAdminUser={activeAdminUser}
+                onRefreshData={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {pubSubTab === 'content_desk' && (
+            <div className="space-y-6">
+              {/* Pending Jobs Queue */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <Briefcase className="w-5 h-5 text-blue-400" />
+                  <span>Pending Job Postings Queue ({pendingJobs.length})</span>
+                </h3>
+
+                {pendingJobs.length === 0 ? (
+                  <div className="p-6 bg-slate-950/40 rounded-2xl border border-slate-800 text-center text-xs text-slate-400">
+                    All business job submissions have been audited. No pending items.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingJobs.map((j) => (
+                      <div
+                        key={j.id}
+                        className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs"
+                      >
+                        <div>
+                          <div className="font-bold text-white text-sm">{j.title}</div>
+                          <div className="text-slate-400 mt-0.5">
+                            Company: <span className="text-white">{j.company_name}</span> • Role: {j.role_type} • Location: {j.location}
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-1 line-clamp-1">{j.description}</div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 shrink-0">
+                          <button
+                            onClick={() => handleApproveJob(j.id)}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center space-x-1 cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Approve to MSN Grid</span>
+                          </button>
+                          <button
+                            onClick={() => handleRejectJob(j.id)}
+                            className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold flex items-center space-x-1 cursor-pointer"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pending News Queue */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <Newspaper className="w-5 h-5 text-indigo-400" />
+                  <span>Pending News &amp; Blog Articles Queue ({pendingNews.length})</span>
+                </h3>
+
+                {pendingNews.length === 0 ? (
+                  <div className="p-6 bg-slate-950/40 rounded-2xl border border-slate-800 text-center text-xs text-slate-400">
+                    All business editorial articles have been audited. No pending items.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingNews.map((n) => (
+                      <div
+                        key={n.id}
+                        className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs"
+                      >
+                        <div>
+                          <div className="font-bold text-white text-sm">{n.title}</div>
+                          <div className="text-slate-400 mt-0.5">
+                            Author: <span className="text-white">{n.author_org}</span> • Category: {n.category}
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-1 line-clamp-1">{n.content}</div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 shrink-0">
+                          <button
+                            onClick={() => handleApproveNews(n.id, 'Primary')}
+                            className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] cursor-pointer"
+                          >
+                            Approve Primary
+                          </button>
+                          <button
+                            onClick={() => handleApproveNews(n.id, 'Secondary')}
+                            className="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] cursor-pointer"
+                          >
+                            Approve Secondary
+                          </button>
+                          <button
+                            onClick={() => handleRejectNews(n.id)}
+                            className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] cursor-pointer"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5. SECTOR: REPORTS                                                        */}
+      {/* ========================================================================= */}
+      {mainSector === 'reports' && (
+        <div className="space-y-5">
+          {/* Reports Sub-Navigation Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
+              Reports &amp; Analytics:
+            </span>
+
+            {/* Executive Report Generator */}
+            <button
+              id="cpanel-rep-exec-btn"
+              onClick={() => setRepSubTab('executive_reports')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                repSubTab === 'executive_reports'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-amber-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Executive Report Generator</span>
+            </button>
+
+            {/* Quantitative Campaign Analytics */}
+            <button
+              id="cpanel-rep-quant-btn"
+              onClick={() => setRepSubTab('quant_analytics')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                repSubTab === 'quant_analytics'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-sky-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
+              <span>Quantitative Campaign Analytics</span>
+            </button>
+
+            {/* Audit Logs */}
+            <button
+              id="cpanel-rep-audit-btn"
+              onClick={() => setRepSubTab('audit_logs')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                repSubTab === 'audit_logs'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Sovereign Audit Logs (SIEM)</span>
+            </button>
+          </div>
+
+          {/* Reports Sub-Views */}
+          {repSubTab === 'executive_reports' && (
+            <div className="space-y-4">
+              <ReportGeneratorDesk
+                activeAdminUser={db.getAdminUsers().find((a) => a.role === 'SUPER_ADMIN') || db.getAdminUsers()[0]}
+                onRefreshAll={onRefreshAll}
+              />
+            </div>
+          )}
+
+          {repSubTab === 'quant_analytics' && (
+            <QuantitativeReportingInterface
+              currentBusiness={db.getBusinesses()[0]}
+              currentUser={currentUser}
+            />
+          )}
+
+          {repSubTab === 'audit_logs' && (
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
                 <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-base font-bold text-white">Sovereign Audit Trail &amp; SIEM Security Console</h3>
-                    <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                      7-Year Immutability
-                    </span>
-                  </div>
+                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                    <span>Sovereign Security Information &amp; Event Management (SIEM) Audit Trail</span>
+                  </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Cryptographically audited ledger of role elevations, wallet debits, PII reveals, and module access control.
+                    Immutable cryptographically-signed records of every administrative action, RBAC escalation, Razorpay payment webhook, and sensitive PII masking event.
                   </p>
                 </div>
 
@@ -855,7 +1755,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
                         time: '2026-10-27 08:30:15 UTC',
                         category: 'SECURITY',
                         level: 'SECURITY_INFO',
-                        actor: 'Chairman & Super Admin L8',
+                        actor: 'Super Admin Aditya',
                         role: 'L8_SUPER_ADMIN',
                         event: 'Single-session integrity sweep verified. Concurrency guard active.',
                         ip: '10.0.12.4',
@@ -1011,40 +1911,59 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
               </div>
             </div>
           )}
+        </div>
+      )}
 
-          {erpSubTab === 'services_approval' && (
-            <AdminServicesApprovalDesk
-              onRefreshAll={onRefreshAll}
-              onOpenBroadcastModal={() => setShowBroadcastModal(true)}
+      {/* ========================================================================= */}
+      {/* 6. SECTOR: SECURITY                                                       */}
+      {/* ========================================================================= */}
+      {mainSector === 'security' && (
+        <div className="space-y-5">
+          {/* Security Sub-Navigation Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
+              Security &amp; Governance:
+            </span>
+
+            {/* RBAC Permissions & Single-Session Guard */}
+            <button
+              id="cpanel-sec-rbac-btn"
+              onClick={() => setSecSubTab('rbac')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                secSubTab === 'rbac'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>RBAC Permissions &amp; Single-Session Guard</span>
+            </button>
+
+            {/* Active Module Controls (Launchpad) */}
+            <button
+              id="cpanel-sec-launchpad-btn"
+              onClick={() => setSecSubTab('launch_matrix')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+                secSubTab === 'launch_matrix'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Active Module Controls (Launchpad)</span>
+            </button>
+          </div>
+
+          {/* Security Sub-Views */}
+          {secSubTab === 'rbac' && (
+            <AdminRBACControlPanel
+              onPermissionsUpdated={onRefreshAll}
+              initialSubTab={rbacSubTab}
+              onSwitchActiveUser={onSwitchActiveUser}
             />
           )}
 
-          {erpSubTab === 'module_directory' && (
-            <div className="space-y-4">
-              <AdminModuleDirectory
-                onSelectModuleTab={(tabKey, subTab) => {
-                  if (tabKey === 'cash_flow') setActiveTab('cash_flow');
-                  else if (tabKey === 'services_approval') {
-                    setActiveTab('erp');
-                    setErpSubTab('services_approval');
-                  }
-                  else if (tabKey === 'rbac') {
-                    if (subTab) setRbacSubTab(subTab as any);
-                    setActiveTab('rbac');
-                  }
-                  else if (tabKey === 'biz_desk') setActiveTab('biz_desk');
-                  else if (tabKey === 'matrix') setActiveTab('matrix');
-                  else if (tabKey === 'human_resource') setActiveTab('human_resource');
-                  else {
-                    setActiveTab('erp');
-                    setErpSubTab('overview');
-                  }
-                }}
-              />
-            </div>
-          )}
-
-          {erpSubTab === 'launch_matrix' && (
+          {secSubTab === 'launch_matrix' && (
             <AdminModularLaunchpad
               onRefreshAll={onRefreshAll}
               onNavigateToModule={onNavigateToModule}
@@ -1052,344 +1971,6 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
               activeAdminUser={activeAdminUser}
             />
           )}
-
-          {erpSubTab === 'report_generator' && (
-            <div className="space-y-4">
-              <ReportGeneratorDesk
-                activeAdminUser={db.getAdminUsers().find((a) => a.role === 'SUPER_ADMIN') || db.getAdminUsers()[0]}
-                onRefreshAll={onRefreshAll}
-              />
-            </div>
-          )}
-
-          {erpSubTab === 'roles' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-              <div>
-                <h3 className="text-base font-bold text-white">Role Classification &amp; IAM Governance</h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Managers have exclusive capability to promote Standard Users to Admin/Manager and demote Admins back to Standard tier.
-                </p>
-              </div>
-
-              {roleChangeNotice && (
-                <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs flex items-center space-x-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>{roleChangeNotice}</span>
-                </div>
-              )}
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-mono border-b border-slate-800">
-                    <tr>
-                      <th className="py-3 px-4">User</th>
-                      <th className="py-3 px-4">Email</th>
-                      <th className="py-3 px-4">Current Classification</th>
-                      <th className="py-3 px-4">Account Status</th>
-                      <th className="py-3 px-4 text-right">Switch Classification</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800 font-sans">
-                    {regularUsers.map((u) => (
-                      <tr key={u.user_id} className="hover:bg-slate-800/40">
-                        <td className="py-3 px-4 font-semibold text-white">@{u.username}</td>
-                        <td className="py-3 px-4 font-mono text-slate-400">{u.email}</td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                              u.role === 'ADMIN' || u.role === 'SUPER_ADMIN'
-                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                : u.role === 'MANAGER'
-                                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                                : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                            }`}
-                          >
-                            {u.role || 'STANDARD_USER'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="text-[10px] font-mono text-emerald-400">{u.account_status}</span>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end space-x-1.5">
-                            <select
-                              value={u.role || 'STANDARD_USER'}
-                              onChange={(e) => handleSwitchRole(u.user_id, e.target.value)}
-                              className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-white font-mono outline-none focus:border-amber-500 cursor-pointer"
-                            >
-                              {db.getCustomUserTypes().map((ct) => (
-                                <option key={ct.id} value={ct.key}>
-                                  {ct.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {erpSubTab === 'flashnews_desk' && (
-            <div className="space-y-4">
-              <FlashNewsPublicationDesk
-                currentUser={currentUser}
-                activeAdminUser={activeAdminUser}
-                onRefreshData={onRefreshAll}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* VIEW: SERVICES APPROVAL DESK */}
-      {activeTab === 'services_desk' && (
-        <AdminServicesApprovalDesk
-          onRefreshAll={onRefreshAll}
-          onOpenBroadcastModal={() => setShowBroadcastModal(true)}
-        />
-      )}
-
-      {/* VIEW: FLASH NEWS PUBLICATION DESK */}
-      {activeTab === 'flashnews' && (
-        <div className="space-y-4">
-          <FlashNewsPublicationDesk
-            currentUser={currentUser}
-            activeAdminUser={activeAdminUser}
-            onRefreshData={onRefreshAll}
-          />
-        </div>
-      )}
-
-      {/* VIEW: FINANCE COMMISSION DESK */}
-      {activeTab === 'commission_desk' && (
-        <div className="space-y-4">
-          <CRMPortal
-            initialTab="commissions"
-            currentUser={currentUser}
-            activeAdminUser={activeAdminUser}
-            onOpenWallet={onOpenWallet}
-            onRefreshData={onRefreshAll}
-          />
-        </div>
-      )}
-
-      {/* VIEW 0.5: REGIONAL CASH FLOW ANALYTICS (APAC, ANZ & OTHERS - Image 3) */}
-      {activeTab === 'cash_flow' && (
-        <div className="space-y-4">
-          <RegionalCashFlowAnalytics />
-        </div>
-      )}
-
-      {/* VIEW 3: ADMIN PROJECT MANAGEMENT SYSTEM (PMS) */}
-      {activeTab === 'pms' && (
-        <div className="space-y-4">
-          <AdminPMSDesk
-            activeAdminUser={db.getAdminUsers().find((a) => a.role === 'SUPER_ADMIN') || db.getAdminUsers()[0]}
-            onRefreshData={onRefreshAll}
-          />
-        </div>
-      )}
-
-      {/* VIEW 4: HUMAN RESOURCE (HR & HRMS SYSTEM) */}
-      {activeTab === 'human_resource' && (
-        <div className="space-y-4">
-          <HumanResourceHRMSModule onRefreshAll={onRefreshAll} />
-        </div>
-      )}
-
-      {/* VIEW 5: RBAC: ROLE-BASED ACCESS CONTROL & PORTAL SECURITY */}
-      {activeTab === 'rbac' && (
-        <AdminRBACControlPanel
-          onPermissionsUpdated={onRefreshAll}
-          initialSubTab={rbacSubTab}
-          onSwitchActiveUser={onSwitchActiveUser}
-        />
-      )}
-
-      {/* VIEW: EXECUTIVE REPORT GENERATOR & L8 UPDATES */}
-      {activeTab === 'report_generator' && (
-        <div className="space-y-4">
-          <ReportGeneratorDesk
-            activeAdminUser={db.getAdminUsers().find((a) => a.role === 'SUPER_ADMIN') || db.getAdminUsers()[0]}
-            onRefreshAll={onRefreshAll}
-          />
-        </div>
-      )}
-
-      {/* VIEW 1: BUSINESS VERIFICATION DESK */}
-      {activeTab === 'biz_desk' && (
-        <AdminVerificationDesk
-          onSelectBusinessToView={onSelectBusinessToView}
-          onRefreshList={onRefreshAll}
-        />
-      )}
-
-      {/* VIEW 2: CENTRALIZED PRICING MATRIX */}
-      {activeTab === 'matrix' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-          <div>
-            <h3 className="text-base font-bold text-white">Centralized Credit Debit Matrix</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Configure automatic credit deductions per marketing, job posting, and boutique lead action across all portals.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-mono border-b border-slate-800">
-                <tr>
-                  <th className="py-3 px-4">Portal Location</th>
-                  <th className="py-3 px-4">Action Type</th>
-                  <th className="py-3 px-4">Debit Value (Credits)</th>
-                  <th className="py-3 px-4">Minimum Threshold</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800 font-sans">
-                {pricingItems.map((item) => {
-                  const isEditing = editingItemId === item.id;
-                  return (
-                    <tr key={item.id} className="hover:bg-slate-800/40">
-                      <td className="py-3 px-4 font-semibold text-white">{item.portal}</td>
-                      <td className="py-3 px-4 text-sky-400 font-mono">{item.actionType}</td>
-                      <td className="py-3 px-4 font-mono">
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            value={editDebit}
-                            onChange={(e) => setEditDebit(Number(e.target.value))}
-                            className="w-20 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-white"
-                          />
-                        ) : (
-                          <span className="font-bold text-emerald-400">{item.defaultDebitCredits} Credits</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 font-mono">
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            value={editMin}
-                            onChange={(e) => setEditMin(Number(e.target.value))}
-                            className="w-20 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-white"
-                          />
-                        ) : (
-                          <span>{item.minimumThreshold} Credits</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {isEditing ? (
-                          <button
-                            onClick={() => handleSaveItem(item.id)}
-                            className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center space-x-1 ml-auto"
-                          >
-                            <Save className="w-3.5 h-3.5" />
-                            <span>Save</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleEditItem(item)}
-                            className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium flex items-center space-x-1 ml-auto"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                            <span>Edit Matrix</span>
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* VIEW 3: USER ROLE SWITCHING */}
-      {activeTab === 'roles' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-          <div>
-            <h3 className="text-base font-bold text-white">Role Classification & IAM Governance</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Managers have exclusive capability to promote Standard Users to Admin/Manager and demote Admins back to Standard tier.
-            </p>
-          </div>
-
-          {roleChangeNotice && (
-            <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>{roleChangeNotice}</span>
-            </div>
-          )}
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-mono border-b border-slate-800">
-                <tr>
-                  <th className="py-3 px-4">User</th>
-                  <th className="py-3 px-4">Email</th>
-                  <th className="py-3 px-4">Current Classification</th>
-                  <th className="py-3 px-4">Account Status</th>
-                  <th className="py-3 px-4 text-right">Switch Classification</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800 font-sans">
-                {regularUsers.map((u) => (
-                  <tr key={u.user_id} className="hover:bg-slate-800/40">
-                    <td className="py-3 px-4 font-semibold text-white">@{u.username}</td>
-                    <td className="py-3 px-4 font-mono text-slate-400">{u.email}</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                          u.role === 'ADMIN' || u.role === 'SUPER_ADMIN'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : u.role === 'MANAGER'
-                            ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                        }`}
-                      >
-                        {u.role || 'STANDARD_USER'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-[10px] font-mono text-emerald-400">{u.account_status}</span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end space-x-1.5">
-                        <select
-                          value={u.role || 'STANDARD_USER'}
-                          onChange={(e) => handleSwitchRole(u.user_id, e.target.value)}
-                          className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-white font-mono outline-none focus:border-amber-500 cursor-pointer"
-                        >
-                          {db.getCustomUserTypes().map((ct) => (
-                            <option key={ct.id} value={ct.key}>
-                              {ct.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* VIEW: SUPPORT CARE DESK & ACTIVITY LOG (ADMIN END ONLY) */}
-      {activeTab === 'support_desk' && (
-        <div className="space-y-4">
-          <AdminSupportActivityDesk onDataUpdated={onRefreshAll} />
         </div>
       )}
 
