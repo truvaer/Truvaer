@@ -19,6 +19,7 @@ import { BusinessCorporateWalletModal, BusinessVerificationModal } from './busin
 import { SessionTimeoutWarningModal } from './components/SessionTimeoutWarningModal';
 import { VersionUpdateNotifier } from './components/VersionUpdateNotifier';
 import { useSessionManager } from './hooks/useSessionManager';
+import { useAntiCopyProtection } from './hooks/useAntiCopyProtection';
 import { X, ArrowLeft, ShieldCheck, Store, Lock, TrendingUp, FlaskConical, Zap, RotateCcw, CheckCircle2, Sparkles, UserCheck, ShieldAlert, AlertTriangle, CreditCard, Wallet, Globe } from 'lucide-react';
 
 import { db } from './data/mockDatabase';
@@ -30,6 +31,20 @@ export default function App() {
   // Environment State: 'LIVE' vs 'TESTING'
   const [envMode, setEnvMode] = useState<'LIVE' | 'TESTING'>(() => db.getEnvMode());
   const [testEventToast, setTestEventToast] = useState<string | null>(null);
+  const [copyBlockedNotice, setCopyBlockedNotice] = useState<string | null>(null);
+  const copyNoticeTimerRef = useRef<number | null>(null);
+
+  const handleCopyBlocked = useCallback((message: string) => {
+    setCopyBlockedNotice(message);
+    if (copyNoticeTimerRef.current) {
+      window.clearTimeout(copyNoticeTimerRef.current);
+    }
+    copyNoticeTimerRef.current = window.setTimeout(() => {
+      setCopyBlockedNotice(null);
+    }, 2500);
+  }, []);
+
+  useAntiCopyProtection(handleCopyBlocked);
 
   // Primary portal fixed default: Always lands on Stories for you / Home page across all logins and sessions
   const [currentTab, setCurrentTab] = useState<AppTab>('marketing');
@@ -604,7 +619,15 @@ export default function App() {
     : null;
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-950 text-slate-100 flex flex-col font-sans antialiased select-none">
+      {/* View-Only Anti-Copy Notice Toast */}
+      {copyBlockedNotice && (
+        <div className="fixed bottom-6 right-6 z-[100] bg-slate-900 border border-amber-500/60 text-amber-300 px-4 py-2.5 rounded-2xl shadow-2xl flex items-center space-x-2 text-xs font-semibold pointer-events-none">
+          <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>{copyBlockedNotice}</span>
+        </div>
+      )}
+
       {/* Toast Notification for Simulated Actions */}
       {testEventToast && (
         <div className="fixed top-16 right-6 z-50 bg-emerald-600 text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center space-x-2 text-xs font-semibold animate-bounce">
@@ -652,19 +675,21 @@ export default function App() {
       />
 
       {/* Subdomain Simulation & Origin Indicator Bar (Enables testing between truvaer.com & admin.truvaer.com) */}
-      <div className="bg-slate-950/90 border-b border-slate-800 px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
+      <div className="w-full max-w-full bg-slate-100 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
         <div className="flex items-center space-x-2">
-          <span className="text-slate-400">Current URL Origin:</span>
           {isAdminSubdomain ? (
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 flex items-center space-x-1.5 shadow-sm">
-              <Lock className="w-3 h-3 text-amber-400" />
-              <span>admin.truvaer.com (Executive Command &amp; C-Panel)</span>
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/40 flex items-center space-x-1.5 shadow-sm">
+              <Lock className="w-3 h-3 text-amber-500" />
+              <span>Admin &amp; Ops Console</span>
             </span>
           ) : (
-            <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40 flex items-center space-x-1.5 shadow-sm">
-              <Globe className="w-3 h-3 text-sky-400" />
-              <span>truvaer.com (Public Aviation Marketplace)</span>
-            </span>
+            <>
+              <span className="text-slate-600 dark:text-slate-400">Current URL Origin:</span>
+              <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-700 dark:text-sky-300 font-bold border border-sky-500/40 flex items-center space-x-1.5 shadow-sm">
+                <Globe className="w-3 h-3 text-sky-500" />
+                <span>truvaer.com (Public Aviation Marketplace)</span>
+              </span>
+            </>
           )}
         </div>
 
@@ -681,7 +706,7 @@ export default function App() {
                 if (isAdmin) setCurrentTab('admin_desk');
               }
             }}
-            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors cursor-pointer text-[10px]"
+            className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer text-[10px]"
           >
             {isAdminSubdomain ? 'Switch View: truvaer.com' : 'Switch View: admin.truvaer.com'}
           </button>
@@ -689,11 +714,12 @@ export default function App() {
       </div>
 
       {/* Main Viewport */}
-      <main className="flex-1 max-w-[1700px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+      <main className="flex-1 w-full max-w-full min-w-0 px-4 sm:px-8 lg:px-12 py-3 sm:py-5 flex flex-col">
         {/* Dedicated Admin Portal (admin.truvaer.com): EXACT SAME AuthGateway interface with executive clearance rules */}
         {isAdminSubdomain && (!currentUser || !isAdmin) ? (
-          <div className="py-1 sm:py-2">
+          <div className="flex-1 flex items-center w-full">
             <AuthGateway
+              key="admin-auth"
               initialMode="login"
               initialUserType="regular"
               theme={theme}
@@ -712,6 +738,10 @@ export default function App() {
                 setIsAdminSubdomain(true);
                 setCurrentTab('admin_desk');
               }}
+              onOpenPolicy={(slug) => {
+                setCurrentPolicySlug(slug as PolicySlug);
+                setShowLegalModal(true);
+              }}
               envMode={envMode}
               isAdminPortal={true}
               onNavigateToPublicPortal={() => {
@@ -722,9 +752,9 @@ export default function App() {
             />
           </div>
         ) : !currentUser && !currentBusiness ? (
-          <div className="py-1 sm:py-2">
+          <div className="flex-1 flex items-center w-full">
             {pendingOtpUser ? (
-              <div className="max-w-md mx-auto">
+              <div className="max-w-md mx-auto w-full">
                 <OtpVerificationView
                   user={pendingOtpUser.user}
                   initialOtp={pendingOtpUser.otp}
@@ -734,6 +764,7 @@ export default function App() {
               </div>
             ) : (
               <AuthGateway
+                key="public-auth"
                 initialMode="login"
                 initialUserType="regular"
                 theme={theme}
@@ -745,6 +776,10 @@ export default function App() {
                 onOpenOtp={(user) => handleOpenOtpForUser(user)}
                 onOpenAdminDesk={() => {
                   setIsAdminSubdomain(true);
+                }}
+                onOpenPolicy={(slug) => {
+                  setCurrentPolicySlug(slug as PolicySlug);
+                  setShowLegalModal(true);
                 }}
                 envMode={envMode}
                 isAdminPortal={false}

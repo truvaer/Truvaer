@@ -8,6 +8,7 @@ import {
   RegularUser,
 } from '../types';
 import { db } from '../data/mockDatabase';
+import { formatDateDDMMYYYY, normalizeDateToISO } from '../utils/dateFormat';
 import {
   Plus,
   Search,
@@ -204,17 +205,7 @@ export const SalesDashboardList: React.FC<SalesDashboardListProps> = ({
   };
 
   // Normalizing date for comparison
-  const normalizeDate = (dStr: string): string => {
-    if (!dStr) return '';
-    if (dStr.includes('-') && dStr.length === 10) {
-      const parts = dStr.split('-');
-      if (parts[0].length === 2 && parts[2].length === 4) {
-        // DD-MM-YYYY -> YYYY-MM-DD
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
-      }
-    }
-    return dStr;
-  };
+  const normalizeDate = (dStr: string): string => normalizeDateToISO(dStr);
 
   // Filtered & Sorted Sales
   const filteredSales = useMemo(() => {
@@ -368,7 +359,7 @@ export const SalesDashboardList: React.FC<SalesDashboardListProps> = ({
     ];
 
     const rows = filteredSales.map((s) => [
-      s.sales_date,
+      formatDateDDMMYYYY(s.sales_date),
       s.sales_code,
       s.sales_status,
       s.reference_no || '-',
@@ -414,7 +405,7 @@ export const SalesDashboardList: React.FC<SalesDashboardListProps> = ({
 
     filteredSales.forEach((s) => {
       const row = [
-        `"${s.sales_date}"`,
+        `"${formatDateDDMMYYYY(s.sales_date)}"`,
         `"${s.sales_code}"`,
         `"${s.sales_status}"`,
         `"${s.reference_no || ''}"`,
@@ -455,7 +446,7 @@ export const SalesDashboardList: React.FC<SalesDashboardListProps> = ({
       .map(
         (s) => `
       <tr>
-        <td style="padding: 6px 10px; border-bottom: 1px solid #ddd;">${s.sales_date}</td>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #ddd;">${formatDateDDMMYYYY(s.sales_date)}</td>
         <td style="padding: 6px 10px; border-bottom: 1px solid #ddd; font-weight: bold;">${s.sales_code}</td>
         <td style="padding: 6px 10px; border-bottom: 1px solid #ddd;">${s.sales_status}</td>
         <td style="padding: 6px 10px; border-bottom: 1px solid #ddd;">${s.reference_no || '-'}</td>
@@ -1109,7 +1100,7 @@ export const SalesDashboardList: React.FC<SalesDashboardListProps> = ({
                       {/* Sales Date */}
                       {columnsVisibility.sales_date && (
                         <td className="p-3 font-medium text-slate-300 whitespace-nowrap">
-                          {sale.sales_date}
+                          {formatDateDDMMYYYY(sale.sales_date)}
                         </td>
                       )}
 
@@ -1875,7 +1866,7 @@ const ViewSaleModal: React.FC<ViewSaleModalProps> = ({ sale, onClose, onRecordPa
               </div>
               <div>
                 <span className="text-slate-400 text-[11px] block">Sales Date:</span>
-                <span className="text-white font-mono text-xs">{sale.sales_date}</span>
+                <span className="text-white font-mono text-xs">{formatDateDDMMYYYY(sale.sales_date)}</span>
               </div>
             </div>
 

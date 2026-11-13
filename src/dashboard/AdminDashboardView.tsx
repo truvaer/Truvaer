@@ -143,7 +143,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       {/* ========================================================================= */}
       {/* 2. ADMIN OPERATIONAL KPI CARDS                                            */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {/* Verification Queue */}
         <div
           onClick={() => onNavigateTab('admin_desk', 'businesses')}
@@ -211,7 +211,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       {/* 3. ENABLED ADMIN MODULES QUICK TILES                                      */}
       {/* ========================================================================= */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-xs font-black text-white uppercase tracking-wider font-mono flex items-center space-x-2">
             <Sparkles className="w-4 h-4 text-sky-400" />
             <span>Enabled Admin Modules</span>

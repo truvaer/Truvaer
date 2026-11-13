@@ -681,6 +681,21 @@ export interface PricingMatrixItem {
   status: 'Active' | 'Paused';
 }
 
+// Regional & Country Specific Credit Pricing Rules (Super Admin Controlled)
+export interface RegionalCreditPricingRule {
+  id: string;
+  location_code: string; // e.g. 'US', 'IN', 'GB', 'APAC', 'EMEA', 'GLOBAL_DEFAULT'
+  location_name: string; // e.g. 'United States', 'India', 'Asia-Pacific (APAC)', 'Global Default Fallback'
+  location_type: 'COUNTRY' | 'REGION' | 'GLOBAL_DEFAULT';
+  credit_cost: number; // custom credits/day
+  currency?: string;
+  is_default?: boolean;
+  countries_covered?: string[]; // for regions, e.g. ['US', 'CA', 'MX'] for NA
+  updated_at: string;
+  updated_by?: string;
+  notes?: string;
+}
+
 // Marketing Portal Service Provider
 export interface ServiceListing {
   id: string;
@@ -1767,4 +1782,110 @@ export interface RegionCountryMapping {
 }
 
 export type AppTab = 'dashboard' | 'marketing' | 'crm_portal' | 'admin_desk' | 'wallet';
+
+// -------------------------------------------------------------
+// Unified Credit Management System (CMS) Types
+// -------------------------------------------------------------
+export type BureauRatingTier = 'AAA' | 'AA' | 'A' | 'BBB' | 'BB' | 'B' | 'CCC' | 'DEFAULT_WARNING';
+export type CreditRiskCategory = 'LOW_RISK' | 'MODERATE' | 'ELEVATED' | 'HIGH_EXPOSURE' | 'CRITICAL';
+export type DunningStage = 'STAGE_1_REMINDER' | 'STAGE_2_URGENT' | 'STAGE_3_FINAL_LEGAL' | 'SETTLED';
+
+export interface CMSCreditAccount {
+  id: string;
+  business_id: string;
+  entity_name: string;
+  category: string;
+  department: string; // e.g. 'Executive Charters', 'MRO & Engineering', 'Pilot Academy', 'Air Cargo'
+  credit_limit: number;
+  temporary_extension: number;
+  extension_valid_until?: string;
+  current_balance: number; // outstanding used credit
+  payment_score: number; // 0 - 100
+  bureau_rating: BureauRatingTier;
+  risk_category: CreditRiskCategory;
+  is_frozen: boolean;
+  freeze_reason?: string;
+  billing_sync_status: 'SYNCED' | 'PENDING' | 'RECONCILED';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CMSAllocationRequest {
+  id: string;
+  account_id: string;
+  entity_name: string;
+  requested_by: string;
+  current_limit: number;
+  requested_limit: number;
+  extension_days?: number;
+  justification: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewed_by?: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
+  created_at: string;
+}
+
+export interface CMSAuditEntry {
+  id: string;
+  timestamp: string;
+  account_id: string;
+  entity_name: string;
+  action_type: 
+    | 'CREDIT_LIMIT_ADJUSTED'
+    | 'EXTENSION_GRANTED'
+    | 'ACCOUNT_FROZEN'
+    | 'ACCOUNT_UNFROZEN'
+    | 'CREDIT_MEMO_ISSUED'
+    | 'PROMO_DISCOUNT_APPLIED'
+    | 'BAD_DEBT_WRITE_OFF'
+    | 'DUNNING_NOTICE_DISPATCHED'
+    | 'PROMISE_TO_PAY_LOGGED';
+  previous_value: string;
+  new_value: string;
+  actor_name: string;
+  actor_role: string;
+  reason: string;
+}
+
+export interface CMSLedgerEntry {
+  id: string;
+  date: string;
+  reference_id: string;
+  account_id: string;
+  entity_name: string;
+  entry_type: 'INVOICE' | 'PAYMENT' | 'CREDIT_MEMO' | 'DISCOUNT' | 'WRITE_OFF';
+  amount: number;
+  running_balance: number;
+  notes: string;
+  settlement_status: 'CLEARED' | 'PENDING' | 'DISPUTED';
+}
+
+export interface CMSAgingRecord {
+  id: string;
+  account_id: string;
+  entity_name: string;
+  department: string;
+  bucket_0_30: number;
+  bucket_31_60: number;
+  bucket_61_90: number;
+  bucket_90_plus: number;
+  total_overdue: number;
+  dunning_stage: DunningStage;
+  last_dunning_sent?: string;
+  has_active_promise: boolean;
+}
+
+export interface CMSPromiseToPay {
+  id: string;
+  account_id: string;
+  entity_name: string;
+  promise_date: string;
+  promised_amount: number;
+  logged_by: string;
+  logged_at: string;
+  notes: string;
+  status: 'PENDING' | 'KEPT' | 'BROKEN';
+}
+
 

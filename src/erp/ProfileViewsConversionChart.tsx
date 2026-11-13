@@ -12,6 +12,7 @@ import {
   BarChart3,
   Sparkles,
 } from 'lucide-react';
+import { formatDateDDMMYYYY } from '../utils/dateFormat';
 
 interface ProfileViewsConversionChartProps {
   businessName?: string;
@@ -34,7 +35,7 @@ export const ProfileViewsConversionChart: React.FC<ProfileViewsConversionChartPr
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const dateStr = formatDateDDMMYYYY(d);
 
       // Daily variance
       const seed = (d.getDate() * 17 + i * 31) % 100;
@@ -44,7 +45,7 @@ export const ProfileViewsConversionChart: React.FC<ProfileViewsConversionChartPr
 
       result.push({
         date: dateStr,
-        fullDate: d.toLocaleDateString(),
+        fullDate: formatDateDDMMYYYY(d),
         views,
         contactReveals,
         convertedRfqs,

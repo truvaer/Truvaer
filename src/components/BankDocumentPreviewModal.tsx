@@ -115,7 +115,7 @@ export const BankDocumentPreviewModal: React.FC<BankDocumentPreviewModalProps> =
                 </div>
                 <div className="text-right">
                   <div className="border border-slate-400 bg-white px-3 py-1 rounded text-xs font-mono tracking-widest font-semibold text-slate-800">
-                    DATE: DD MM YYYY
+                    DATE: DD/MM/YYYY
                   </div>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export const BankDocumentPreviewModal: React.FC<BankDocumentPreviewModalProps> =
                 <h5 className="font-bold text-slate-800 text-xs mb-2 uppercase tracking-wide">
                   Recent Verified Bank Clearance Ledger
                 </h5>
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="border border-slate-200 rounded-lg overflow-x-auto">
                   <table className="w-full text-left text-[11px]">
                     <thead className="bg-slate-100 text-slate-700 font-semibold uppercase text-[10px]">
                       <tr>

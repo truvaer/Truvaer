@@ -22,6 +22,7 @@ import { BusinessProfile, RegularUser } from '../types';
 interface QuantitativeReportingInterfaceProps {
   currentBusiness?: BusinessProfile | null;
   currentUser?: RegularUser | null;
+  isAdmin?: boolean;
   initialPostId?: string;
   onClose?: () => void;
   onOpenRenewalModal?: (postId: string) => void;
@@ -30,10 +31,16 @@ interface QuantitativeReportingInterfaceProps {
 export const QuantitativeReportingInterface: React.FC<QuantitativeReportingInterfaceProps> = ({
   currentBusiness,
   currentUser,
+  isAdmin = false,
   initialPostId,
   onClose,
   onOpenRenewalModal,
 }) => {
+  const isAdminViewer = Boolean(
+    isAdmin || currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN'
+  );
+  const hasPromotionAccess = Boolean(isAdminViewer || currentBusiness?.business_id);
+
   const [selectedPostId, setSelectedPostId] = useState<string>(initialPostId || 'ALL');
   const [loading, setLoading] = useState<boolean>(true);
   const [reportData, setReportData] = useState<any>(null);
@@ -46,11 +53,20 @@ export const QuantitativeReportingInterface: React.FC<QuantitativeReportingInter
     // Async simulated query with query time measurement & skeleton loading >400ms
     await new Promise((resolve) => setTimeout(resolve, 450));
 
-    const bizId = currentBusiness?.business_id;
-    const data = db.getCampaignQuantitativeReport(
-      postIdToQuery === 'ALL' ? undefined : postIdToQuery,
-      bizId
-    );
+    const data = hasPromotionAccess
+      ? db.getCampaignQuantitativeReport(
+          postIdToQuery === 'ALL' ? undefined : postIdToQuery,
+          isAdminViewer ? undefined : currentBusiness?.business_id,
+          isAdminViewer
+        )
+      : {
+          totalViews: 0,
+          targetAudienceReached: 0,
+          totalClicks: 0,
+          avgEngagementRate: 0,
+          totalCreditUsage: 0,
+          campaigns: [],
+        };
 
     const elapsed = Math.round(performance.now() - start);
     setQueryTimeMs(elapsed);
@@ -60,7 +76,7 @@ export const QuantitativeReportingInterface: React.FC<QuantitativeReportingInter
 
   useEffect(() => {
     loadData(selectedPostId);
-  }, [selectedPostId, currentBusiness?.business_id]);
+  }, [selectedPostId, currentBusiness?.business_id, isAdminViewer]);
 
   const activeCampaign =
     selectedPostId !== 'ALL' && reportData?.campaigns
@@ -90,35 +106,39 @@ export const QuantitativeReportingInterface: React.FC<QuantitativeReportingInter
           </div>
         </div>
 
-        <div className="flex items-center space-x-2.5 flex-wrap">
+        <div className="flex items-center space-x-2 shrink-0 flex-nowrap">
           {/* Campaign Selector */}
           <select
             value={selectedPostId}
             onChange={(e) => setSelectedPostId(e.target.value)}
-            className="bg-slate-950 border border-slate-700 text-xs text-white rounded-xl px-3 py-2 outline-none focus:border-amber-500 font-mono cursor-pointer"
+            className="bg-slate-950 border border-slate-700 text-xs text-white rounded-xl px-3 py-2 outline-none focus:border-amber-500 font-mono cursor-pointer max-w-[240px] sm:max-w-[320px] truncate"
           >
-            <option value="ALL">Aggregate Overview (All Campaigns)</option>
+            <option value="ALL">
+              {isAdminViewer ? 'Aggregate Overview (All Platform Campaigns)' : 'Aggregate Overview (Your Published Campaigns)'}
+            </option>
             {reportData?.campaigns?.map((c: any) => (
               <option key={c.postId} value={c.postId}>
-                {c.title} ({c.targetScope} - {c.durationDays}d)
+                {isAdminViewer && c.businessName ? `${c.businessName}: ` : ''}{c.title} ({c.targetScope} - {c.durationDays}d)
               </option>
             ))}
           </select>
 
+          {/* Refresh Button */}
           <button
             type="button"
             onClick={() => loadData(selectedPostId)}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-700"
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-700 shrink-0 flex items-center justify-center"
             title="Refresh asynchronous metrics"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-amber-400' : ''}`} />
           </button>
 
+          {/* Close Button */}
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-colors cursor-pointer border border-slate-700 shrink-0 flex items-center justify-center"
             >
               Close
             </button>
@@ -135,8 +155,14 @@ export const QuantitativeReportingInterface: React.FC<QuantitativeReportingInter
         <span>Latency: {queryTimeMs > 0 ? `${queryTimeMs}ms` : 'Calculating...'}</span>
       </div>
 
-      {/* SKELETON LOADERS (Triggered when loading >400ms) */}
-      {loading ? (
+      {!hasPromotionAccess ? (
+        <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
+          <p className="text-sm font-bold text-white">Promotion Details Restricted</p>
+          <p className="text-xs text-slate-400">
+            Campaign promotion metrics are visible only to the publishing Business account and Platform Administrators.
+          </p>
+        </div>
+      ) : loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-32 bg-slate-950/80 rounded-2xl border border-slate-800 p-5 space-y-3">
@@ -292,7 +318,9 @@ export const QuantitativeReportingInterface: React.FC<QuantitativeReportingInter
                     <tr key={c.postId} className="hover:bg-slate-900/60 transition-colors">
                       <td className="py-3 px-4">
                         <div className="font-bold text-white text-xs">{c.title}</div>
-                        <div className="text-[10px] text-slate-500 font-mono">ID: {c.postId}</div>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          {isAdminViewer && c.businessName ? `${c.businessName} • ` : ''}ID: {c.postId}
+                        </div>
                       </td>
                       <td className="py-3 px-3">
                         <span className="font-mono text-sky-400 font-bold">{c.targetScope}</span>

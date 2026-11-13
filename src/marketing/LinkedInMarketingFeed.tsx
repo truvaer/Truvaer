@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Building2,
   User,
@@ -39,8 +39,11 @@ import {
   ShieldAlert,
   Zap,
   RefreshCw,
+  UploadCloud,
+  Film,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
+import { formatDateDDMMYYYY } from '../utils/dateFormat';
 import {
   BusinessPost,
   BusinessPostType,
@@ -119,6 +122,23 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
     return CATEGORIES.filter((c) => c !== 'All');
   }, []);
 
+  // Role visibility flags for Promotion Details
+  const isAdminOrSuperAdmin = Boolean(
+    isAdmin ||
+      Boolean(activeAdminUser) ||
+      currentUser?.role === 'SUPER_ADMIN' ||
+      currentUser?.role === 'ADMIN'
+  );
+
+  const isPostOwnedByCurrentBusiness = (post: BusinessPost): boolean => {
+    if (!currentBusiness) return false;
+    return Boolean(
+      post.business_id === currentBusiness.business_id ||
+        post.business_id === currentBusiness.business_email ||
+        (currentUser?.user_id && post.author_id === currentUser.user_id)
+    );
+  };
+
   // Followed businesses list for current user
   const currentUserId = currentUser?.user_id || currentBusiness?.business_id || 'guest';
   const [followedBizIds, setFollowedBizIds] = useState<string[]>(() => {
@@ -139,6 +159,46 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
+  const [showMediaUrlInput, setShowMediaUrlInput] = useState(false);
+  const [mediaFilePreview, setMediaFilePreview] = useState<string | null>(null);
+  const [mediaFileName, setMediaFileName] = useState<string>('');
+  const [mediaFileType, setMediaFileType] = useState<'image' | 'video' | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMediaFileSelect = (file: File) => {
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      showToast('File size exceeds the 50MB limit.');
+      return;
+    }
+    const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov)$/i);
+    const isImage = file.type.startsWith('image/') || file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+    if (!isImage && !isVideo) {
+      showToast('Please upload an image (JPG, PNG, WebP) or video (MP4).');
+      return;
+    }
+    setMediaFileName(file.name);
+    setMediaFileType(isVideo ? 'video' : 'image');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setMediaFilePreview(result);
+      setMediaUrl(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearMedia = () => {
+    setMediaFilePreview(null);
+    setMediaFileName('');
+    setMediaFileType(null);
+    setMediaUrl('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const [selectedPostCategory, setSelectedPostCategory] = useState(
     currentBusiness?.category || 'Pilot Training & Academies'
   );
@@ -161,7 +221,12 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
   const [viewingBusinessProfile, setViewingBusinessProfile] = useState<BusinessProfile | null>(null);
 
   // Lifecycle & Notification Engine States (Requirement 1 & 2)
-  const [dailyAlert, setDailyAlert] = useState<{ show: boolean; message: string; daysRemaining?: number } | null>(null);
+  const [dailyAlert, setDailyAlert] = useState<{
+    show: boolean;
+    message: string;
+    daysRemaining?: number;
+    postId?: string;
+  } | null>(null);
   const [twelveHourWarnings, setTwelveHourWarnings] = useState<any[]>([]);
   const [completionAlert, setCompletionAlert] = useState<{ show: boolean; message: string } | null>(null);
   const [showQuantReports, setShowQuantReports] = useState(false);
@@ -224,28 +289,37 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
     return () => unsub();
   }, [currentUserId]);
 
-  // Requirement 1: Campaign Lifecycle & Notification Engine
+  // Requirement 1: Campaign Lifecycle & Notification Engine (Only for Business Owners & Admins/Super Admins)
   useEffect(() => {
-    const activeTarget = currentUser || currentBusiness;
+    if (!isAdminOrSuperAdmin && !currentBusiness) {
+      setDailyAlert(null);
+      setTwelveHourWarnings([]);
+      setCompletionAlert(null);
+      return;
+    }
+
+    const activeTarget = currentBusiness || currentUser;
     if (activeTarget) {
       // 1. Daily Status Alert (First Login of calendar day, timezone-dependent, remaining > 3 days)
-      const dailyRes = db.checkDailyCampaignAlert(activeTarget);
+      const dailyRes = db.checkDailyCampaignAlert(activeTarget, isAdminOrSuperAdmin);
       if (dailyRes.shouldAlert && dailyRes.message) {
         setDailyAlert({
           show: true,
           message: dailyRes.message,
           daysRemaining: dailyRes.daysRemaining,
+          postId: dailyRes.postId,
         });
       }
 
-      // 2. 12-Hour Expiry Warning & Renewal Flow
-      const warningsResult = db.check12HourCampaignWarnings();
-      if (warningsResult.warnings && warningsResult.warnings.length > 0) {
-        setTwelveHourWarnings(warningsResult.warnings);
-      }
+      // 2. 12-Hour Expiry Warning & Renewal Flow (Own campaigns for business; all campaigns for Admin/Super Admin)
+      const warningsResult = db.check12HourCampaignWarnings(
+        isAdminOrSuperAdmin ? undefined : currentBusiness?.business_id,
+        isAdminOrSuperAdmin
+      );
+      setTwelveHourWarnings(warningsResult.warnings || []);
 
       // 3. Post-Campaign Completion Alert
-      const compRes = db.checkPostCampaignCompletionAlerts(activeTarget);
+      const compRes = db.checkPostCampaignCompletionAlerts(activeTarget, isAdminOrSuperAdmin);
       if (compRes.completedCampaigns && compRes.completedCampaigns.length > 0) {
         const first = compRes.completedCampaigns[0];
         setCompletionAlert({
@@ -254,11 +328,12 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
         });
       }
     }
-  }, [currentUser, currentBusiness]);
+  }, [currentUser, currentBusiness, isAdminOrSuperAdmin]);
 
   // Handler to open Renewal Modal pre-populated with campaign's current state
   const handleOpenRenewalForPost = (post: BusinessPost) => {
     if (!post.marketing_campaign) return;
+    if (!isAdminOrSuperAdmin && !isPostOwnedByCurrentBusiness(post)) return;
     const c = post.marketing_campaign;
     setRenewalCampaign({ post, campaign: c });
     setRenewalScope(c.target_scope || 'Region');
@@ -513,10 +588,16 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
         showToast('Campaign duration must be an integer between 1 and 30 days.');
         return;
       }
-      const finalCountries = isMultipleCountries && selectedCountries.length > 0 ? selectedCountries : [campaignCountry];
-      // Multi-location credit calculation: count individual countries/regions selected and multiply by daily rate
-      const locationCount = Math.max(1, finalCountries.length);
-      const creditsCost = locationCount * campaignDurationDays * 15;
+      const finalCountries = isMultipleCountries && selectedCountries.length > 0 ? selectedCountries : [campaignCountry || selectedCountries[0] || 'IN'];
+      const dynamicCalc = db.calculateDynamicLocationCredits(finalCountries, campaignTargetScope === 'Region');
+      const locationCount = dynamicCalc.effectiveCount;
+      const creditsCost = dynamicCalc.totalCreditsPerDay * campaignDurationDays;
+
+      if (currentBusiness.corporate_wallet && currentBusiness.corporate_wallet.credit_balance < creditsCost) {
+        showToast(`Insufficient corporate wallet balance. Required: ${creditsCost} Credits, Available: ${currentBusiness.corporate_wallet.credit_balance} Credits.`);
+        return;
+      }
+
       marketingCampaign = {
         radius_km: campaignTargetScope === 'City' ? 25 : campaignTargetScope === 'Country' ? 250 : campaignTargetScope === 'Region' ? 500 : -1,
         country: finalCountries[0] || 'IN',
@@ -563,7 +644,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
       title: title.trim() || undefined,
       content: content.trim(),
       media_url: mediaUrl.trim() || undefined,
-      media_type: 'image',
+      media_type: mediaFileType || (mediaUrl.match(/\.(mp4|webm|mov)($|\?)/i) ? 'video' : 'image'),
       tags: tagsArray,
       is_marketed: isMarketed && !!currentBusiness,
       marketing_campaign: marketingCampaign,
@@ -573,6 +654,11 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
     setTitle('');
     setContent('');
     setMediaUrl('');
+    setMediaFilePreview(null);
+    setMediaFileName('');
+    setMediaFileType(null);
+    setShowMediaUrlInput(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setIsMarketed(false);
     setShowComposerModal(false);
     refreshPosts();
@@ -592,31 +678,32 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
   // Rule 4: Marketing must ONLY publish to standard users, NOT to business-to-business users!
   const visiblePosts = useMemo(() => {
     return posts.filter((post) => {
-      // 1. If author is current business, author always sees its own post
-      if (currentBusiness && post.business_id === currentBusiness.business_id) {
+      // 1. Business authors always see posts they published (including their own promoted posts)
+      if (isPostOwnedByCurrentBusiness(post)) {
+        if (categoryFilter !== 'All' && post.business_category !== categoryFilter && post.marketing_campaign?.category !== categoryFilter) {
+          return false;
+        }
         return true;
       }
 
       // 2. Marketed Post check:
       if (post.is_marketed) {
-        // "Make sure the marketing only publish to standard users not to business to business users."
+        // Admin & Super Admin see all promoted posts with full promotion details
+        if (isAdminOrSuperAdmin) {
+          if (categoryFilter !== 'All' && post.marketing_campaign?.category !== categoryFilter && post.business_category !== categoryFilter) {
+            return false;
+          }
+          return true;
+        }
+
+        // Business users cannot see other businesses' promoted posts
         if (currentBusiness) {
-          // If viewer is a Business User, HIDE marketed posts!
           return false;
         }
 
-        // If viewer is a Standard/Regular User, apply campaign targeting matching:
+        // Standard/Regular Users see marketed post content (without promotion metadata)
         if (post.marketing_campaign) {
           const camp = post.marketing_campaign;
-
-          // Country match
-          if (camp.country !== 'All') {
-            const userCountry = currentUser?.country_code || 'IN';
-            if (camp.country.toUpperCase() !== userCountry.toUpperCase()) {
-              // Not targeted to user's country
-              // Allow if worldwide
-            }
-          }
 
           // Category match
           if (categoryFilter !== 'All' && camp.category !== categoryFilter) {
@@ -627,7 +714,13 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
       }
 
       // 3. Organic Post check:
-      // "Making an condition the updates should be visible only to following users"
+      if (isAdminOrSuperAdmin) {
+        if (categoryFilter !== 'All' && post.business_category !== categoryFilter) {
+          return false;
+        }
+        return true;
+      }
+
       const isFollowing = followedBizIds.includes(post.business_id);
       if (!isFollowing) {
         return false;
@@ -640,7 +733,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
 
       return true;
     });
-  }, [posts, followedBizIds, currentBusiness, currentUser, categoryFilter]);
+  }, [posts, followedBizIds, currentBusiness, currentUser, categoryFilter, isAdminOrSuperAdmin]);
 
   // Feed Tab Filtered Posts
   const filteredFeedPosts = useMemo(() => {
@@ -689,7 +782,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
         {/* ========================================================================= */}
         {/* LEFT COLUMN: Profile Overview & Network Shortcuts (4 cols)                */}
         {/* ========================================================================= */}
-        <div className="lg:col-span-3 space-y-5">
+        <div className="lg:col-span-3 min-w-0 space-y-5">
           {/* User / Business Profile Card */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
             {/* Header Cover Banner */}
@@ -857,9 +950,9 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
         {/* ========================================================================= */}
         {/* CENTER COLUMN: Stories for you Feed & Post Composer (6 cols)              */}
         {/* ========================================================================= */}
-        <div className="lg:col-span-6 space-y-5">
-          {/* Requirement 1: 12-Hour Expiry Warning Banner with [Renew / Extend] CTA */}
-          {twelveHourWarnings.length > 0 && (
+        <div className="lg:col-span-6 min-w-0 space-y-5">
+          {/* Requirement 1: 12-Hour Expiry Warning Banner (Visible only to Business Owner for own campaigns & Admin/Super Admin) */}
+          {(isAdminOrSuperAdmin || Boolean(currentBusiness)) && twelveHourWarnings.length > 0 && (
             <div className="bg-amber-950/70 border border-amber-500/60 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3 animate-fadeIn">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center space-x-3">
@@ -979,7 +1072,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                       </span>
                     )}
 
-                    {(currentBusiness || isAdmin) && (
+                    {(currentBusiness || isAdminOrSuperAdmin) && (
                       <button
                         type="button"
                         onClick={() => {
@@ -1049,13 +1142,9 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
               {filteredFeedPosts.map((post) => {
                 const isFollowing = followedBizIds.includes(post.business_id);
                 const isLiked = post.likes?.includes(currentUserId);
+                const isOwnBusinessPost = isPostOwnedByCurrentBusiness(post);
                 const isAuthor = Boolean(
-                  (currentBusiness && (
-                    post.business_id === currentBusiness.business_id ||
-                    post.business_name?.toLowerCase() === currentBusiness.organization_name?.toLowerCase() ||
-                    post.author_name?.toLowerCase() === currentBusiness.organization_name?.toLowerCase() ||
-                    post.business_id === currentBusiness.business_email
-                  )) ||
+                  isOwnBusinessPost ||
                   (currentUser && (
                     post.business_id === currentUser.user_id ||
                     post.business_id === currentUser.email ||
@@ -1063,12 +1152,15 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                     post.author_name?.toLowerCase() === `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim().toLowerCase()
                   ))
                 );
-                const canManage = Boolean(
-                  isAuthor ||
-                  isAdmin ||
-                  currentUser?.role === 'SUPER_ADMIN' ||
-                  currentUser?.role === 'ADMIN' ||
-                  Boolean(activeAdminUser)
+                const canManage = Boolean(isAuthor || isAdminOrSuperAdmin);
+                // Promotion Details visibility rule:
+                // - Admin & Super Admin: full promotion details across all promoted posts
+                // - Business users: ONLY promotion details for posts they published & promoted
+                // - Standard users & guests: hidden
+                const canViewPromotionDetails = Boolean(
+                  post.is_marketed &&
+                    post.marketing_campaign &&
+                    (isAdminOrSuperAdmin || isOwnBusinessPost)
                 );
 
                 return (
@@ -1112,10 +1204,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                           <div className="text-[10px] text-slate-500 flex items-center space-x-1.5 mt-0.5">
                             <Clock className="w-3 h-3" />
                             <span>
-                              {new Date(post.created_at).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                              })}
+                              {formatDateDDMMYYYY(post.created_at)}
                             </span>
                             <span>•</span>
                             <Globe className="w-3 h-3" />
@@ -1186,8 +1275,8 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                       </div>
                     )}
 
-                    {/* Sponsored Campaign Badge (Condition 4 & Req 1, 2) */}
-                    {post.is_marketed && post.marketing_campaign && (
+                    {/* Sponsored Campaign Badge: Visible only to Business Owner (own promoted posts) & Admin/Super Admin */}
+                    {canViewPromotionDetails && post.marketing_campaign && (
                       <div className="px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-amber-300 gap-2">
                         <div className="flex items-center space-x-2">
                           <Megaphone className="w-4 h-4 text-amber-400 shrink-0" />
@@ -1202,29 +1291,25 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 font-bold uppercase tracking-wider">
                             Standard Aviators Only
                           </span>
-                          {canManage && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedReportPostId(post.id);
-                                  setShowQuantReports(true);
-                                }}
-                                className="px-2.5 py-1 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-200 hover:text-white font-bold text-[10px] transition-colors cursor-pointer shadow-xs"
-                                title="Open Pure-Data Analytics for this campaign"
-                              >
-                                View Pure Analytics
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenRenewalForPost(post)}
-                                className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] transition-colors cursor-pointer shadow-xs"
-                                title="Extend duration of this active campaign"
-                              >
-                                Renew / Extend
-                              </button>
-                            </>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedReportPostId(post.id);
+                              setShowQuantReports(true);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-200 hover:text-white font-bold text-[10px] transition-colors cursor-pointer shadow-xs"
+                            title="Open Pure-Data Analytics for this campaign"
+                          >
+                            View Pure Analytics
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenRenewalForPost(post)}
+                            className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] transition-colors cursor-pointer shadow-xs"
+                            title="Extend duration of this active campaign"
+                          >
+                            Renew / Extend
+                          </button>
                         </div>
                       </div>
                     )}
@@ -1407,7 +1492,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
         {/* ========================================================================= */}
         {/* RIGHT COLUMN: Recommended Businesses & Aviation Trends (3 cols)          */}
         {/* ========================================================================= */}
-        <div className="lg:col-span-3 space-y-5">
+        <div className="lg:col-span-3 min-w-0 space-y-5">
           {/* FLASHNEWS 5-SECOND LIVE BLINK FEED TICKER (Max 160 Words) - Repositioned to Right Column */}
           <FlashNewsBlinkFeed
             currentUser={currentUser}
@@ -1612,18 +1697,176 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                 />
               </div>
 
-              {/* Media URL Input */}
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-300">
-                  Photo / Banner Media URL
-                </label>
+              {/* HYBRID MEDIA ATTACHMENT SECTION (DRAG-AND-DROP + PASTE URL + PREVIEW) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-300">
+                    Media Attachment (Photo or Video)
+                  </label>
+                  {mediaUrl && (
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                      ✓ Media Attached
+                    </span>
+                  )}
+                </div>
+
+                {/* Hidden File Input */}
                 <input
-                  type="url"
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full py-2 px-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleMediaFileSelect(e.target.files[0]);
+                    }
+                  }}
                 />
+
+                {/* PREVIEW CONTAINER: Once file is uploaded or valid URL is pasted, drop zone collapses */}
+                {mediaUrl ? (
+                  <div className="relative rounded-2xl bg-slate-950 border border-slate-700/80 p-3 flex items-center justify-between gap-3 animate-in fade-in">
+                    <div className="flex items-center space-x-3 overflow-hidden">
+                      {/* Thumbnail or Video indicator */}
+                      <div className="w-16 h-16 rounded-xl bg-slate-900 border border-slate-800 overflow-hidden flex items-center justify-center shrink-0">
+                        {mediaFileType === 'video' || mediaUrl.match(/\.(mp4|webm|mov)($|\?)/i) ? (
+                          <div className="flex flex-col items-center justify-center text-indigo-400 p-1 text-center">
+                            <Film className="w-6 h-6 mb-1" />
+                            <span className="text-[9px] font-mono font-bold uppercase">MP4 Video</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={mediaUrl}
+                            alt="Media Preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400';
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-white truncate">
+                          {mediaFileName || (mediaFileType === 'video' ? 'Video Media Asset' : 'Image Media Asset')}
+                        </div>
+                        <div className="text-[11px] text-slate-400 truncate max-w-xs sm:max-w-md font-mono mt-0.5">
+                          {mediaUrl.startsWith('data:') ? 'Local file uploaded successfully' : mediaUrl}
+                        </div>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className="text-[10px] text-emerald-400 font-medium">Ready to publish</span>
+                          <span className="text-slate-600">•</span>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold cursor-pointer underline"
+                          >
+                            Replace
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Clear / Remove Button */}
+                    <button
+                      type="button"
+                      onClick={handleClearMedia}
+                      className="p-2 rounded-xl bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 border border-slate-800 hover:border-rose-500/40 transition-colors cursor-pointer shrink-0 flex items-center space-x-1"
+                      title="Remove Media"
+                    >
+                      <X className="w-4 h-4" />
+                      <span className="text-[11px] font-bold hidden sm:inline">Remove</span>
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* DRAG-AND-DROP ZONE */}
+                    <div
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDraggingOver(true);
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault();
+                        setIsDraggingOver(false);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDraggingOver(false);
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                          handleMediaFileSelect(e.dataTransfer.files[0]);
+                        }
+                      }}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer select-none ${
+                        isDraggingOver
+                          ? 'border-blue-500 bg-blue-500/10 scale-[0.99]'
+                          : 'border-slate-800 hover:border-slate-700 bg-slate-950/60 hover:bg-slate-950'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shadow-inner">
+                          <UploadCloud className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-white">
+                            Drag &amp; drop Image/Video here, or <span className="text-blue-400 underline">click to browse</span>
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Supports JPG, PNG, MP4 <span className="text-slate-600 font-mono">•</span> Max size: 50MB
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* LINK ALTERNATIVE: Toggle to paste media URL */}
+                    <div className="pt-0.5">
+                      {!showMediaUrlInput ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowMediaUrlInput(true)}
+                          className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition-colors flex items-center space-x-1 cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>Or paste media URL</span>
+                        </button>
+                      ) : (
+                        <div className="space-y-1.5 pt-1 animate-in fade-in">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-semibold text-slate-400">
+                              Paste Direct Media URL (HTTPS)
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setShowMediaUrlInput(false)}
+                              className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                          <div className="flex space-x-2">
+                            <input
+                              type="url"
+                              value={mediaUrl}
+                              onChange={(e) => setMediaUrl(e.target.value)}
+                              placeholder="https://images.unsplash.com/... or https://...mp4"
+                              className="flex-1 py-2 px-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                            />
+                            {mediaUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setShowMediaUrlInput(false)}
+                                className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer"
+                              >
+                                Done
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Taxonomy Category */}
@@ -1730,11 +1973,9 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                           onChange={(e) => {
                             const newScope = e.target.value as CampaignTargetScope;
                             setCampaignTargetScope(newScope);
-                            if (newScope === 'Region' && campaignLifecycleMode !== 'RENEW_AND_EXTEND') {
-                              setCampaignLifecycleMode('RENEW_AND_EXTEND');
+                            if (newScope === 'Region') {
                               setSelectedCountries(['APAC']);
-                            } else if (newScope !== 'Region' && campaignLifecycleMode === 'RENEW_AND_EXTEND') {
-                              setCampaignLifecycleMode('NEW_CAMPAIGN');
+                            } else {
                               setSelectedCountries([currentBusiness?.country || 'IN']);
                             }
                           }}
@@ -1767,24 +2008,23 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                         />
                       </div>
 
-                      {/* 3. Dynamic Location Dropdown: Countries vs Regions (Dependent on Renew and Extend) */}
+                      {/* 3. Dynamic Location Dropdown: Sovereign Countries vs Aviation Regions */}
                       {(() => {
-                        const isRegionSource = campaignLifecycleMode === 'RENEW_AND_EXTEND' || campaignTargetScope === 'Region';
+                        const isRegionSource = campaignTargetScope === 'Region';
                         const locationDataSource = isRegionSource ? AVIATION_REGIONS : COUNTRIES;
-                        const locationLabel = isRegionSource ? 'Target Flight Region' : 'Target Country';
-                        const locationCount = isMultipleCountries ? Math.max(1, selectedCountries.length) : 1;
-                        const totalCalculatedCredits = locationCount * campaignDurationDays * 15;
+                        const locationLabel = isRegionSource ? 'Target Flight Region' : 'Target Sovereign Country';
+                        const activeList = isMultipleCountries && selectedCountries.length > 0 ? selectedCountries : [selectedCountries[0] || (isRegionSource ? 'APAC' : 'IN')];
+                        const dynamicCalc = db.calculateDynamicLocationCredits(activeList, isRegionSource);
+                        const totalCalculatedCredits = dynamicCalc.totalCreditsPerDay * campaignDurationDays;
 
                         return (
-                          <div className="space-y-1 sm:col-span-2">
+                          <div className="space-y-2 sm:col-span-2">
                             <div className="flex items-center justify-between">
                               <label className="block text-[11px] font-semibold text-slate-300">
                                 {locationLabel} {isMultipleCountries && `(${selectedCountries.length} Selected)`}
-                                {isRegionSource && (
-                                  <span className="ml-1.5 text-[10px] font-mono text-amber-400">
-                                    [Dynamic: Regions Populated via Renew and Extend]
-                                  </span>
-                                )}
+                                <span className={`ml-1.5 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${isRegionSource ? 'bg-amber-500/20 text-amber-300' : 'bg-blue-500/20 text-blue-300'}`}>
+                                  {isRegionSource ? 'Region Corridor Mode' : 'Sovereign Country Mode'}
+                                </span>
                               </label>
                               <label className="flex items-center space-x-1.5 text-[11px] text-amber-300 cursor-pointer font-semibold">
                                 <input
@@ -1798,18 +2038,18 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                                   }}
                                   className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
                                 />
-                                <span>Multiple {isRegionSource ? 'Regions' : 'Countries'}</span>
+                                <span>Multi-Select {isRegionSource ? 'Regions' : 'Countries'}</span>
                               </label>
                             </div>
 
                             {isMultipleCountries ? (
-                              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 max-h-36 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 max-h-40 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                                 {locationDataSource.map((loc) => {
                                   const isChecked = selectedCountries.includes(loc.code);
                                   return (
                                     <label
                                       key={loc.code}
-                                      className={`flex items-center space-x-1.5 p-1 rounded-lg text-[11px] cursor-pointer transition-colors ${
+                                      className={`flex items-center space-x-1.5 p-1.5 rounded-lg text-[11px] cursor-pointer transition-colors ${
                                         isChecked
                                           ? 'text-amber-300 font-bold bg-amber-500/10 border border-amber-500/30'
                                           : 'text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent'
@@ -1829,7 +2069,7 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                                         }}
                                         className="rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-0 cursor-pointer"
                                       />
-                                      <span>{loc.flag} {loc.name}</span>
+                                      <span className="truncate">{loc.flag} {loc.name}</span>
                                     </label>
                                   );
                                 })}
@@ -1845,18 +2085,52 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                               >
                                 {locationDataSource.map((loc) => (
                                   <option key={loc.code} value={loc.code}>
-                                    {loc.flag} {loc.name}
+                                    {loc.flag} {loc.name} ({loc.code})
                                   </option>
                                 ))}
                               </select>
                             )}
 
-                            {/* Multi-Location Credit Calculation Notice */}
-                            <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1 font-mono">
-                              <span>Total Credit Investment:</span>
-                              <span className="font-bold text-amber-400">
-                                {totalCalculatedCredits} Credits ({locationCount} {isRegionSource ? 'region(s)' : 'country(ies)'} × {campaignDurationDays} days @ 15 Cr/day)
-                              </span>
+                            {/* Dynamic Multi-Location & Regional Pricing Engine Breakdown Widget */}
+                            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 font-mono text-[11px]">
+                              <div className="flex items-center justify-between text-white font-bold">
+                                <span className="flex items-center space-x-1.5">
+                                  <span>Total Credit Investment:</span>
+                                  <span className="text-[10px] text-slate-400 font-normal">
+                                    ({dynamicCalc.totalCreditsPerDay} Cr/day × {campaignDurationDays} d)
+                                  </span>
+                                </span>
+                                <span className="text-amber-400 font-black text-xs">
+                                  {totalCalculatedCredits} Credits
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-800/60">
+                                {dynamicCalc.breakdown.map((item) => (
+                                  <span
+                                    key={item.code}
+                                    className={`px-2 py-0.5 rounded text-[10px] border flex items-center space-x-1 ${
+                                      item.isOverriddenByRegion
+                                        ? 'bg-slate-900/80 border-slate-700 text-slate-500 line-through'
+                                        : item.isGlobalDefaultFallback
+                                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+                                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                                    }`}
+                                  >
+                                    <span>{item.name}:</span>
+                                    <span className="font-bold">{item.charge} Cr/day</span>
+                                    {item.isOverriddenByRegion && (
+                                      <span className="text-[9px] text-slate-500">(Override: 0 Cr)</span>
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+
+                              {dynamicCalc.overriddenCount > 0 && (
+                                <div className="text-[10px] text-amber-400/90 flex items-center space-x-1">
+                                  <span>ℹ️ Regional Override Active: {dynamicCalc.overriddenCount} individual country charge(s) zeroed to prevent double-charging.</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -2173,8 +2447,16 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  const targetPostId = dailyAlert?.postId;
                   setDailyAlert(null);
-                  const activePost = posts.find((p) => p.is_marketed && p.marketing_campaign);
+                  const activePost =
+                    (targetPostId && posts.find((p) => p.id === targetPostId)) ||
+                    posts.find(
+                      (p) =>
+                        p.is_marketed &&
+                        p.marketing_campaign &&
+                        (isAdminOrSuperAdmin || isPostOwnedByCurrentBusiness(p))
+                    );
                   if (activePost) handleOpenRenewalForPost(activePost);
                 }}
                 className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs cursor-pointer shadow-md transition-all active:scale-95"
@@ -2313,17 +2595,21 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
 
               {/* Dynamic Dependent Location Dropdown / Checklist */}
               {(() => {
-                const isRegionMode = renewalLifecycleMode === 'RENEW_AND_EXTEND' || renewalScope === 'Region';
+                const isRegionMode = renewalScope === 'Region';
                 const locationOptions = isRegionMode ? AVIATION_REGIONS : COUNTRIES;
-                const locCount = renewalIsMultiCountries && renewalCountries.length > 0 ? renewalCountries.length : 1;
-                const totalCredits = locCount * renewalDurationDays * 15;
+                const activeRenewalList = renewalIsMultiCountries && renewalCountries.length > 0 ? renewalCountries : [renewalCountries[0] || (isRegionMode ? 'APAC' : 'IN')];
+                const renewalDynamicCalc = db.calculateDynamicLocationCredits(activeRenewalList, isRegionMode);
+                const totalCredits = renewalDynamicCalc.totalCreditsPerDay * renewalDurationDays;
 
                 return (
                   <>
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <label className="block font-semibold text-slate-300">
-                          {isRegionMode ? 'Target Regions (Dynamic Corridors)' : 'Target Countries'}
+                          {isRegionMode ? 'Target Regions (Dynamic Corridors)' : 'Target Sovereign Countries'}
+                          <span className={`ml-1.5 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${isRegionMode ? 'bg-amber-500/20 text-amber-300' : 'bg-blue-500/20 text-blue-300'}`}>
+                            {isRegionMode ? 'Region Mode' : 'Country Mode'}
+                          </span>
                         </label>
                         <label className="flex items-center space-x-1.5 text-amber-300 cursor-pointer font-semibold text-[11px]">
                           <input
@@ -2403,17 +2689,35 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
                       />
                     </div>
 
-                    {/* Precise Credit Calculation per individual country/region */}
-                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300 font-mono">
-                      <div>
-                        <span>Wallet Debit Required:</span>
-                        <div className="text-[10px] text-slate-400">
-                          {locCount} location(s) × {renewalDurationDays} day(s) × 15 Cr/day
+                    {/* Dynamic Regional Credit Calculation Breakdown */}
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2 text-xs text-amber-300 font-mono">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-bold">Renewal Wallet Debit Required:</span>
+                          <div className="text-[10px] text-slate-400">
+                            {renewalDynamicCalc.totalCreditsPerDay} Cr/day × {renewalDurationDays} day(s)
+                          </div>
                         </div>
+                        <span className="font-bold text-sm text-amber-400">
+                          {totalCredits} Credits
+                        </span>
                       </div>
-                      <span className="font-bold text-sm text-amber-400">
-                        {totalCredits} Credits
-                      </span>
+
+                      <div className="flex flex-wrap gap-1 pt-1 border-t border-amber-500/20 text-[10px]">
+                        {renewalDynamicCalc.breakdown.map((item) => (
+                          <span
+                            key={item.code}
+                            className={`px-1.5 py-0.5 rounded border ${
+                              item.isOverriddenByRegion
+                                ? 'bg-slate-900 border-slate-700 text-slate-500 line-through'
+                                : 'bg-slate-950/80 border-amber-500/30 text-amber-200'
+                            }`}
+                          >
+                            {item.name}: {item.charge} Cr/day
+                            {item.isOverriddenByRegion && ' (Override: 0 Cr)'}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </>
                 );
@@ -2441,13 +2745,14 @@ export const LinkedInMarketingFeed: React.FC<LinkedInMarketingFeedProps> = ({
         </div>
       )}
 
-      {/* Requirement 2: Quantitative Reporting Interface Modal */}
-      {showQuantReports && (
+      {/* Requirement 2: Quantitative Reporting Interface Modal (Business Owner own campaigns & Admin/Super Admin full access) */}
+      {showQuantReports && (isAdminOrSuperAdmin || Boolean(currentBusiness)) && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn">
           <div className="w-full max-w-6xl my-auto">
             <QuantitativeReportingInterface
               currentBusiness={currentBusiness}
               currentUser={currentUser}
+              isAdmin={isAdminOrSuperAdmin}
               initialPostId={selectedReportPostId}
               onClose={() => setShowQuantReports(false)}
               onOpenRenewalModal={(postId) => {

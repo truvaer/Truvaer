@@ -27,6 +27,21 @@
   --color-safety-green: #10B981;
 }
 
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
+
 /* =============================================================================
    DYNAMIC THEME CSS VARIABLES (DARK / LIGHT CONTRAST SWAP)
    ============================================================================= */
@@ -121,43 +136,43 @@ html.light,
 .light {
   color-scheme: light;
 
-  /* Semantic Theme CSS Variables in Light Mode (Eye Support: 60-80% Luminosity) */
-  --theme-bg: #D0DCE7;
-  --theme-surface: #E3EAF2;
-  --theme-surface-subtle: #D9E3ED;
-  --theme-border: #A2B5CA;
-  --theme-border-contrast: #64748B;
+  /* Semantic Theme CSS Variables in Light Mode (Clean, High-Contrast Luxury Aviation Palette) */
+  --theme-bg: #F8FAFC;
+  --theme-surface: #FFFFFF;
+  --theme-surface-subtle: #F1F5F9;
+  --theme-border: #E2E8F0;
+  --theme-border-contrast: #CBD5E1;
   --theme-text-primary: #0F172A;
   --theme-text-secondary: #334155;
-  --theme-text-muted: #475569;
+  --theme-text-muted: #64748B;
   --theme-text-header: #020617;
-  --theme-input-bg: #EAEFF6;
+  --theme-input-bg: #FFFFFF;
   --theme-input-text: #0F172A;
 
   /* Palette Tokens */
   --brand-blue: #2563EB;
   --brand-sky: #3B82F6;
   --brand-charcoal: #1F2937;
-  --brand-ice: #E3EAF2;
+  --brand-ice: #FFFFFF;
   --brand-wisteria: #7C3AED;
 
-  /* Soft, Soothing Eye-Friendly Base & Surfaces (60% - 80% Brightness Control) */
-  --color-slate-950: #D0DCE7; /* Gentle muted foundation, eliminates eye glare */
-  --color-slate-900: #E3EAF2; /* Restful soft card surface (zero harsh white) */
-  --color-slate-850: #D9E3ED; /* Subtle secondary inset */
-  --color-slate-800: #A2B5CA; /* Soft, restful borders */
-  --color-slate-750: #8DA2BA;
-  --color-slate-700: #64748B;
+  /* Base & Surfaces in Light Mode (Clean, luminous, premium surfaces) */
+  --color-slate-950: #F8FAFC; /* Clean airy base foundation */
+  --color-slate-900: #FFFFFF; /* Pure crisp white card surface */
+  --color-slate-850: #F1F5F9; /* Subtle secondary inset */
+  --color-slate-800: #E2E8F0; /* Soft, refined borders */
+  --color-slate-750: #CBD5E1;
+  --color-slate-700: #94A3B8;
 
-  /* Inverted Typography with Relaxing Contrast */
-  --color-slate-600: #475569;
-  --color-slate-500: #334155;
-  --color-slate-400: #1E293B;
+  /* High-Contrast Typography */
+  --color-slate-600: #64748B;
+  --color-slate-500: #475569;
+  --color-slate-400: #334155;
   --color-slate-300: #1E293B;
   --color-slate-200: #0F172A;
-  --color-slate-100: #0F172A; /* Clean, restful charcoal slate text */
-  --color-slate-50: #020617;
-  --color-white: #FFFFFF; /* Pure crisp white for text on dark/colored buttons */
+  --color-slate-100: #F1F5F9; /* Clean light background tint */
+  --color-slate-50: #FFFFFF;
+  --color-white: #FFFFFF; /* Pure crisp white */
 
   /* Electric Blue & Sky in Light Mode */
   --color-blue-700: #1D4ED8;
@@ -181,22 +196,22 @@ html.light,
   --color-amber-600: #B45309;
   --color-amber-500: #D97706;
   --color-amber-400: #B45309;
-  --color-amber-300: #92400E; /* Deep Bronze/Amber for crisp readability on light card */
+  --color-amber-300: #92400E;
 
   --color-emerald-600: #047857;
   --color-emerald-500: #059669;
   --color-emerald-400: #047857;
-  --color-emerald-300: #065F46; /* Deep Emerald for crisp readability on light card */
+  --color-emerald-300: #065F46;
 
   --color-rose-600: #BE123C;
   --color-rose-500: #E11D48;
   --color-rose-400: #BE123C;
-  --color-rose-300: #9F1239; /* Deep Rose for crisp readability */
+  --color-rose-300: #9F1239;
 
   --color-cyan-600: #0E7490;
   --color-cyan-500: #06B6D4;
   --color-cyan-400: #0E7490;
-  --color-cyan-300: #155E75; /* Deep Cyan */
+  --color-cyan-300: #155E75;
 
   /* Custom Role-Based Accents in Light Mode */
   --marketing-primary: #2563EB;
@@ -206,28 +221,8 @@ html.light,
   --business-accent-hover: #1D4ED8;
   --verified-accent: #047857;
 
-  background-color: #D0DCE7;
+  background-color: #F8FAFC;
   color: #0F172A;
-}
-
-/* =============================================================================
-   EYE SUPPORT SHIELD FOR LIGHT MODE (60% - 80% BRIGHTNESS & ANTI-GLARE SOFT BLUR)
-   Softens luminance intensity to 60-80% and applies gentle optical diffusion blur
-   to prevent eye fatigue from stark bright white backgrounds.
-   ============================================================================= */
-html.light::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 99999;
-  background: var(--light-veil-bg, rgba(15, 23, 42, 0.18));
-  backdrop-filter: blur(var(--light-veil-blur, 0.35px));
-  -webkit-backdrop-filter: blur(var(--light-veil-blur, 0.35px));
-}
-
-html.light {
-  filter: contrast(0.96) saturate(0.95);
 }
 
 /* =============================================================================
@@ -261,6 +256,16 @@ html.light .text-slate-300 {
 }
 html.light .text-slate-400 {
   color: #475569 !important;
+}
+html.light .text-slate-700 {
+  color: #334155 !important;
+}
+html.light .text-slate-800 {
+  color: #1E293B !important;
+}
+html.light .text-slate-900,
+html.light .text-slate-950 {
+  color: #0F172A !important;
 }
 
 /* Light mode text contrast overrides:
@@ -685,22 +690,21 @@ html.light .bg-\[\#335577\] {
   color: #FFFFFF !important;
 }
 
-/* Subtle elevation for cards in Light Mode - Eye Friendly Soft Surface #E3EAF2 */
-html.light .bg-slate-900,
-html.light .bg-white {
-  background-color: #E3EAF2 !important;
-  border-color: #A2B5CA !important;
-  box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
+/* Subtle elevation for cards in Light Mode - Clean Luxury Aviation Surface */
+html.light .bg-slate-900 {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
 }
 
 html.light .bg-slate-950 {
-  background-color: #D0DCE7 !important;
+  background-color: #F8FAFC !important;
 }
 
 html.light header {
-  background-color: rgba(227, 234, 242, 0.98) !important;
-  border-color: #A2B5CA !important;
-  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.06);
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.05);
 }
 
 /* Live Market Ticker in Light Mode */
@@ -759,4 +763,51 @@ html.light ::selection {
 
 .executive-gradient-border {
   border-image: linear-gradient(to right, #3B82F6, #60A5FA, #C8B8D8) 1;
+}
+
+/* =============================================================================
+   GLOBAL VIEW-ONLY / ANTI-COPY PROTECTION
+   Restricts all text selection, dragging, and printing so data can only be viewed.
+   ============================================================================= */
+html,
+body,
+body *,
+body *::before,
+body *::after,
+.select-text,
+.select-all {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none !important;
+}
+
+/* Permit cursor/typing only inside active editable form controls (copy/cut remain blocked via JS) */
+input:not([readonly]):not([disabled]),
+textarea:not([readonly]):not([disabled]),
+[contenteditable="true"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+img,
+svg,
+video,
+canvas,
+a {
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+
+/* Prevent saving/printing website text via browser Print or Save as PDF */
+@media print {
+  html,
+  body {
+    display: none !important;
+    visibility: hidden !important;
+  }
 }

@@ -18,6 +18,7 @@ import {
   DigitalWallet,
   CorporateWallet,
   PricingMatrixItem,
+  RegionalCreditPricingRule,
   ServiceListing,
   CustomerReview,
   InternalMail,
@@ -108,6 +109,7 @@ import {
   CampaignTargetScope,
   HelpArticle,
 } from '../types';
+import { formatDateDDMMYYYY, normalizeDateToISO } from '../utils/dateFormat';
 import {
   FLASH_NEWS_KEY,
   FLASH_NEWS_CONFIG_KEY,
@@ -236,6 +238,175 @@ const ACTIVE_SESSIONS_STORE_KEY = 'truvaer_active_sessions_v1';
 const SESSION_SETTINGS_KEY = 'truvaer_session_settings_v1';
 const PLATFORM_MODULE_CONTROLS_KEY = 'truvaer_platform_module_controls_v2';
 const GLOBAL_CRISIS_MODE_KEY = 'truvaer_global_crisis_mode_v2';
+const REGIONAL_CREDIT_PRICING_KEY = 'truvaer_regional_credit_pricing_v1';
+const GLOBAL_DEFAULT_CREDIT_KEY = 'truvaer_global_default_credit_v1';
+
+export const initialRegionalCreditPricing: RegionalCreditPricingRule[] = [
+  {
+    id: 'rcp_default',
+    location_code: 'GLOBAL_DEFAULT',
+    location_name: 'Global Default Rate (Unconfigured Fallback)',
+    location_type: 'GLOBAL_DEFAULT',
+    credit_cost: 15,
+    is_default: true,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'Default baseline charge applied when a country has no specific pricing override.',
+  },
+  {
+    id: 'rcp_us',
+    location_code: 'US',
+    location_name: 'United States (FAA Airspace)',
+    location_type: 'COUNTRY',
+    credit_cost: 20,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'Premium commercial charter and aviation market',
+  },
+  {
+    id: 'rcp_gb',
+    location_code: 'GB',
+    location_name: 'United Kingdom (CAA Corridor)',
+    location_type: 'COUNTRY',
+    credit_cost: 18,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'High density executive European gateway',
+  },
+  {
+    id: 'rcp_in',
+    location_code: 'IN',
+    location_name: 'India (DGCA National Grid)',
+    location_type: 'COUNTRY',
+    credit_cost: 15,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'Standard domestic & business jet aviation pricing',
+  },
+  {
+    id: 'rcp_ae',
+    location_code: 'AE',
+    location_name: 'United Arab Emirates (GCAA Hub)',
+    location_type: 'COUNTRY',
+    credit_cost: 22,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'VIP Middle East SkySuite and charter pricing',
+  },
+  {
+    id: 'rcp_sg',
+    location_code: 'SG',
+    location_name: 'Singapore (CAAS Changi Complex)',
+    location_type: 'COUNTRY',
+    credit_cost: 18,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'Southeast Asia corporate aerodrome hub',
+  },
+  {
+    id: 'rcp_de',
+    location_code: 'DE',
+    location_name: 'Germany (LBA Continental)',
+    location_type: 'COUNTRY',
+    credit_cost: 16,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'European industrial aviation center',
+  },
+  {
+    id: 'rcp_fr',
+    location_code: 'FR',
+    location_name: 'France (DGAC Corridor)',
+    location_type: 'COUNTRY',
+    credit_cost: 16,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'Western Europe executive flight network',
+  },
+  {
+    id: 'rcp_jp',
+    location_code: 'JP',
+    location_name: 'Japan (JCAB Airspace)',
+    location_type: 'COUNTRY',
+    credit_cost: 18,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+  },
+  {
+    id: 'rcp_au',
+    location_code: 'AU',
+    location_name: 'Australia (CASA Pacific)',
+    location_type: 'COUNTRY',
+    credit_cost: 18,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+  },
+  {
+    id: 'rcp_na',
+    location_code: 'NA',
+    location_name: 'North America (FAA Direct Airspace)',
+    location_type: 'REGION',
+    credit_cost: 25,
+    countries_covered: ['US', 'CA', 'MX'],
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'Regional override covering USA, Canada, and Mexico',
+  },
+  {
+    id: 'rcp_apac',
+    location_code: 'APAC',
+    location_name: 'Asia-Pacific (APAC Corridor)',
+    location_type: 'REGION',
+    credit_cost: 28,
+    countries_covered: ['IN', 'SG', 'JP', 'AU', 'NZ', 'TH', 'MY', 'VN', 'ID', 'KR'],
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'Regional override covering 10 Asia-Pacific nations',
+  },
+  {
+    id: 'rcp_emea',
+    location_code: 'EMEA',
+    location_name: 'Europe, Middle East & Africa (EMEA)',
+    location_type: 'REGION',
+    credit_cost: 30,
+    countries_covered: ['GB', 'DE', 'FR', 'IT', 'ES', 'CH', 'AE', 'SA', 'QA', 'ZA'],
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'Regional override covering key EMEA aerodromes',
+  },
+  {
+    id: 'rcp_mena',
+    location_code: 'MENA',
+    location_name: 'Middle East & North Africa Hub',
+    location_type: 'REGION',
+    credit_cost: 25,
+    countries_covered: ['AE', 'SA', 'QA', 'KW', 'OM', 'BH', 'EG'],
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'Middle East & North Africa corridor',
+  },
+  {
+    id: 'rcp_latam',
+    location_code: 'LATAM',
+    location_name: 'Latin America & Caribbean',
+    location_type: 'REGION',
+    credit_cost: 22,
+    countries_covered: ['BR', 'AR', 'CL', 'CO', 'PE', 'PA'],
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+  },
+  {
+    id: 'rcp_global',
+    location_code: 'GLOBAL',
+    location_name: 'Global Intercontinental Network',
+    location_type: 'REGION',
+    credit_cost: 45,
+    countries_covered: ['*'],
+    updated_at: '2026-11-01T00:00:00.000Z',
+    updated_by: 'Super Admin Sovereign',
+    notes: 'Worldwide broadcast coverage across all sovereign airspaces',
+  },
+];
 
 export const initialPlatformModuleControls: PlatformModuleControl[] = [
   {
@@ -3791,6 +3962,8 @@ class MockDatabase {
   private storyCategories: StoryCategory[];
   private regionalZones: RegionalAuthorityZone[];
   private countryMappings: RegionCountryMapping[];
+  private regionalCreditPricing: RegionalCreditPricingRule[];
+  private globalDefaultCreditRate: number;
 
   constructor() {
     const savedMode = typeof window !== 'undefined' ? localStorage.getItem('truvaer_env_mode') : null;
@@ -4065,6 +4238,11 @@ class MockDatabase {
     if (!this.flashNewsItems || this.flashNewsItems.length === 0) {
       this.flashNewsItems = [...initialFlashNewsItems];
     }
+    // Enforce UPPERCASE ONLY on all headlines
+    this.flashNewsItems = this.flashNewsItems.map((item) => ({
+      ...item,
+      headline: item.headline ? item.headline.toUpperCase() : '',
+    }));
     this.flashNewsConfig = loadStorage<FlashNewsConfig>(FLASH_NEWS_CONFIG_KEY, initialFlashNewsConfig);
     if (!this.flashNewsConfig || !this.flashNewsConfig.max_active_limit) {
       this.flashNewsConfig = { ...initialFlashNewsConfig };
@@ -4082,6 +4260,12 @@ class MockDatabase {
     if (!this.countryMappings || this.countryMappings.length === 0) {
       this.countryMappings = [...initialCountryMappings];
     }
+
+    this.regionalCreditPricing = loadStorage<RegionalCreditPricingRule[]>(REGIONAL_CREDIT_PRICING_KEY, initialRegionalCreditPricing);
+    if (!this.regionalCreditPricing || this.regionalCreditPricing.length === 0) {
+      this.regionalCreditPricing = [...initialRegionalCreditPricing];
+    }
+    this.globalDefaultCreditRate = loadStorage<number>(GLOBAL_DEFAULT_CREDIT_KEY, 15);
 
     // Ensure Super Admin Chairman / MD profile has full unrestricted access permissions across modules
     const superAdminAcc = this.adminUsers.find((a) => a.admin_id === 'admin_super_admin' || a.role === 'SUPER_ADMIN');
@@ -4205,6 +4389,8 @@ class MockDatabase {
     saveStorage(STORY_CATEGORIES_KEY, this.storyCategories);
     saveStorage(REGIONAL_ZONES_KEY, this.regionalZones);
     saveStorage(COUNTRY_MAPPINGS_KEY, this.countryMappings);
+    saveStorage(REGIONAL_CREDIT_PRICING_KEY, this.regionalCreditPricing);
+    saveStorage(GLOBAL_DEFAULT_CREDIT_KEY, this.globalDefaultCreditRate);
   }
 
   public getAdminActivities(): AdminActivityItem[] {
@@ -5999,6 +6185,268 @@ class MockDatabase {
         word_count_tier: 'Tiers scale by +10 Cr per 50 words above 100 words',
       },
       ledger_verification: 'HMAC-SHA256 Single-Session Concurrency Guard Active',
+    };
+  }
+
+  // --- Regional & Multi-Country Credit Pricing Engine ---
+  public getRegionalCreditPricing(): RegionalCreditPricingRule[] {
+    return [...this.regionalCreditPricing];
+  }
+
+  public getGlobalDefaultCreditRate(): number {
+    return this.globalDefaultCreditRate || 15;
+  }
+
+  public setGlobalDefaultCreditRate(rate: number, adminName = 'Super Administrator (L8)'): { success: boolean; rate: number; message: string } {
+    if (typeof rate !== 'number' || rate < 1) {
+      return { success: false, rate: this.globalDefaultCreditRate, message: 'Invalid credit rate: must be positive integer.' };
+    }
+    this.globalDefaultCreditRate = Math.round(rate);
+    const def = this.regionalCreditPricing.find((r) => r.location_type === 'GLOBAL_DEFAULT' || r.is_default);
+    if (def) {
+      def.credit_cost = this.globalDefaultCreditRate;
+      def.updated_at = new Date().toISOString();
+      def.updated_by = adminName;
+    }
+    this.logAdminActivity({
+      category: 'WALLET_DEBIT',
+      title: 'Global Default Credit Rate Calibrated',
+      description: `Global fallback rate adjusted to ${this.globalDefaultCreditRate} credits/day across unconfigured regions & countries.`,
+      actor_name: adminName,
+      actor_role: 'L8_SUPER_ADMIN',
+      severity: 'info',
+    });
+    this.persist();
+    return { success: true, rate: this.globalDefaultCreditRate, message: `Global fallback rate updated to ${this.globalDefaultCreditRate} Credits.` };
+  }
+
+  public saveRegionalCreditPricingRule(
+    rule: {
+      id?: string;
+      location_code: string;
+      location_name: string;
+      location_type: 'COUNTRY' | 'REGION';
+      credit_cost: number;
+      countries_covered?: string[];
+      notes?: string;
+    },
+    adminName = 'Super Administrator (L8)'
+  ): { success: boolean; message: string; rule?: RegionalCreditPricingRule } {
+    if (!rule.location_code || !rule.location_name || !rule.credit_cost) {
+      return { success: false, message: 'Missing required fields: location code, name, and credit cost are required.' };
+    }
+
+    const cleanCode = rule.location_code.trim().toUpperCase();
+    const cost = Math.max(1, Math.round(rule.credit_cost));
+
+    const existing = rule.id
+      ? this.regionalCreditPricing.find((r) => r.id === rule.id)
+      : this.regionalCreditPricing.find((r) => r.location_code.toUpperCase() === cleanCode && r.location_type === rule.location_type);
+
+    if (existing) {
+      existing.location_name = rule.location_name.trim();
+      existing.credit_cost = cost;
+      if (rule.countries_covered) existing.countries_covered = rule.countries_covered;
+      if (rule.notes !== undefined) existing.notes = rule.notes;
+      existing.updated_at = new Date().toISOString();
+      existing.updated_by = adminName;
+
+      this.logAdminActivity({
+        category: 'WALLET_DEBIT',
+        title: `Regional Pricing Updated: ${existing.location_name}`,
+        description: `Pricing for ${existing.location_type} [${existing.location_code}] updated to ${cost} credits.`,
+        actor_name: adminName,
+        actor_role: 'L8_SUPER_ADMIN',
+        severity: 'info',
+      });
+      this.persist();
+      return { success: true, message: `Pricing rule for "${existing.location_name}" updated successfully.`, rule: existing };
+    } else {
+      const newRule: RegionalCreditPricingRule = {
+        id: `rcp_${cleanCode.toLowerCase()}_${Date.now().toString(36)}`,
+        location_code: cleanCode,
+        location_name: rule.location_name.trim(),
+        location_type: rule.location_type,
+        credit_cost: cost,
+        countries_covered: rule.countries_covered || [],
+        notes: rule.notes || '',
+        updated_at: new Date().toISOString(),
+        updated_by: adminName,
+      };
+      this.regionalCreditPricing.push(newRule);
+      this.logAdminActivity({
+        category: 'WALLET_DEBIT',
+        title: `Regional Pricing Added: ${newRule.location_name}`,
+        description: `New pricing rule configured: ${newRule.location_type} [${newRule.location_code}] set to ${cost} credits.`,
+        actor_name: adminName,
+        actor_role: 'L8_SUPER_ADMIN',
+        severity: 'info',
+      });
+      this.persist();
+      return { success: true, message: `New pricing rule for "${newRule.location_name}" created successfully.`, rule: newRule };
+    }
+  }
+
+  public deleteRegionalCreditPricingRule(
+    id: string,
+    adminName = 'Super Administrator (L8)'
+  ): { success: boolean; message: string } {
+    const idx = this.regionalCreditPricing.findIndex((r) => r.id === id);
+    if (idx === -1) return { success: false, message: 'Pricing rule not found.' };
+
+    const rule = this.regionalCreditPricing[idx];
+    if (rule.is_default || rule.location_type === 'GLOBAL_DEFAULT') {
+      return { success: false, message: 'Cannot delete the Global Default baseline rule.' };
+    }
+
+    this.regionalCreditPricing.splice(idx, 1);
+    this.logAdminActivity({
+      category: 'WALLET_DEBIT',
+      title: `Regional Pricing Deleted: ${rule.location_name}`,
+      description: `Pricing rule [${rule.location_code}] removed. Locations under this rule now revert to Global Default rate.`,
+      actor_name: adminName,
+      actor_role: 'L8_SUPER_ADMIN',
+      severity: 'warning',
+    });
+    this.persist();
+    return { success: true, message: `Pricing rule for "${rule.location_name}" deleted. Reverted to Global Default.` };
+  }
+
+  public calculateDynamicLocationCredits(
+    selectedLocations: string[],
+    isRegionScope = false
+  ): {
+    totalCreditsPerDay: number;
+    globalDefaultRate: number;
+    breakdown: Array<{
+      code: string;
+      name: string;
+      type: 'COUNTRY' | 'REGION';
+      charge: number;
+      isOverriddenByRegion?: boolean;
+      overriddenBy?: string;
+      isGlobalDefaultFallback?: boolean;
+    }>;
+    overriddenCount: number;
+    effectiveCount: number;
+  } {
+    const globalDefault = this.getGlobalDefaultCreditRate();
+    if (!selectedLocations || selectedLocations.length === 0) {
+      return {
+        totalCreditsPerDay: globalDefault,
+        globalDefaultRate: globalDefault,
+        breakdown: [
+          {
+            code: 'DEFAULT',
+            name: 'Default Location',
+            type: 'COUNTRY',
+            charge: globalDefault,
+            isGlobalDefaultFallback: true,
+          },
+        ],
+        overriddenCount: 0,
+        effectiveCount: 1,
+      };
+    }
+
+    const countryRulesMap = new Map<string, RegionalCreditPricingRule>();
+    const regionRulesMap = new Map<string, RegionalCreditPricingRule>();
+    for (const r of this.regionalCreditPricing) {
+      if (r.location_type === 'COUNTRY') {
+        countryRulesMap.set(r.location_code.toUpperCase(), r);
+      } else if (r.location_type === 'REGION') {
+        regionRulesMap.set(r.location_code.toUpperCase(), r);
+      }
+    }
+
+    const selectedRegionCodes = new Set<string>();
+    const selectedCountryCodes = new Set<string>();
+
+    selectedLocations.forEach((loc) => {
+      const upper = loc.trim().toUpperCase();
+      if (isRegionScope || regionRulesMap.has(upper)) {
+        selectedRegionCodes.add(upper);
+      } else {
+        selectedCountryCodes.add(upper);
+      }
+    });
+
+    // Check which countries are covered by active selected regions (to avoid double charging)
+    const countryOverriddenByRegion = new Map<string, string>();
+    selectedRegionCodes.forEach((rCode) => {
+      const regRule = regionRulesMap.get(rCode);
+      if (regRule?.countries_covered) {
+        regRule.countries_covered.forEach((c) => {
+          if (c === '*') {
+            selectedCountryCodes.forEach((country) => {
+              countryOverriddenByRegion.set(country, regRule.location_name);
+            });
+          } else {
+            countryOverriddenByRegion.set(c.toUpperCase(), regRule.location_name);
+          }
+        });
+      }
+    });
+
+    let totalPerDay = 0;
+    let overriddenCount = 0;
+    const breakdown: Array<{
+      code: string;
+      name: string;
+      type: 'COUNTRY' | 'REGION';
+      charge: number;
+      isOverriddenByRegion?: boolean;
+      overriddenBy?: string;
+      isGlobalDefaultFallback?: boolean;
+    }> = [];
+
+    // 1. Process Regions
+    selectedRegionCodes.forEach((rCode) => {
+      const rule = regionRulesMap.get(rCode);
+      const charge = rule ? rule.credit_cost : Math.round(globalDefault * 1.5);
+      totalPerDay += charge;
+      breakdown.push({
+        code: rCode,
+        name: rule ? rule.location_name : `${rCode} Corridor`,
+        type: 'REGION',
+        charge,
+        isGlobalDefaultFallback: !rule,
+      });
+    });
+
+    // 2. Process Countries
+    selectedCountryCodes.forEach((cCode) => {
+      const overriddenBy = countryOverriddenByRegion.get(cCode);
+      if (overriddenBy) {
+        overriddenCount++;
+        breakdown.push({
+          code: cCode,
+          name: countryRulesMap.get(cCode)?.location_name || cCode,
+          type: 'COUNTRY',
+          charge: 0,
+          isOverriddenByRegion: true,
+          overriddenBy,
+        });
+      } else {
+        const rule = countryRulesMap.get(cCode);
+        const charge = rule ? rule.credit_cost : globalDefault;
+        totalPerDay += charge;
+        breakdown.push({
+          code: cCode,
+          name: rule ? rule.location_name : cCode,
+          type: 'COUNTRY',
+          charge,
+          isGlobalDefaultFallback: !rule,
+        });
+      }
+    });
+
+    return {
+      totalCreditsPerDay: Math.max(1, totalPerDay),
+      globalDefaultRate: globalDefault,
+      breakdown,
+      overriddenCount,
+      effectiveCount: breakdown.filter((b) => !b.isOverriddenByRegion).length,
     };
   }
 
@@ -9427,7 +9875,7 @@ Automated Compliance & Balance Monitoring System`;
     this.addNotification({
       recipient_id: params.businessId,
       title: 'Deal Won! Commission Sheet Generated',
-      message: `Sale "${params.dealTitle}" of ${params.currency} ${params.saleAmount.toLocaleString()} closed! Commission of ${params.currency} ${commissionAmount.toLocaleString()} committed as per platform agreement. Due by ${dueDate}.`,
+      message: `Sale "${params.dealTitle}" of ${params.currency} ${params.saleAmount.toLocaleString()} closed! Commission of ${params.currency} ${commissionAmount.toLocaleString()} committed as per platform agreement. Due by ${formatDateDDMMYYYY(dueDate)}.`,
       type: 'WALLET',
     });
 
@@ -9799,26 +10247,10 @@ Automated Compliance & Balance Monitoring System`;
         );
       }
       if (filters.startDate) {
-        list = list.filter((s) => {
-          const sDate =
-            s.sales_date.includes('-') && s.sales_date.length === 10
-              ? s.sales_date.split('-').length === 3 && s.sales_date.indexOf('-') === 2
-                ? `${s.sales_date.split('-')[2]}-${s.sales_date.split('-')[1]}-${s.sales_date.split('-')[0]}`
-                : s.sales_date
-              : s.sales_date;
-          return sDate >= filters.startDate!;
-        });
+        list = list.filter((s) => normalizeDateToISO(s.sales_date) >= filters.startDate!);
       }
       if (filters.endDate) {
-        list = list.filter((s) => {
-          const sDate =
-            s.sales_date.includes('-') && s.sales_date.length === 10
-              ? s.sales_date.split('-').length === 3 && s.sales_date.indexOf('-') === 2
-                ? `${s.sales_date.split('-')[2]}-${s.sales_date.split('-')[1]}-${s.sales_date.split('-')[0]}`
-                : s.sales_date
-              : s.sales_date;
-          return sDate <= filters.endDate!;
-        });
+        list = list.filter((s) => normalizeDateToISO(s.sales_date) <= filters.endDate!);
       }
     }
     return list;
@@ -10599,10 +11031,13 @@ Automated Compliance & Balance Monitoring System`;
     const currentEnd = new Date(camp.end_date).getTime();
     const baseStartTime = currentEnd > Date.now() ? currentEnd : Date.now();
     const newEndMs = baseStartTime + additionalDays * 24 * 60 * 60 * 1000;
-    const locationCount = targetCountries && Array.isArray(targetCountries) && targetCountries.length > 0 
-      ? targetCountries.length 
-      : 1;
-    const addedCredits = additionalDays * 15 * locationCount;
+    const effectiveScope = targetScope || camp.target_scope || 'Country';
+    const effectiveLocations = (targetCountries && Array.isArray(targetCountries) && targetCountries.length > 0)
+      ? targetCountries
+      : (camp.target_countries && camp.target_countries.length > 0 ? camp.target_countries : [camp.country || 'IN']);
+    const dynamicRate = this.calculateDynamicLocationCredits(effectiveLocations, effectiveScope === 'Region');
+    const locationCount = dynamicRate.effectiveCount;
+    const addedCredits = additionalDays * dynamicRate.totalCreditsPerDay;
 
     // Deduct from business corporate wallet if available
     const biz = this.businesses.find((b) => b.business_id === post.business_id);
@@ -10612,7 +11047,7 @@ Automated Compliance & Balance Monitoring System`;
         id: `tx_${Date.now()}`,
         type: 'USAGE',
         credits: addedCredits,
-        description: `Campaign Extension: "${post.title || 'Official Publication'}" renewed for +${additionalDays} days across ${locationCount} location(s) (Data continuity under ID: ${post.id}).`,
+        description: `Campaign Extension: "${post.title || 'Official Publication'}" renewed for +${additionalDays} days across ${effectiveLocations.length} location(s) @ ${dynamicRate.totalCreditsPerDay} Cr/day (Data continuity under ID: ${post.id}).`,
         timestamp: new Date().toISOString(),
         actionType: 'CAMPAIGN_RENEWAL_EXTENSION',
       });
@@ -10650,8 +11085,11 @@ Automated Compliance & Balance Monitoring System`;
     };
   }
 
-  // Daily Status Alert (First Login): fires ONLY if duration_remaining > 3 days on user's first login of current calendar day in local timezone
-  public checkDailyCampaignAlert(user: RegularUser | BusinessProfile): {
+  // Daily Status Alert (First Login): fires ONLY for Business Owner (own campaigns) or Admin/Super Admin (all campaigns)
+  public checkDailyCampaignAlert(
+    user: RegularUser | BusinessProfile,
+    isAdmin?: boolean
+  ): {
     shouldAlert: boolean;
     message?: string;
     daysRemaining?: number;
@@ -10659,8 +11097,16 @@ Automated Compliance & Balance Monitoring System`;
     postId?: string;
     campaign?: PostMarketingCampaign;
   } {
+    const userIsAdmin = Boolean(
+      isAdmin ||
+        ('role' in user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'))
+    );
     const bizId = 'business_id' in user ? user.business_id : undefined;
-    const authorId = 'user_id' in user ? user.user_id : undefined;
+
+    // Standard users have no access to promotion lifecycle alerts
+    if (!userIsAdmin && !bizId) {
+      return { shouldAlert: false };
+    }
 
     // Determine user's local timezone (based on country of login / profile settings)
     const country = ('country' in user ? user.country : undefined) || 'IN';
@@ -10689,10 +11135,7 @@ Automated Compliance & Balance Monitoring System`;
 
     const now = Date.now();
     for (const post of this.businessPosts) {
-      const isOwner =
-        (bizId && post.business_id === bizId) ||
-        (authorId && post.author_id === authorId) ||
-        (!bizId && !authorId);
+      const isOwner = userIsAdmin || (Boolean(bizId) && post.business_id === bizId);
 
       if (isOwner && post.is_marketed && post.marketing_campaign) {
         const camp = post.marketing_campaign;
@@ -10720,15 +11163,24 @@ Automated Compliance & Balance Monitoring System`;
     return { shouldAlert: false };
   }
 
-  // 12-Hour Expiry Warning: triggers notification exactly 12 hours prior to campaign_end_timestamp with [Renew / Extend] CTA
-  public check12HourCampaignWarnings(): {
+  // 12-Hour Expiry Warning: scoped strictly to Business Owner's own campaigns or Admin/Super Admin
+  public check12HourCampaignWarnings(
+    businessId?: string,
+    isAdmin?: boolean
+  ): {
     alertsSent: number;
     warnings: { postId: string; campaignTitle: string; hoursRemaining: number }[];
   } {
+    if (!isAdmin && !businessId) {
+      return { alertsSent: 0, warnings: [] };
+    }
+
     const now = Date.now();
     const warnings: { postId: string; campaignTitle: string; hoursRemaining: number }[] = [];
 
     for (const post of this.businessPosts) {
+      const isAuthorized = Boolean(isAdmin || (businessId && post.business_id === businessId));
+      if (!isAuthorized) continue;
       if (post.is_marketed && post.marketing_campaign) {
         const camp = post.marketing_campaign;
         const endMs = new Date(camp.end_date).getTime();
@@ -10760,19 +11212,31 @@ Automated Compliance & Balance Monitoring System`;
     return { alertsSent: warnings.length, warnings };
   }
 
-  // Post-Campaign Alert: fires upon campaign completion timestamp or user's next subsequent login, routes directly to Quantitative Reporting Interface
-  public checkPostCampaignCompletionAlerts(user?: RegularUser | BusinessProfile): {
+  // Post-Campaign Alert: fires ONLY for Business Owner (own campaigns) or Admin/Super Admin (all campaigns)
+  public checkPostCampaignCompletionAlerts(
+    user?: RegularUser | BusinessProfile,
+    isAdmin?: boolean
+  ): {
     completedCampaigns: { postId: string; title: string; views: number; clicks: number; creditsUsed: number }[];
   } {
+    const userIsAdmin = Boolean(
+      isAdmin ||
+        (user && 'role' in user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'))
+    );
+    const bizId = user && 'business_id' in user ? user.business_id : undefined;
+
+    if (!userIsAdmin && !bizId) {
+      return { completedCampaigns: [] };
+    }
+
     const now = Date.now();
     const completedCampaigns: { postId: string; title: string; views: number; clicks: number; creditsUsed: number }[] = [];
-    const bizId = user && 'business_id' in user ? user.business_id : undefined;
 
     for (const post of this.businessPosts) {
       if (post.is_marketed && post.marketing_campaign) {
         const camp = post.marketing_campaign;
         const endMs = new Date(camp.end_date).getTime();
-        const isOwner = !bizId || post.business_id === bizId;
+        const isOwner = userIsAdmin || (Boolean(bizId) && post.business_id === bizId);
 
         if (isOwner && now >= endMs && !camp.completed_alert_seen) {
           camp.completed_alert_seen = true;
@@ -10802,13 +11266,28 @@ Automated Compliance & Balance Monitoring System`;
     return { completedCampaigns };
   }
 
-  // Quantitative Reporting Interface data endpoint (pure-data analytics, no fluff)
-  public getCampaignQuantitativeReport(postId?: string, businessId?: string) {
+  // Quantitative Reporting Interface data endpoint:
+  // - Admin / Super Admin: full promotion details across all businesses
+  // - Business Users: ONLY promotions they published
+  // - Standard Users: no access
+  public getCampaignQuantitativeReport(postId?: string, businessId?: string, isAdmin?: boolean) {
+    if (!isAdmin && !businessId) {
+      return {
+        totalViews: 0,
+        targetAudienceReached: 0,
+        totalClicks: 0,
+        avgEngagementRate: 0,
+        totalCreditUsage: 0,
+        campaigns: [],
+      };
+    }
+
     let posts = this.businessPosts.filter((p) => p.is_marketed && p.marketing_campaign);
+    if (!isAdmin && businessId) {
+      posts = posts.filter((p) => p.business_id === businessId);
+    }
     if (postId) {
       posts = posts.filter((p) => p.id === postId);
-    } else if (businessId) {
-      posts = posts.filter((p) => p.business_id === businessId);
     }
 
     const campaigns = posts.map((p) => {
@@ -14761,7 +15240,7 @@ Automated Compliance & Balance Monitoring System`;
       const expectedDob = (account.dateOfBirthExpected || '').trim();
       if (!inputDob) {
         errors.push('Customer Date of Birth (DOB) is required.');
-      } else if (inputDob !== expectedDob) {
+      } else if (normalizeDateToISO(inputDob) !== normalizeDateToISO(expectedDob)) {
         errors.push(`Date of Birth (DOB) verification failed. Value entered does not match customer records.`);
       }
 
@@ -14785,7 +15264,7 @@ Automated Compliance & Balance Monitoring System`;
       const expectedDoi = (account.dateOfIncorporationExpected || '').trim();
       if (!inputDoi) {
         errors.push('Date of Incorporation (DOI) is required.');
-      } else if (inputDoi !== expectedDoi) {
+      } else if (normalizeDateToISO(inputDoi) !== normalizeDateToISO(expectedDoi)) {
         errors.push('Date of Incorporation (DOI) does not match corporate filing records.');
       }
 
@@ -15728,7 +16207,7 @@ Automated Compliance & Balance Monitoring System`;
 
     const newItem: FlashNewsItem = {
       id: `flash_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      headline: payload.headline?.trim() || words.slice(0, 10).join(' ') + '...',
+      headline: (payload.headline?.trim() || words.slice(0, 10).join(' ') + '...').toUpperCase(),
       content: rawContent,
       word_count: words.length,
       category: payload.category || 'BREAKING',
@@ -16111,7 +16590,7 @@ Automated Compliance & Balance Monitoring System`;
       item.word_count = words.length;
     }
 
-    if (updates.headline !== undefined) item.headline = updates.headline.trim();
+    if (updates.headline !== undefined) item.headline = updates.headline.trim().toUpperCase();
     if (updates.category) item.category = updates.category;
     if (updates.priority) item.priority = updates.priority;
     if (updates.blink_interval_sec) item.blink_interval_sec = updates.blink_interval_sec;

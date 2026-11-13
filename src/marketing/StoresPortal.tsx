@@ -21,6 +21,7 @@ import {
   Building,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
+import { formatDateDDMMYYYY } from '../utils/dateFormat';
 import { StoreInventoryItem, StoreItemCondition, StoreItemStatus, AdminUser } from '../types';
 
 interface StoresPortalProps {
@@ -335,7 +336,7 @@ export const StoresPortal: React.FC<StoresPortalProps> = ({ activeAdminUser, onR
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                       {item.condition}
                     </span>
-                    <div className="text-[10px] text-slate-400 mt-1">Insp: {item.last_inspected}</div>
+                    <div className="text-[10px] text-slate-400 mt-1">Insp: {formatDateDDMMYYYY(item.last_inspected)}</div>
                   </td>
 
                   <td className="px-4 py-3">

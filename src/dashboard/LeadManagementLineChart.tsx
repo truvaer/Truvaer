@@ -12,6 +12,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { CRMLead } from '../types';
+import { formatDateDDMMYYYY } from '../utils/dateFormat';
 
 interface LeadManagementLineChartProps {
   leads: CRMLead[];
@@ -61,10 +62,7 @@ export const LeadManagementLineChart: React.FC<LeadManagementLineChartProps> = (
     for (let i = timeframe - 1; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 86400000);
       const dateStr = d.toISOString().split('T')[0];
-      const displayDate = d.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      });
+      const displayDate = formatDateDDMMYYYY(d);
 
       // Filter leads created on or matching this day slot
       const dayLeads = filteredLeads.filter((l) => {

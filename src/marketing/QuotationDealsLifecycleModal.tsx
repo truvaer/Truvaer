@@ -33,6 +33,7 @@ import {
   CRMQuotationItem,
 } from '../types';
 import { db } from '../data/mockDatabase';
+import { formatDateDDMMYYYY } from '../utils/dateFormat';
 import {
   QuotationPrintableStatementModal,
   PrintableDocumentData,
@@ -554,7 +555,7 @@ export const QuotationDealsLifecycleModal: React.FC<QuotationDealsLifecycleModal
                       <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center space-x-2">
                           <span className="text-[10px] font-mono text-slate-500">
-                            Valid: {q.valid_until}
+                            Valid: {formatDateDDMMYYYY(q.valid_until)}
                           </span>
                           <button
                             type="button"
@@ -562,7 +563,7 @@ export const QuotationDealsLifecycleModal: React.FC<QuotationDealsLifecycleModal
                               setPrintableDoc({
                                 referenceNumber: q.quotation_number,
                                 date: new Date(q.created_at).toLocaleDateString(),
-                                validUntil: q.valid_until,
+                                validUntil: formatDateDDMMYYYY(q.valid_until),
                                 serviceTitle: q.service_title,
                                 issuerName: q.business_name,
                                 clientName: q.client_name,
@@ -672,7 +673,7 @@ export const QuotationDealsLifecycleModal: React.FC<QuotationDealsLifecycleModal
                         </div>
 
                         <div className="mt-3 text-xs text-slate-400 flex items-center justify-between">
-                          <span>Target Close: {opp.expected_close_date}</span>
+                          <span>Target Close: {formatDateDDMMYYYY(opp.expected_close_date)}</span>
                           <span>Hub: {opp.territory}</span>
                         </div>
                       </div>
@@ -704,7 +705,7 @@ export const QuotationDealsLifecycleModal: React.FC<QuotationDealsLifecycleModal
                                 taxPercent: 5,
                                 grandTotal: Math.round(opp.deal_value * 1.05),
                                 paymentTerms: 'Escrow settlement via TruvAer corporate wallet/treasury',
-                                notes: `Stage: ${opp.stage} • Probability: ${opp.probability}% • Close Date: ${opp.expected_close_date}`,
+                                notes: `Stage: ${opp.stage} • Probability: ${opp.probability}% • Close Date: ${formatDateDDMMYYYY(opp.expected_close_date)}`,
                                 status: opp.stage,
                               });
                               setPrintableDocType('DEAL');
@@ -814,14 +815,14 @@ export const QuotationDealsLifecycleModal: React.FC<QuotationDealsLifecycleModal
                       <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs flex-wrap gap-2">
                         <div className="flex items-center space-x-2">
                           <span className="text-[10px] text-slate-500 font-mono">
-                            {s.sales_date} • {s.territory}
+                            {formatDateDDMMYYYY(s.sales_date)} • {s.territory}
                           </span>
                           <button
                             type="button"
                             onClick={() => {
                               setPrintableDoc({
                                 referenceNumber: s.sales_code,
-                                date: s.sales_date,
+                                date: formatDateDDMMYYYY(s.sales_date),
                                 serviceTitle: s.description || 'Charter & Maintenance Contract Finalized',
                                 issuerName: s.business_name,
                                 clientName: s.customer_name,

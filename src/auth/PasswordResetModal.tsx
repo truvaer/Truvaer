@@ -27,6 +27,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
+import { formatDateDDMMYYYY } from '../utils/dateFormat';
 import { AgentVerificationGateAudit } from '../types';
 
 interface PasswordResetModalProps {
@@ -209,10 +210,10 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
       } else {
         // Pre-fill fields for easy agent demo testing while enforcing gate check
         if (acc.accountType === 'STANDARD') {
-          setStandardDob(acc.dateOfBirthExpected || '');
+          setStandardDob(acc.dateOfBirthExpected ? formatDateDDMMYYYY(acc.dateOfBirthExpected, '') : '');
           setStandardPhoneOrEmail(acc.registeredEmail || '');
         } else {
-          setBusinessDoi(acc.dateOfIncorporationExpected || '');
+          setBusinessDoi(acc.dateOfIncorporationExpected ? formatDateDDMMYYYY(acc.dateOfIncorporationExpected, '') : '');
           setBusinessEmail(acc.registeredEmail || '');
           setBusinessTransactionAmount((acc.recentTransactionAmounts && acc.recentTransactionAmounts[0]?.toString()) || '5000');
         }
@@ -499,13 +500,13 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                             <Calendar className="w-3.5 h-3.5 text-blue-400" />
                             <span>1. Customer Date of Birth (DOB)</span>
                           </label>
-                          <span className="text-[10px] text-slate-400 font-mono">Format: YYYY-MM-DD</span>
+                          <span className="text-[10px] text-slate-400 font-mono">Format: DD/MM/YYYY</span>
                         </div>
                         <input
                           type="text"
                           value={standardDob}
                           onChange={(e) => setStandardDob(e.target.value)}
-                          placeholder="e.g. 1995-01-01"
+                          placeholder="e.g. 01/01/1995"
                           className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-white font-mono focus:outline-none focus:border-blue-500"
                         />
                       </div>
@@ -545,13 +546,13 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                             <Calendar className="w-3.5 h-3.5 text-amber-400" />
                             <span>1. Date of Incorporation (DOI)</span>
                           </label>
-                          <span className="text-[10px] text-slate-400 font-mono">Format: YYYY-MM-DD</span>
+                          <span className="text-[10px] text-slate-400 font-mono">Format: DD/MM/YYYY</span>
                         </div>
                         <input
                           type="text"
                           value={businessDoi}
                           onChange={(e) => setBusinessDoi(e.target.value)}
-                          placeholder="e.g. 2024-01-15"
+                          placeholder="e.g. 15/01/2024"
                           className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-white font-mono focus:outline-none focus:border-amber-500"
                         />
                       </div>

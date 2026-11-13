@@ -21,6 +21,7 @@ import {
   Coins,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
+import { formatDateDDMMYYYY } from '../utils/dateFormat';
 import { JobListing, RegularUser, BusinessProfile, PlatformModuleControl } from '../types';
 
 interface JobsPortalProps {
@@ -380,7 +381,7 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
 
                 <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-xs">
                   <div className="text-[10px] text-slate-500 font-mono">
-                    Posted: {job.published_date} • Expires: {job.expiration_date}
+                    Posted: {formatDateDDMMYYYY(job.published_date)} • Expires: {formatDateDDMMYYYY(job.expiration_date)}
                   </div>
 
                   <div className="flex items-center space-x-2">

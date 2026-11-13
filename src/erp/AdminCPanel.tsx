@@ -24,6 +24,10 @@ import {
   Download,
   FileSpreadsheet,
   RotateCcw,
+  Plus,
+  Trash2,
+  X,
+  CreditCard,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
 import {
@@ -33,7 +37,10 @@ import {
   BusinessProfile,
   JobListing,
   NewsArticle,
+  RegionalCreditPricingRule,
 } from '../types';
+import { COUNTRIES } from '../marketing/MarketingPortal';
+import { AVIATION_REGIONS } from '../marketing/LinkedInMarketingFeed';
 import { AdminVerificationDesk } from './AdminVerificationDesk';
 import { AdminERPPlatform } from './AdminERPPlatform';
 import { AdminRBACControlPanel } from './AdminRBACControlPanel';
@@ -54,6 +61,7 @@ import { EmployeeAccountLifecycleDesk } from './EmployeeAccountLifecycleDesk';
 import { AdminApplicationResetDesk } from './AdminApplicationResetDesk';
 import { CRMPortal } from './CRMPortal';
 import { CreditTransparencyView } from './CreditTransparencyView';
+import { CreditManagementSystemDesk } from './CreditManagementSystemDesk';
 import { QuantitativeReportingInterface } from '../marketing/QuantitativeReportingInterface';
 import { TrendingUp, Sliders, Layers, Tags, Zap, Globe, MapPin, UserX, Coins, BarChart3, HelpCircle, UserPlus, Mail, KeyRound, Send } from 'lucide-react';
 import { DispatchedWelcomeEmailModal, AdminPasswordSetupModal } from '../auth';
@@ -114,7 +122,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
 
   const [hrSubTab, setHrSubTab] = useState<'hrms' | 'safeguard' | 'roles'>('hrms');
   const [finSubTab, setFinSubTab] = useState<
-    'cash_flow' | 'crm_sales' | 'wallet' | 'pricing_matrix' | 'commission_desk' | 'credit_transparency'
+    'cash_flow' | 'crm_sales' | 'wallet' | 'pricing_matrix' | 'commission_desk' | 'credit_transparency' | 'credit_management'
   >('cash_flow');
   const [pubSubTab, setPubSubTab] = useState<'flashnews_desk' | 'content_desk'>('flashnews_desk');
   const [repSubTab, setRepSubTab] = useState<'executive_reports' | 'quant_analytics' | 'audit_logs'>('executive_reports');
@@ -170,6 +178,9 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
     } else if (t === 'credit_transparency') {
       setMainSection('finance');
       setFinSubTab('credit_transparency');
+    } else if (t === 'cms' || t === 'credit_management' || t === 'credit_system') {
+      setMainSection('finance');
+      setFinSubTab('credit_management');
     } else if (t === 'flashnews' || t === 'flash_news' || t === 'flashnews_desk') {
       setMainSection('publication');
       setPubSubTab('flashnews_desk');
@@ -205,6 +216,28 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editDebit, setEditDebit] = useState<number>(0);
   const [editMin, setEditMin] = useState<number>(0);
+
+  // Multi-Country & Regional Credit Pricing Engine State (Super Admin)
+  const [pricingActiveView, setPricingActiveView] = useState<'REGIONAL_RULES' | 'PORTAL_ACTIONS'>('REGIONAL_RULES');
+  const [regionalPricingList, setRegionalPricingList] = useState<RegionalCreditPricingRule[]>(() => db.getRegionalCreditPricing());
+  const [globalDefaultRate, setGlobalDefaultRate] = useState<number>(() => db.getGlobalDefaultCreditRate());
+  const [regionalSearchQuery, setRegionalSearchQuery] = useState('');
+  const [regionalFilterType, setRegionalFilterType] = useState<'ALL' | 'COUNTRY' | 'REGION'>('ALL');
+
+  // Modal states for Add/Edit rule
+  const [showAddEditRuleModal, setShowAddEditRuleModal] = useState(false);
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [modalLocationType, setModalLocationType] = useState<'COUNTRY' | 'REGION'>('COUNTRY');
+  const [modalLocationCode, setModalLocationCode] = useState('');
+  const [modalLocationName, setModalLocationName] = useState('');
+  const [modalCreditCost, setModalCreditCost] = useState<number>(15);
+  const [modalNotes, setModalNotes] = useState('');
+  const [modalFeedback, setModalFeedback] = useState<string | null>(null);
+
+  // Global default rate edit modal
+  const [showGlobalRateModal, setShowGlobalRateModal] = useState(false);
+  const [tempGlobalRate, setTempGlobalRate] = useState<number>(15);
+  const [pricingFeedbackMessage, setPricingFeedbackMessage] = useState<string | null>(null);
 
   // User role switching state
   const [regularUsers, setRegularUsers] = useState<RegularUser[]>(db.getRegularUsers());
@@ -311,6 +344,112 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
     setEditingItemId(null);
   };
 
+  const refreshRegionalPricing = () => {
+    setRegionalPricingList(db.getRegionalCreditPricing());
+    setGlobalDefaultRate(db.getGlobalDefaultCreditRate());
+  };
+
+  const handleOpenAddRule = () => {
+    setEditingRuleId(null);
+    setModalLocationType('COUNTRY');
+    setModalLocationCode(COUNTRIES[0]?.code || 'US');
+    setModalLocationName(COUNTRIES[0]?.name || 'United States');
+    setModalCreditCost(15);
+    setModalNotes('');
+    setModalFeedback(null);
+    setShowAddEditRuleModal(true);
+  };
+
+  const handleOpenEditRule = (rule: RegionalCreditPricingRule) => {
+    setEditingRuleId(rule.id);
+    setModalLocationType(rule.location_type === 'REGION' ? 'REGION' : 'COUNTRY');
+    setModalLocationCode(rule.location_code);
+    setModalLocationName(rule.location_name);
+    setModalCreditCost(rule.credit_cost);
+    setModalNotes(rule.notes || '');
+    setModalFeedback(null);
+    setShowAddEditRuleModal(true);
+  };
+
+  const handleSaveRegionalRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canEditPricing) {
+      setModalFeedback('403 Forbidden: Only L7 and L8 Super Admins can configure credit pricing rules.');
+      return;
+    }
+    if (!modalLocationCode || !modalLocationName || modalCreditCost < 1) {
+      setModalFeedback('Please provide valid location code, location name, and a positive credit cost.');
+      return;
+    }
+
+    const res = db.saveRegionalCreditPricingRule(
+      {
+        id: editingRuleId || undefined,
+        location_code: modalLocationCode,
+        location_name: modalLocationName,
+        location_type: modalLocationType,
+        credit_cost: modalCreditCost,
+        notes: modalNotes,
+      },
+      activeAdminUser?.name || 'Super Administrator (L8)'
+    );
+
+    if (res.success) {
+      refreshRegionalPricing();
+      setShowAddEditRuleModal(false);
+      setPricingFeedbackMessage(res.message);
+      setTimeout(() => setPricingFeedbackMessage(null), 4000);
+    } else {
+      setModalFeedback(res.message);
+    }
+  };
+
+  const handleDeleteRegionalRule = (rule: RegionalCreditPricingRule) => {
+    if (!canEditPricing) {
+      alert('403 Forbidden: Only L7 and L8 Super Admins can delete credit pricing rules.');
+      return;
+    }
+    if (rule.location_type === 'GLOBAL_DEFAULT' || rule.is_default) {
+      alert('The Global Default baseline rule cannot be deleted.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Are you sure you want to delete the pricing rule for "${rule.location_name}" (${rule.location_code})? Locations under this rule will revert to the Global Default rate (${globalDefaultRate} Cr/day).`
+      )
+    ) {
+      return;
+    }
+
+    const res = db.deleteRegionalCreditPricingRule(rule.id, activeAdminUser?.name || 'Super Administrator (L8)');
+    if (res.success) {
+      refreshRegionalPricing();
+      setPricingFeedbackMessage(res.message);
+      setTimeout(() => setPricingFeedbackMessage(null), 4000);
+    } else {
+      alert(res.message);
+    }
+  };
+
+  const handleSaveGlobalDefaultRate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canEditPricing) {
+      alert('403 Forbidden: Only L7 and L8 Super Admins can adjust the Global Default baseline rate.');
+      return;
+    }
+    if (tempGlobalRate < 1) {
+      alert('Global default rate must be at least 1 credit.');
+      return;
+    }
+    const res = db.setGlobalDefaultCreditRate(tempGlobalRate, activeAdminUser?.name || 'Super Administrator (L8)');
+    if (res.success) {
+      refreshRegionalPricing();
+      setShowGlobalRateModal(false);
+      setPricingFeedbackMessage(`Global Default baseline rate calibrated to ${res.rate} Credits/day.`);
+      setTimeout(() => setPricingFeedbackMessage(null), 4000);
+    }
+  };
+
   const handleSwitchRole = (userId: string, newRole: string) => {
     const res = db.switchUserRole(userId, newRole, actorLevel, activeAdminUser?.role);
     setRoleChangeNotice(res.message);
@@ -354,14 +493,14 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="text-xl sm:text-2xl font-black text-white flex items-center space-x-2">
-              <ShieldCheck className="w-6 h-6 text-amber-400" />
-              <span>Central Administration &amp; Operations Desk (C-Panel)</span>
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full max-w-full">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-lg sm:text-2xl font-black text-white flex items-center space-x-2 min-w-0">
+              <ShieldCheck className="w-6 h-6 text-amber-400 shrink-0" />
+              <span className="break-words">Central Administration &amp; Operations Desk (C-Panel)</span>
             </span>
-            <span className="text-[10px] font-mono bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
+            <span className="text-[10px] font-mono bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
               Super Admin &amp; Manager Powers
             </span>
           </div>
@@ -370,9 +509,9 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto shrink-0">
           {/* Global Company Quick Search across all C-Panel modules */}
-          <div className="relative w-full sm:w-80 lg:w-96">
+          <div className="relative w-full sm:w-72 lg:w-80 xl:w-96 max-w-full">
             <div className="relative">
               <Search className="w-4 h-4 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -456,24 +595,24 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
         </div>
       </div>
 
-      {/* Master Sector Navigation (Operations, HR, Finance, Publication, Reports, Security) */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-1 bg-slate-900/90 p-2 rounded-2xl border border-slate-800 shadow-md">
+      {/* Master Sector Navigation (Ops, HR, Finance, Publication, Reports, Security) */}
+      <div className="flex flex-wrap items-center gap-2 bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800 shadow-md max-w-full w-full">
         <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider px-2 shrink-0">
           C-Panel Sector:
         </span>
 
-        {/* 1. OPERATIONS */}
+        {/* 1. OPERATIONS (RENAMED TO OPS PER SPECIFICATION) */}
         <button
           id="cpanel-sector-operations"
           onClick={() => setMainSection('operations')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 whitespace-normal break-words text-center ${
             mainSector === 'operations'
               ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
               : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Crown className="w-4 h-4" />
-          <span>Operations</span>
+          <Crown className="w-4 h-4 shrink-0" />
+          <span>Ops</span>
           {(pendingJobs.length + pendingNews.length) > 0 && (
             <span className="ml-1 bg-slate-950 text-amber-300 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
               {pendingJobs.length + pendingNews.length}
@@ -485,13 +624,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
         <button
           id="cpanel-sector-hr"
           onClick={() => setMainSection('hr')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 whitespace-normal break-words text-center ${
             mainSector === 'hr'
               ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
               : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Users className="w-4 h-4" />
+          <Users className="w-4 h-4 shrink-0" />
           <span>HR</span>
         </button>
 
@@ -499,13 +638,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
         <button
           id="cpanel-sector-finance"
           onClick={() => setMainSection('finance')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 whitespace-normal break-words text-center ${
             mainSector === 'finance'
               ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
               : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <DollarSign className="w-4 h-4" />
+          <DollarSign className="w-4 h-4 shrink-0" />
           <span>Finance</span>
         </button>
 
@@ -513,13 +652,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
         <button
           id="cpanel-sector-publication"
           onClick={() => setMainSection('publication')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 whitespace-normal break-words text-center ${
             mainSector === 'publication'
               ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
               : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Radio className="w-4 h-4 text-rose-400" />
+          <Radio className="w-4 h-4 shrink-0 text-rose-400" />
           <span>Publication</span>
         </button>
 
@@ -527,13 +666,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
         <button
           id="cpanel-sector-reports"
           onClick={() => setMainSection('reports')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 whitespace-normal break-words text-center ${
             mainSector === 'reports'
               ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
               : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <FileText className="w-4 h-4 text-sky-400" />
+          <FileText className="w-4 h-4 shrink-0 text-sky-400" />
           <span>Reports</span>
         </button>
 
@@ -541,13 +680,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
         <button
           id="cpanel-sector-security"
           onClick={() => setMainSection('security')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 whitespace-normal break-words text-center ${
             mainSector === 'security'
               ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
               : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
           <span>Security</span>
         </button>
       </div>
@@ -557,121 +696,117 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
       {/* ========================================================================= */}
       {mainSector === 'operations' && (
         <div className="space-y-5">
-          {/* Operations Sub-Navigation Bar */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
-              Operations:
-            </span>
-
-            {/* ERP Platform Overview */}
+          {/* Operations Sub-Navigation Bar (Responsive wrap within screen size, word-wrap enabled) */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex flex-wrap items-center gap-2 max-w-full w-full">
+            {/* 1. ERP Overview */}
             <button
               id="cpanel-ops-overview-btn"
               onClick={() => setOpsSubTab('overview')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 opsSubTab === 'overview'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Crown className="w-3.5 h-3.5" />
-              <span>ERP Platform Overview</span>
+              <Crown className="w-3.5 h-3.5 shrink-0" />
+              <span>ERP Overview</span>
             </button>
 
-            {/* Admin PMS */}
+            {/* 2. ERP Module */}
+            <button
+              id="cpanel-ops-directory-btn"
+              onClick={() => setOpsSubTab('directory')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
+                opsSubTab === 'directory'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span>ERP Module</span>
+            </button>
+
+            {/* 3. Admin PMS */}
             <button
               id="cpanel-ops-pms-btn"
               onClick={() => setOpsSubTab('pms')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 opsSubTab === 'pms'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Briefcase className="w-3.5 h-3.5" />
+              <Briefcase className="w-3.5 h-3.5 shrink-0" />
               <span>Admin PMS</span>
             </button>
 
-            {/* Services & Verification */}
+            {/* 4. Services & Verification */}
             <button
               id="cpanel-ops-services-btn"
               onClick={() => setOpsSubTab('services')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 opsSubTab === 'services'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-cyan-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+              <Building2 className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
               <span>Services &amp; Verification</span>
             </button>
 
-            {/* Regional & Country Mapping */}
+            {/* 5. Regional & Country Mapping */}
             <button
               id="cpanel-ops-regional-mapping-btn"
               onClick={() => setOpsSubTab('regional_mapping')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 opsSubTab === 'regional_mapping'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-emerald-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+              <Globe className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
               <span>Regional &amp; Country Mapping</span>
             </button>
 
-            {/* Categories & Subcategories */}
+            {/* 6. Categories & Subcategories */}
             <button
               id="cpanel-ops-categories-btn"
               onClick={() => setOpsSubTab('categories')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 opsSubTab === 'categories'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-indigo-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Tags className="w-3.5 h-3.5 text-indigo-400" />
+              <Tags className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
               <span>Categories &amp; Subcategories</span>
             </button>
 
-            {/* Story Categories */}
+            {/* 7. Story Categories */}
             <button
               id="cpanel-ops-story-categories-btn"
               onClick={() => setOpsSubTab('story_categories')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 opsSubTab === 'story_categories'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-purple-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Tags className="w-3.5 h-3.5 text-purple-400" />
+              <Tags className="w-3.5 h-3.5 shrink-0 text-purple-400" />
               <span>Story Categories</span>
             </button>
 
-            {/* Full Application Reset */}
-            <button
-              id="cpanel-ops-system-reset-btn"
-              onClick={() => setOpsSubTab('system_reset')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                opsSubTab === 'system_reset'
-                  ? 'bg-rose-600 text-white font-black shadow'
-                  : 'text-rose-400 hover:text-white hover:bg-rose-950/40 border border-rose-500/20'
-              }`}
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
-              <span>Full Application Reset</span>
-            </button>
-
-            {/* Content Queue */}
+            {/* 8. Content Queue */}
             <button
               id="cpanel-ops-content-queue-btn"
               onClick={() => setOpsSubTab('content_queue')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 opsSubTab === 'content_queue'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <FileCheck className="w-3.5 h-3.5" />
+              <FileCheck className="w-3.5 h-3.5 shrink-0" />
               <span>Content Queue</span>
               {(pendingJobs.length + pendingNews.length) > 0 && (
                 <span className="ml-1 bg-slate-950 text-amber-300 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
@@ -680,18 +815,18 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
               )}
             </button>
 
-            {/* Module Directory */}
+            {/* 9. Reset */}
             <button
-              id="cpanel-ops-directory-btn"
-              onClick={() => setOpsSubTab('directory')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
-                opsSubTab === 'directory'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              id="cpanel-ops-system-reset-btn"
+              onClick={() => setOpsSubTab('system_reset')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
+                opsSubTab === 'system_reset'
+                  ? 'bg-rose-600 text-white font-black shadow'
+                  : 'text-rose-400 hover:text-white hover:bg-rose-950/40 border border-rose-500/20'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>ERP Modules Directory</span>
+              <RotateCcw className="w-3.5 h-3.5 shrink-0 text-rose-400" />
+              <span>Reset</span>
             </button>
           </div>
 
@@ -914,7 +1049,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
       {mainSector === 'hr' && (
         <div className="space-y-5">
           {/* HR Sub-Navigation Bar */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex flex-wrap items-center gap-2 max-w-full w-full">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
               HR &amp; People:
             </span>
@@ -923,13 +1058,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-hr-hrms-btn"
               onClick={() => setHrSubTab('hrms')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 hrSubTab === 'hrms'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Users className="w-3.5 h-3.5" />
+              <Users className="w-3.5 h-3.5 shrink-0" />
               <span>HR &amp; HRMS System</span>
             </button>
 
@@ -937,14 +1072,14 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-hr-safeguard-btn"
               onClick={() => setHrSubTab('safeguard')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 hrSubTab === 'safeguard'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-rose-300 hover:text-white hover:bg-rose-950/40 border border-rose-500/20'
               }`}
               title="Employee Offboarding & Data Safeguard Lifecycle (Level 6-8 & HR Only)"
             >
-              <UserX className="w-3.5 h-3.5 text-current" />
+              <UserX className="w-3.5 h-3.5 shrink-0 text-current" />
               <span>Account Safeguard &amp; Offboarding (L6-L8 &amp; HR)</span>
             </button>
 
@@ -952,13 +1087,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-hr-roles-btn"
               onClick={() => setHrSubTab('roles')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 hrSubTab === 'roles'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-indigo-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
               <span>Role Switch &amp; IAM Governance</span>
             </button>
           </div>
@@ -1278,22 +1413,32 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
       {mainSector === 'finance' && (
         <div className="space-y-5">
           {/* Finance Sub-Navigation Bar */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
-              Finance &amp; Treasury:
-            </span>
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex flex-wrap items-center gap-2 max-w-full w-full">
+            {/* Unified Credit Management System (CMS) */}
+            <button
+              id="cpanel-fin-cms-btn"
+              onClick={() => setFinSubTab('credit_management')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
+                finSubTab === 'credit_management'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow'
+                  : 'text-amber-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <CreditCard className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+              <span>Credit Management System (CMS)</span>
+            </button>
 
             {/* Regional Cash Flow */}
             <button
               id="cpanel-fin-cashflow-btn"
               onClick={() => setFinSubTab('cash_flow')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 finSubTab === 'cash_flow'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <DollarSign className="w-3.5 h-3.5" />
+              <DollarSign className="w-3.5 h-3.5 shrink-0" />
               <span>Regional Cash Flow</span>
             </button>
 
@@ -1301,13 +1446,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-fin-sales-btn"
               onClick={() => setFinSubTab('crm_sales')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 finSubTab === 'crm_sales'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <TrendingUp className="w-3.5 h-3.5" />
+              <TrendingUp className="w-3.5 h-3.5 shrink-0" />
               <span>Commercial Sales (CRM)</span>
             </button>
 
@@ -1315,13 +1460,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-fin-pricing-btn"
               onClick={() => setFinSubTab('pricing_matrix')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 finSubTab === 'pricing_matrix'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-amber-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Coins className="w-3.5 h-3.5 text-amber-400" />
+              <Coins className="w-3.5 h-3.5 shrink-0 text-amber-400" />
               <span>Centralized Pricing Matrix</span>
             </button>
 
@@ -1329,13 +1474,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-fin-commissions-btn"
               onClick={() => setFinSubTab('commission_desk')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 finSubTab === 'commission_desk'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-emerald-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+              <Building2 className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
               <span>Commission Desk</span>
             </button>
 
@@ -1343,13 +1488,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-fin-transparency-btn"
               onClick={() => setFinSubTab('credit_transparency')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 finSubTab === 'credit_transparency'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-sky-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
+              <BarChart3 className="w-3.5 h-3.5 shrink-0 text-sky-400" />
               <span>Credit Transparency &amp; Ledger</span>
             </button>
           </div>
@@ -1374,15 +1519,54 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           )}
 
           {finSubTab === 'pricing_matrix' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-bold text-white">Centralized Credit Debit Matrix</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Configure automatic credit deductions per marketing, job posting, and boutique lead action across all portals.
-                  </p>
+            <div className="space-y-6">
+              {/* Feedback Alert Toast */}
+              {pricingFeedbackMessage && (
+                <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 text-xs text-emerald-200 flex items-center justify-between shadow-xl animate-in fade-in">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="font-medium">{pricingFeedbackMessage}</span>
+                  </div>
+                  <button
+                    onClick={() => setPricingFeedbackMessage(null)}
+                    className="text-emerald-400 hover:text-white text-xs font-bold"
+                  >
+                    ✕
+                  </button>
                 </div>
+              )}
+
+              {/* Sub-toggle Header: Multi-Country/Regional vs Action Debit Matrix */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-lg">
                 <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setPricingActiveView('REGIONAL_RULES')}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 ${
+                      pricingActiveView === 'REGIONAL_RULES'
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md font-black'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-850'
+                    }`}
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span>Multi-Country &amp; Regional Pricing Matrix</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPricingActiveView('PORTAL_ACTIONS')}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 ${
+                      pricingActiveView === 'PORTAL_ACTIONS'
+                        ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md font-black'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-850'
+                    }`}
+                  >
+                    <Sliders className="w-4 h-4" />
+                    <span>Portal Action Debit Rules</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center space-x-2 self-start sm:self-auto">
                   <span
                     className={`text-xs font-mono font-bold px-3 py-1 rounded-full border ${
                       canEditPricing
@@ -1390,95 +1574,663 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
                     }`}
                   >
-                    {canEditPricing ? 'L7/L8 Edit Permitted' : 'Read Only (L7/L8 Required)'}
+                    {canEditPricing ? 'L7/L8 Super Admin Clearance Active' : 'Read Only (L7/L8 Clearance Required)'}
                   </span>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-mono border-b border-slate-800">
-                    <tr>
-                      <th className="py-3 px-4">Portal Location</th>
-                      <th className="py-3 px-4">Action Type</th>
-                      <th className="py-3 px-4">Debit Value (Credits)</th>
-                      <th className="py-3 px-4">Minimum Threshold</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800 font-sans">
-                    {pricingItems.map((item) => {
-                      const isEditing = editingItemId === item.id;
-                      return (
-                        <tr key={item.id} className="hover:bg-slate-800/40">
-                          <td className="py-3 px-4 font-semibold text-white">{item.portal}</td>
-                          <td className="py-3 px-4 text-sky-400 font-mono">{item.actionType}</td>
-                          <td className="py-3 px-4 font-mono">
-                            {isEditing ? (
-                              <input
-                                type="number"
-                                value={editDebit}
-                                onChange={(e) => setEditDebit(Number(e.target.value))}
-                                className="w-20 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-white"
-                              />
-                            ) : (
-                              <span className="font-bold text-emerald-400">{item.defaultDebitCredits} Credits</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 font-mono">
-                            {isEditing ? (
-                              <input
-                                type="number"
-                                value={editMin}
-                                onChange={(e) => setEditMin(Number(e.target.value))}
-                                className="w-20 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-white"
-                              />
-                            ) : (
-                              <span>{item.minimumThreshold} Credits</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            {isEditing ? (
-                              <button
-                                onClick={() => handleSaveItem(item.id)}
-                                className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center space-x-1 ml-auto cursor-pointer"
-                              >
-                                <Save className="w-3.5 h-3.5" />
-                                <span>Save</span>
-                              </button>
-                            ) : (
-                              <button
-                                disabled={!canEditPricing}
-                                onClick={() => handleEditItem(item)}
-                                className={`px-3 py-1 rounded font-medium flex items-center space-x-1 ml-auto transition-colors ${
-                                  canEditPricing
-                                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer'
-                                    : 'bg-slate-900 text-slate-600 border border-slate-800/60 cursor-not-allowed opacity-60'
-                                }`}
-                                title={
-                                  canEditPricing
-                                    ? 'Edit credit rate'
-                                    : '403 Forbidden: Modifying credit pricing is restricted to L7 and L8 Super Admins.'
-                                }
-                              >
-                                {!canEditPricing && <Lock className="w-3 h-3 text-slate-500" />}
-                                {canEditPricing && <Edit2 className="w-3 h-3" />}
-                                <span>Edit Matrix</span>
-                              </button>
-                            )}
-                          </td>
+              {/* VIEW 1: MULTI-COUNTRY & REGIONAL PRICING ENGINE */}
+              {pricingActiveView === 'REGIONAL_RULES' && (
+                <div className="space-y-6">
+                  {/* KPI Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* KPI 1: Global Default Baseline Rate */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-2">
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span className="font-semibold uppercase tracking-wider">Global Default Fallback Rate</span>
+                        <Globe className="w-4 h-4 text-amber-400" />
+                      </div>
+                      <div className="flex items-baseline space-x-2">
+                        <span className="text-3xl font-black text-amber-400 font-mono">
+                          {globalDefaultRate}
+                        </span>
+                        <span className="text-xs text-slate-400 font-medium">Credits / Location / Day</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Default baseline fee charged automatically when a user targets a country or territory lacking an admin override.
+                      </p>
+                      {canEditPricing && (
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTempGlobalRate(globalDefaultRate);
+                              setShowGlobalRateModal(true);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>Edit Global Baseline Rate</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* KPI 2: Configured Locations Count */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-2">
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span className="font-semibold uppercase tracking-wider">Configured Pricing Rules</span>
+                        <MapPin className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <div className="flex items-baseline space-x-3">
+                        <span className="text-3xl font-black text-white font-mono">
+                          {regionalPricingList.filter((r) => r.location_type !== 'GLOBAL_DEFAULT').length}
+                        </span>
+                        <span className="text-xs text-emerald-400 font-semibold font-mono">
+                          ({regionalPricingList.filter((r) => r.location_type === 'COUNTRY').length} Countries,{' '}
+                          {regionalPricingList.filter((r) => r.location_type === 'REGION').length} Regional Corridors)
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Custom tariffs calibrated for high-density sovereign airspaces, regional federations, and international corridors.
+                      </p>
+                    </div>
+
+                    {/* KPI 3: Dynamic Calculation & Regional Override Logic */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-2">
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span className="font-semibold uppercase tracking-wider">Real-time Calculation Engine</span>
+                        <ShieldCheck className="w-4 h-4 text-sky-400" />
+                      </div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center space-x-1.5 text-emerald-300 font-mono text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          <span>Additive Sum: Multi-country selections add dynamically</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5 text-amber-300 font-mono text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                          <span>Regional Override: Broad corridor zeroes covered countries</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5 text-sky-300 font-mono text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                          <span>No Double-Charging: Concurrency guard enforces strict totals</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Toolbar & Data Table Section */}
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                          <span>Sovereign &amp; Regional Credit Pricing Matrix</span>
+                          <span className="text-xs font-mono font-normal text-slate-400">
+                            ({regionalPricingList.length} Total Rules)
+                          </span>
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Manage sovereign territory credit costs. When a user selects multiple countries or flight regions, rates calculate live before checkout.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <button
+                          type="button"
+                          disabled={!canEditPricing}
+                          onClick={handleOpenAddRule}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                            canEditPricing
+                              ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg cursor-pointer'
+                              : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                          }`}
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add New Pricing Rule</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Filter and Search Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
+                      <div className="relative flex-1">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={regionalSearchQuery}
+                          onChange={(e) => setRegionalSearchQuery(e.target.value)}
+                          placeholder="Search location name, sovereign code (e.g. US, GB, APAC), or notes..."
+                          className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500"
+                        />
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <select
+                          value={regionalFilterType}
+                          onChange={(e) => setRegionalFilterType(e.target.value as any)}
+                          className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white outline-none focus:border-amber-500"
+                        >
+                          <option value="ALL">All Types</option>
+                          <option value="COUNTRY">Countries Only</option>
+                          <option value="REGION">Regional Corridors Only</option>
+                        </select>
+
+                        <button
+                          type="button"
+                          onClick={refreshRegionalPricing}
+                          className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                          title="Refresh pricing table"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Data Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs text-slate-300">
+                        <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-mono border-b border-slate-800">
+                          <tr>
+                            <th className="py-3 px-4">Location Name &amp; Code</th>
+                            <th className="py-3 px-4">Type</th>
+                            <th className="py-3 px-4">Credit Cost (Per Day)</th>
+                            <th className="py-3 px-4">Coverage &amp; Regional Overrides</th>
+                            <th className="py-3 px-4">Last Updated</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800 font-sans">
+                          {regionalPricingList
+                            .filter((item) => {
+                              if (regionalFilterType !== 'ALL' && item.location_type !== regionalFilterType) {
+                                return false;
+                              }
+                              if (regionalSearchQuery) {
+                                const q = regionalSearchQuery.toLowerCase();
+                                return (
+                                  item.location_name.toLowerCase().includes(q) ||
+                                  item.location_code.toLowerCase().includes(q) ||
+                                  (item.notes && item.notes.toLowerCase().includes(q))
+                                );
+                              }
+                              return true;
+                            })
+                            .map((rule) => {
+                              const isDefault = rule.location_type === 'GLOBAL_DEFAULT' || rule.is_default;
+                              return (
+                                <tr key={rule.id} className="hover:bg-slate-800/40 transition-colors">
+                                  {/* Location Name & Code */}
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center space-x-2">
+                                      <span
+                                        className={`px-2 py-0.5 rounded font-mono font-bold text-[10px] ${
+                                          isDefault
+                                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                            : rule.location_type === 'REGION'
+                                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                        }`}
+                                      >
+                                        {rule.location_code}
+                                      </span>
+                                      <span className="font-bold text-white text-xs">{rule.location_name}</span>
+                                    </div>
+                                    {rule.notes && (
+                                      <p className="text-[10px] text-slate-400 mt-0.5 italic">{rule.notes}</p>
+                                    )}
+                                  </td>
+
+                                  {/* Type */}
+                                  <td className="py-3 px-4 font-mono">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                        isDefault
+                                          ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                          : rule.location_type === 'REGION'
+                                          ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                                          : 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                                      }`}
+                                    >
+                                      {rule.location_type === 'GLOBAL_DEFAULT'
+                                        ? 'GLOBAL DEFAULT'
+                                        : rule.location_type}
+                                    </span>
+                                  </td>
+
+                                  {/* Credit Cost */}
+                                  <td className="py-3 px-4 font-mono">
+                                    <div className="flex items-baseline space-x-1.5">
+                                      <span className="text-base font-black text-amber-400">
+                                        {rule.credit_cost}
+                                      </span>
+                                      <span className="text-[11px] text-slate-400">Credits/Day</span>
+                                    </div>
+                                  </td>
+
+                                  {/* Coverage & Regional Overrides */}
+                                  <td className="py-3 px-4 text-[11px] text-slate-300">
+                                    {rule.countries_covered && rule.countries_covered.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        <span className="text-purple-300 font-semibold">Overrides:</span>
+                                        {rule.countries_covered.map((c) => (
+                                          <span
+                                            key={c}
+                                            className="px-1.5 py-0.2 rounded bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-300"
+                                          >
+                                            {c === '*' ? 'Global Airspace' : c}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : isDefault ? (
+                                      <span className="text-slate-400 font-mono text-[10px]">
+                                        Applies to any unconfigured sovereign nation
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-400 font-mono text-[10px]">
+                                        Single sovereign airspace
+                                      </span>
+                                    )}
+                                  </td>
+
+                                  {/* Last Updated */}
+                                  <td className="py-3 px-4 font-mono text-[11px] text-slate-400">
+                                    <div>{rule.updated_at ? new Date(rule.updated_at).toLocaleDateString() : 'Baseline'}</div>
+                                    <div className="text-[10px] text-slate-400">{rule.updated_by || 'System Sovereign'}</div>
+                                  </td>
+
+                                  {/* Actions */}
+                                  <td className="py-3 px-4 text-right">
+                                    <div className="flex items-center justify-end space-x-2">
+                                      <button
+                                        type="button"
+                                        disabled={!canEditPricing}
+                                        onClick={() => handleOpenEditRule(rule)}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center space-x-1 transition-colors ${
+                                          canEditPricing
+                                            ? 'bg-slate-800 hover:bg-slate-700 text-amber-300 cursor-pointer border border-slate-700'
+                                            : 'bg-slate-950 text-slate-600 border border-slate-800 cursor-not-allowed opacity-50'
+                                        }`}
+                                        title="Edit credit rate"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                        <span>Edit</span>
+                                      </button>
+
+                                      {!isDefault && (
+                                        <button
+                                          type="button"
+                                          disabled={!canEditPricing}
+                                          onClick={() => handleDeleteRegionalRule(rule)}
+                                          className={`p-1.5 rounded-lg text-xs font-semibold flex items-center transition-colors ${
+                                            canEditPricing
+                                              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 cursor-pointer'
+                                              : 'bg-slate-950 text-slate-600 border border-slate-800 cursor-not-allowed opacity-50'
+                                          }`}
+                                          title="Delete pricing rule"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW 2: PORTAL ACTION DEBIT RULES (Centralized action table) */}
+              {pricingActiveView === 'PORTAL_ACTIONS' && (
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-bold text-white">Centralized Credit Debit Matrix</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Configure automatic credit deductions per marketing, job posting, and boutique lead action across all portals.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-300">
+                      <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-mono border-b border-slate-800">
+                        <tr>
+                          <th className="py-3 px-4">Portal Location</th>
+                          <th className="py-3 px-4">Action Type</th>
+                          <th className="py-3 px-4">Debit Value (Credits)</th>
+                          <th className="py-3 px-4">Minimum Threshold</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800 font-sans">
+                        {pricingItems.map((item) => {
+                          const isEditing = editingItemId === item.id;
+                          return (
+                            <tr key={item.id} className="hover:bg-slate-800/40">
+                              <td className="py-3 px-4 font-semibold text-white">{item.portal}</td>
+                              <td className="py-3 px-4 text-sky-400 font-mono">{item.actionType}</td>
+                              <td className="py-3 px-4 font-mono">
+                                {isEditing ? (
+                                  <input
+                                    type="number"
+                                    value={editDebit}
+                                    onChange={(e) => setEditDebit(Number(e.target.value))}
+                                    className="w-20 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-white"
+                                  />
+                                ) : (
+                                  <span className="font-bold text-emerald-400">{item.defaultDebitCredits} Credits</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 font-mono">
+                                {isEditing ? (
+                                  <input
+                                    type="number"
+                                    value={editMin}
+                                    onChange={(e) => setEditMin(Number(e.target.value))}
+                                    className="w-20 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-white"
+                                  />
+                                ) : (
+                                  <span>{item.minimumThreshold} Credits</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
+                                  {item.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                {isEditing ? (
+                                  <button
+                                    onClick={() => handleSaveItem(item.id)}
+                                    className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center space-x-1 ml-auto cursor-pointer"
+                                  >
+                                    <Save className="w-3.5 h-3.5" />
+                                    <span>Save</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    disabled={!canEditPricing}
+                                    onClick={() => handleEditItem(item)}
+                                    className={`px-3 py-1 rounded font-medium flex items-center space-x-1 ml-auto transition-colors ${
+                                      canEditPricing
+                                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer'
+                                        : 'bg-slate-900 text-slate-600 border border-slate-800/60 cursor-not-allowed opacity-60'
+                                    }`}
+                                    title={
+                                      canEditPricing
+                                        ? 'Edit credit rate'
+                                        : '403 Forbidden: Modifying credit pricing is restricted to L7 and L8 Super Admins.'
+                                    }
+                                  >
+                                    {!canEditPricing && <Lock className="w-3 h-3 text-slate-500" />}
+                                    {canEditPricing && <Edit2 className="w-3 h-3" />}
+                                    <span>Edit Matrix</span>
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL 1: ADD / EDIT REGIONAL PRICING RULE */}
+              {showAddEditRuleModal && (
+                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                      <div className="flex items-center space-x-2">
+                        <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30">
+                          <Globe className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono">
+                            {editingRuleId ? 'Edit Location Pricing Rule' : 'Configure New Location Pricing Rule'}
+                          </h3>
+                          <p className="text-xs text-slate-400">
+                            Set custom credit tariffs per sovereign nation or flight region corridor.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddEditRuleModal(false)}
+                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {modalFeedback && (
+                      <div className="p-3 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-xs text-rose-200 flex items-center space-x-2">
+                        <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                        <span>{modalFeedback}</span>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSaveRegionalRule} className="space-y-4">
+                      {/* 1. Location Type Dropdown */}
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                          Location Type
+                        </label>
+                        <select
+                          value={modalLocationType}
+                          onChange={(e) => {
+                            const val = e.target.value as 'COUNTRY' | 'REGION';
+                            setModalLocationType(val);
+                            if (val === 'COUNTRY') {
+                              setModalLocationCode(COUNTRIES[0]?.code || 'US');
+                              setModalLocationName(COUNTRIES[0]?.name || 'United States');
+                            } else {
+                              setModalLocationCode(AVIATION_REGIONS[0]?.code || 'APAC');
+                              setModalLocationName(AVIATION_REGIONS[0]?.name || 'Asia-Pacific Corridor');
+                            }
+                          }}
+                          className="w-full py-2.5 px-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white outline-none focus:border-amber-500 font-semibold"
+                        >
+                          <option value="COUNTRY">Country (Single Sovereign Airspace)</option>
+                          <option value="REGION">Region (Broad Flight Corridor)</option>
+                        </select>
+                      </div>
+
+                      {/* 2. Location Search / Select */}
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                          Select {modalLocationType === 'COUNTRY' ? 'Country' : 'Region Corridor'}
+                        </label>
+                        {modalLocationType === 'COUNTRY' ? (
+                          <select
+                            value={modalLocationCode}
+                            onChange={(e) => {
+                              const found = COUNTRIES.find((c) => c.code === e.target.value);
+                              setModalLocationCode(e.target.value);
+                              if (found) setModalLocationName(found.name);
+                            }}
+                            className="w-full py-2.5 px-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white outline-none focus:border-amber-500"
+                          >
+                            {COUNTRIES.map((c) => (
+                              <option key={c.code} value={c.code}>
+                                {c.flag} {c.name} ({c.code})
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <select
+                            value={modalLocationCode}
+                            onChange={(e) => {
+                              const found = AVIATION_REGIONS.find((r) => r.code === e.target.value);
+                              setModalLocationCode(e.target.value);
+                              if (found) setModalLocationName(found.name);
+                            }}
+                            className="w-full py-2.5 px-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white outline-none focus:border-amber-500"
+                          >
+                            {AVIATION_REGIONS.map((r) => (
+                              <option key={r.code} value={r.code}>
+                                {r.flag} {r.name} ({r.code})
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      {/* Custom Location Code & Name override display */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-slate-400">
+                            Location Code
+                          </label>
+                          <input
+                            type="text"
+                            value={modalLocationCode}
+                            onChange={(e) => setModalLocationCode(e.target.value.toUpperCase())}
+                            className="w-full py-2 px-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono uppercase"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-slate-400">
+                            Display Name
+                          </label>
+                          <input
+                            type="text"
+                            value={modalLocationName}
+                            onChange={(e) => setModalLocationName(e.target.value)}
+                            className="w-full py-2 px-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* 3. Credit Amount Input (Unlimited — no upper cap) */}
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                          <span>Credit Cost (Daily Rate)</span>
+                          <span className="text-[10px] text-amber-400 font-mono">Credits / day (Unlimited)</span>
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={modalCreditCost}
+                          onChange={(e) => setModalCreditCost(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                          className="w-full py-2.5 px-3 rounded-xl bg-slate-950 border border-slate-800 text-sm font-mono font-bold text-amber-400 outline-none focus:border-amber-500"
+                          required
+                        />
+                        <p className="text-[10px] text-slate-400">
+                          Unlimited custom credit rate — users selecting this location will be charged exactly this credit amount per day multiplied by duration.
+                        </p>
+                      </div>
+
+                      {/* Notes / Description */}
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                          Administrative Notes
+                        </label>
+                        <input
+                          type="text"
+                          value={modalNotes}
+                          onChange={(e) => setModalNotes(e.target.value)}
+                          placeholder="e.g. High-density commercial charter corridor"
+                          className="w-full py-2 px-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white outline-none focus:border-amber-500"
+                        />
+                      </div>
+
+                      {/* Buttons */}
+                      <div className="flex items-center justify-end space-x-2.5 pt-3 border-t border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => setShowAddEditRuleModal(false)}
+                          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-lg cursor-pointer"
+                        >
+                          Save Pricing Rule
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL 2: EDIT GLOBAL DEFAULT BASELINE RATE */}
+              {showGlobalRateModal && (
+                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                      <div className="flex items-center space-x-2">
+                        <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30">
+                          <Globe className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono">
+                            Calibrate Global Default Rate
+                          </h3>
+                          <p className="text-xs text-slate-400">
+                            Fallback rate for all unconfigured sovereign territories.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowGlobalRateModal(false)}
+                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleSaveGlobalDefaultRate} className="space-y-4">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                          <span>Global Default Fallback (Credits / Day)</span>
+                          <span className="text-[10px] text-amber-400 font-mono">Unlimited</span>
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={tempGlobalRate}
+                          onChange={(e) => setTempGlobalRate(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                          className="w-full py-2.5 px-3 rounded-xl bg-slate-950 border border-slate-800 text-base font-mono font-black text-amber-400 outline-none focus:border-amber-500"
+                          required
+                        />
+                        <p className="text-[11px] text-slate-400 leading-relaxed pt-1">
+                          Unlimited baseline configuration — any country selected by a user that does not have an admin-defined tariff rule will automatically charge this default rate.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-end space-x-2.5 pt-3 border-t border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => setShowGlobalRateModal(false)}
+                          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-lg cursor-pointer"
+                        >
+                          Apply Default Rate
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1497,6 +2249,14 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
           {finSubTab === 'credit_transparency' && (
             <CreditTransparencyView activeAdminUser={activeAdminUser} />
           )}
+
+          {finSubTab === 'credit_management' && (
+            <CreditManagementSystemDesk
+              activeAdminUser={activeAdminUser}
+              currentUser={currentUser}
+              onRefreshAll={onRefreshAll}
+            />
+          )}
         </div>
       )}
 
@@ -1506,7 +2266,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
       {mainSector === 'publication' && (
         <div className="space-y-5">
           {/* Publication Sub-Navigation Bar */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex flex-wrap items-center gap-2 max-w-full w-full">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
               Publication:
             </span>
@@ -1515,13 +2275,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-pub-flashnews-btn"
               onClick={() => setPubSubTab('flashnews_desk')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 pubSubTab === 'flashnews_desk'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-amber-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Radio className="w-3.5 h-3.5 text-rose-400" />
+              <Radio className="w-3.5 h-3.5 shrink-0 text-rose-400" />
               <span>FlashNews &amp; Blink Feed Desk</span>
             </button>
 
@@ -1529,13 +2289,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-pub-content-btn"
               onClick={() => setPubSubTab('content_desk')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 pubSubTab === 'content_desk'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <FileCheck className="w-3.5 h-3.5" />
+              <FileCheck className="w-3.5 h-3.5 shrink-0" />
               <span>Content Verification Queue</span>
               {(pendingJobs.length + pendingNews.length) > 0 && (
                 <span className="ml-1 bg-slate-950 text-amber-300 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
@@ -1668,7 +2428,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
       {mainSector === 'reports' && (
         <div className="space-y-5">
           {/* Reports Sub-Navigation Bar */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex flex-wrap items-center gap-2 max-w-full w-full">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
               Reports &amp; Analytics:
             </span>
@@ -1677,13 +2437,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-rep-exec-btn"
               onClick={() => setRepSubTab('executive_reports')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 repSubTab === 'executive_reports'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-amber-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <FileText className="w-3.5 h-3.5" />
+              <FileText className="w-3.5 h-3.5 shrink-0" />
               <span>Executive Report Generator</span>
             </button>
 
@@ -1691,13 +2451,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-rep-quant-btn"
               onClick={() => setRepSubTab('quant_analytics')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 repSubTab === 'quant_analytics'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-sky-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
+              <BarChart3 className="w-3.5 h-3.5 shrink-0 text-sky-400" />
               <span>Quantitative Campaign Analytics</span>
             </button>
 
@@ -1705,13 +2465,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-rep-audit-btn"
               onClick={() => setRepSubTab('audit_logs')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 repSubTab === 'audit_logs'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
               <span>Sovereign Audit Logs (SIEM)</span>
             </button>
           </div>
@@ -1728,7 +2488,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
 
           {repSubTab === 'quant_analytics' && (
             <QuantitativeReportingInterface
-              currentBusiness={db.getBusinesses()[0]}
+              isAdmin={true}
               currentUser={currentUser}
             />
           )}
@@ -1920,7 +2680,7 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
       {mainSector === 'security' && (
         <div className="space-y-5">
           {/* Security Sub-Navigation Bar */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex items-center space-x-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-md flex flex-wrap items-center gap-2 max-w-full w-full">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono px-2 shrink-0">
               Security &amp; Governance:
             </span>
@@ -1929,13 +2689,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-sec-rbac-btn"
               onClick={() => setSecSubTab('rbac')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 secSubTab === 'rbac'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
               <span>RBAC Permissions &amp; Single-Session Guard</span>
             </button>
 
@@ -1943,13 +2703,13 @@ export const AdminCPanel: React.FC<AdminCPanelProps> = ({
             <button
               id="cpanel-sec-launchpad-btn"
               onClick={() => setSecSubTab('launch_matrix')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 whitespace-normal break-words text-center ${
                 secSubTab === 'launch_matrix'
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <Layers className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
               <span>Active Module Controls (Launchpad)</span>
             </button>
           </div>

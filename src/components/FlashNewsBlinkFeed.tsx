@@ -211,7 +211,7 @@ export const FlashNewsBlinkFeed: React.FC<FlashNewsBlinkFeedProps> = ({
             <div className="space-y-1 min-w-0 flex-1">
               <h4 className="text-xs sm:text-sm font-black text-white hover:text-amber-300 transition-colors flex items-center space-x-2">
                 <span className="text-amber-400 font-mono text-[11px] shrink-0">▶</span>
-                <span className="truncate">{currentItem.headline}</span>
+                <span className="truncate uppercase font-bold tracking-wide">{currentItem.headline?.toUpperCase()}</span>
               </h4>
               <p className="text-xs text-slate-300 leading-relaxed line-clamp-2 sm:line-clamp-3">
                 {currentItem.content}
@@ -254,8 +254,8 @@ export const FlashNewsBlinkFeed: React.FC<FlashNewsBlinkFeedProps> = ({
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-base font-black text-white leading-snug">
-                {selectedItemForDetail.headline}
+              <h3 className="text-base font-black text-white leading-snug uppercase tracking-wide">
+                {selectedItemForDetail.headline?.toUpperCase()}
               </h3>
               <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">
                 {selectedItemForDetail.content}

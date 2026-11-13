@@ -280,7 +280,7 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
     const res = db.updateFlashNews(
       editingFlashItem.id,
       {
-        headline: editHeadline,
+        headline: editHeadline.trim().toUpperCase(),
         content: editContent,
         category: editCategory,
         priority: editPriority,
@@ -384,7 +384,7 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
     }
 
     const res = db.publishFlashNews({
-      headline: headline.trim() || undefined,
+      headline: headline.trim().toUpperCase() || undefined,
       content: content.trim(),
       category,
       priority,
@@ -908,15 +908,17 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
               <form onSubmit={handlePublish} className="space-y-4">
                 {/* Headline */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Flashnews Headline / Topic
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center justify-between">
+                    <span>Flashnews Headline / Topic (UPPERCASE ONLY)</span>
+                    <span className="text-[10px] text-amber-400 font-mono">AUTOMATIC UPPERCASE ENFORCED</span>
                   </label>
                   <input
                     type="text"
-                    value={headline}
-                    onChange={(e) => setHeadline(e.target.value)}
-                    placeholder="e.g. DGCA Airspace Low-Visibility Operational Advisory"
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none"
+                    value={headline.toUpperCase()}
+                    onChange={(e) => setHeadline(e.target.value.toUpperCase())}
+                    placeholder="E.G. DGCA AIRSPACE LOW-VISIBILITY OPERATIONAL ADVISORY"
+                    style={{ textTransform: 'uppercase' }}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none uppercase font-bold tracking-wide"
                     required
                   />
                 </div>
@@ -1801,7 +1803,6 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
                   <input
                     type="number"
                     min="0"
-                    max="500"
                     value={pricingMatrix.base_cost ?? 20}
                     onChange={(e) => setPricingMatrix({ ...pricingMatrix, base_cost: Math.max(0, parseInt(e.target.value) || 0) })}
                     className="w-24 bg-slate-900 border border-amber-500/40 rounded-xl px-3 py-1.5 text-xs text-white font-mono font-bold outline-none text-right"
@@ -2098,7 +2099,6 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
                     <input
                       type="number"
                       min="0"
-                      max="1000"
                       value={creditCostInput}
                       onChange={(e) => setCreditCostInput(Math.max(0, parseInt(e.target.value) || 0))}
                       className="w-36 bg-slate-900 border border-emerald-500/50 rounded-xl px-3.5 py-2 text-white font-mono font-bold text-sm outline-none focus:border-emerald-400"
@@ -2936,14 +2936,16 @@ export const FlashNewsPublicationDesk: React.FC<FlashNewsPublicationDeskProps> =
 
             <form onSubmit={handleSaveFlashEdit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  Flashnews Headline
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center justify-between">
+                  <span>Flashnews Headline (UPPERCASE ONLY)</span>
+                  <span className="text-[10px] text-amber-400 font-mono">AUTOMATIC UPPERCASE ENFORCED</span>
                 </label>
                 <input
                   type="text"
-                  value={editHeadline}
-                  onChange={(e) => setEditHeadline(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none"
+                  value={editHeadline.toUpperCase()}
+                  onChange={(e) => setEditHeadline(e.target.value.toUpperCase())}
+                  style={{ textTransform: 'uppercase' }}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none uppercase font-bold tracking-wide"
                   required
                 />
               </div>

@@ -188,7 +188,7 @@ export const SuperAdminDashboardView: React.FC<SuperAdminDashboardViewProps> = (
       {/* ========================================================================= */}
       {/* 2. EXECUTIVE 360° KPI METRICS (SALES, MARKETING, SUPPORT, FINANCE)        */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
         {/* Sales Pipeline */}
         <div
           onClick={() => setActiveDepartment('SALES')}

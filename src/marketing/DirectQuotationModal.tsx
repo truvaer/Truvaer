@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { BusinessProfile, CRMQuotation, CRMQuotationItem, RegularUser } from '../types';
 import { db, maskClientEmail, maskClientPhone, maskClientName, UserChatEligibility } from '../data/mockDatabase';
+import { formatDateDDMMYYYY } from '../utils/dateFormat';
 
 interface DirectQuotationModalProps {
   isOpen: boolean;
@@ -356,7 +357,7 @@ export const DirectQuotationModal: React.FC<DirectQuotationModalProps> = ({
                   </div>
                   <div>
                     <span className="text-slate-500 block uppercase text-[9px]">Validity &amp; Terms:</span>
-                    <div>Valid Until: <strong className="text-amber-300">{issuedQuotation.valid_until}</strong></div>
+                    <div>Valid Until: <strong className="text-amber-300">{formatDateDDMMYYYY(issuedQuotation.valid_until)}</strong></div>
                     <div className="text-slate-400">{issuedQuotation.payment_terms}</div>
                   </div>
                 </div>
@@ -365,7 +366,7 @@ export const DirectQuotationModal: React.FC<DirectQuotationModalProps> = ({
                   <div className="font-bold text-slate-300 mb-1 font-sans text-xs">
                     Scope: {issuedQuotation.service_title}
                   </div>
-                  <div className="border border-slate-800 rounded-xl overflow-hidden">
+                  <div className="border border-slate-800 rounded-xl overflow-x-auto">
                     <table className="w-full text-left text-[11px]">
                       <thead className="bg-slate-900 border-b border-slate-800 text-slate-400">
                         <tr>

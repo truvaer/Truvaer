@@ -32,6 +32,8 @@ import {
   Newspaper,
   Home,
   HelpCircle,
+  Menu,
+  X,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
 import { RegularUser, BusinessProfile } from '../types';
@@ -103,6 +105,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [showPresets, setShowPresets] = useState(false);
   const [showTestingTools, setShowTestingTools] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const pendingBizCount = allBusinesses.filter((b) => b.verification_status === 'HARD_LOCKED').length;
   const isAuthenticated = !!(currentUser || currentBusiness);
@@ -121,16 +124,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   const businessWalletBalance = currentBusiness?.corporate_wallet?.credit_balance ?? 0;
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/98 backdrop-blur-md text-slate-100 border-b border-slate-800 shadow-lg">
-      <div className="max-w-[1700px] mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-3">
+    <header className="sticky top-0 z-40 w-full max-w-full bg-slate-900/98 backdrop-blur-md text-slate-100 border-b border-slate-800 shadow-lg">
+      <div className="w-full max-w-full px-4 sm:px-8 lg:px-12">
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between min-h-[3.75rem] py-1.5 gap-2 sm:gap-3">
           {/* ========================================================================= */}
           {/* LEFT: Brand Logo & Title + LIVE/TESTING Identifiable Environment Badge   */}
           {/* ========================================================================= */}
-          <div className="flex items-center space-x-3.5 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
             {/* Logo: Always returns directly to Home Page */}
             <div
-              className="flex items-center space-x-2.5 cursor-pointer group"
+              className="flex items-center space-x-2 cursor-pointer group shrink-0"
               onClick={() => {
                 if (onNavigateToStories) {
                   onNavigateToStories();
@@ -140,7 +143,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }}
               title="Truvaer.com - Aviation Community Home"
             >
-              <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center p-0.5 bg-white shadow-md border border-slate-700/60 shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden flex items-center justify-center p-0.5 !bg-white bg-white shadow-md border border-slate-200 shrink-0 group-hover:scale-105 transition-transform">
                 <img
                   src="/logo.png"
                   alt="TruvAer Logo"
@@ -151,12 +154,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <div>
-                <div className="flex items-center space-x-1.5">
-                  <span className="text-lg font-black tracking-tight text-white font-mono">Truvaer</span>
+              <div className="min-w-0">
+                <div className="flex items-center space-x-1">
+                  <span className="text-base sm:text-lg font-black tracking-tight text-white font-mono">Truvaer</span>
                   <span className="text-xs text-blue-400 font-bold hidden sm:inline">.com</span>
                 </div>
-                <p className="text-[10px] text-slate-400 hidden md:block leading-tight font-medium">
+                <p className="text-[10px] text-slate-400 hidden xl:block leading-tight font-medium">
                   Aviation Community
                 </p>
               </div>
@@ -165,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Requirement 1: Easily Identifiable LIVE vs TESTING Application Interface */}
             <div className="relative">
               <div
-                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-inner transition-all ${
+                className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-bold border shadow-inner transition-all ${
                   envMode === 'LIVE'
                     ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300 ring-1 ring-emerald-500/20'
                     : 'bg-amber-950/80 border-amber-500/50 text-amber-300 ring-1 ring-amber-500/20'
@@ -173,16 +176,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 {envMode === 'LIVE' ? (
                   <>
-                    <span className="relative flex h-2 w-2">
+                    <span className="relative flex h-2 w-2 shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    <span className="tracking-wide text-[11px] font-mono font-bold">LIVE MODE</span>
+                    <span className="tracking-wide text-[10px] sm:text-[11px] font-mono font-bold whitespace-nowrap">
+                      LIVE<span className="hidden xl:inline"> MODE</span>
+                    </span>
                   </>
                 ) : (
                   <>
                     <FlaskConical className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="tracking-wide text-[11px] font-mono font-bold">TESTING MODE</span>
+                    <span className="tracking-wide text-[10px] sm:text-[11px] font-mono font-bold whitespace-nowrap">
+                      TEST<span className="hidden xl:inline">ING MODE</span>
+                    </span>
                   </>
                 )}
 
@@ -190,7 +197,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   type="button"
                   onClick={onToggleEnvMode}
-                  className={`ml-1 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                  className={`ml-0.5 sm:ml-1 text-[9px] sm:text-[10px] uppercase font-mono px-1.5 py-0.5 rounded transition-all cursor-pointer whitespace-nowrap ${
                     envMode === 'LIVE'
                       ? 'bg-emerald-800/60 hover:bg-emerald-700 text-emerald-100 hover:text-white'
                       : 'bg-amber-800/60 hover:bg-amber-700 text-amber-100 hover:text-white'
@@ -215,7 +222,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Testing Tools Dropdown */}
               {envMode === 'TESTING' && showTestingTools && (
-                <div className="absolute left-0 mt-2 w-72 bg-slate-900 border border-amber-500/40 rounded-2xl p-3 shadow-2xl z-50 text-xs space-y-2.5">
+                <div className="absolute left-0 mt-2 w-72 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-amber-500/40 rounded-2xl p-3 shadow-2xl z-50 text-xs space-y-2.5">
                   <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
                     <span className="font-bold text-amber-300 flex items-center space-x-1.5">
                       <FlaskConical className="w-3.5 h-3.5" />
@@ -267,10 +274,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* ========================================================================= */}
-          {/* CENTER: Navigation Links (Visible when logged in)                         */}
+          {/* CENTER: Navigation Links (Visible inline on lg+ screens)                  */}
           {/* ========================================================================= */}
           {isAuthenticated && (
-            <div className="flex items-center space-x-1.5 sm:space-x-2 xl:space-x-3">
+            <div className="hidden lg:flex items-center flex-wrap gap-1 xl:gap-2 min-w-0">
               {/* Home Page */}
               <button
                 id="navbar-home-btn"
@@ -368,13 +375,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* ========================================================================= */}
           {/* RIGHT: Actions, Theme, Role Switches, Wallet & Auth Button                */}
           {/* ========================================================================= */}
-          <div className="flex items-center space-x-2 sm:space-x-2.5">
+          <div className="flex items-center flex-wrap justify-end gap-1.5 sm:gap-2 shrink-0">
             {/* Theme Toggle (Light / Dark) */}
             <button
               id="theme-toggle-btn"
               type="button"
               onClick={onToggleTheme}
-              className="flex items-center space-x-1 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-sm cursor-pointer"
+              className="flex items-center space-x-1 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-sm cursor-pointer"
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
               aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
             >
@@ -397,11 +404,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id="aggressive-test-suite-btn"
                 type="button"
                 onClick={onOpenTestSuite}
-                className="flex items-center space-x-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                className="hidden sm:flex items-center space-x-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
                 title="Open Aggressive Automated Load Test & Governance Verification Suite (Platform Admin Only)"
               >
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden md:inline font-mono">Test Suite</span>
+                <span className="hidden xl:inline font-mono">Test Suite</span>
               </button>
             )}
             {/* Quick Profile / Demo Account Switcher */}
@@ -411,18 +418,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id="quick-demo-presets-btn"
                 type="button"
                 onClick={() => setShowPresets(!showPresets)}
-                className="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-750 text-slate-200 px-2.5 py-1.5 rounded-xl border border-slate-700 text-xs font-medium transition-colors cursor-pointer shadow-sm"
+                className="flex items-center space-x-1 sm:space-x-1.5 bg-slate-800 hover:bg-slate-750 text-slate-200 px-2 sm:px-2.5 py-1.5 rounded-xl border border-slate-700 text-xs font-medium transition-colors cursor-pointer shadow-sm"
                 title="Switch active user or business profile"
               >
-                <UserCheck className="w-3.5 h-3.5 text-sky-400" />
-                <span className="hidden sm:inline">Switch Account</span>
-                <span className="sm:hidden">Account</span>
+                <UserCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                <span className="hidden xl:inline">Switch Account</span>
+                <span className="hidden sm:inline xl:hidden">Account</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </button>
 
               {showPresets && (
                 <div
-                  className="absolute right-0 mt-2 w-84 bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 p-2.5 z-50 text-xs text-slate-200 max-h-[85vh] overflow-y-auto"
+                  className="absolute right-0 mt-2 w-80 sm:w-84 max-w-[calc(100vw-1.5rem)] bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 p-2.5 z-50 text-xs text-slate-200 max-h-[85vh] overflow-y-auto"
                   onClick={() => setShowPresets(false)}
                 >
                   {/* Category 1: Platform Administration & Command Governance (Exclusively on admin.truvaer.com) */}
@@ -636,7 +643,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <Building2 className="w-4 h-4" />
                     )}
                   </div>
-                  <div className="text-right hidden sm:block">
+                  <div className="text-right hidden md:block">
                     <div className="text-xs font-semibold text-white group-hover:text-blue-300 leading-tight truncate max-w-[110px]">
                       {currentUser ? `@${currentUser.username}` : currentBusiness?.organization_name}
                     </div>
@@ -652,9 +659,104 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </button>
               ) : null}
+
+              {/* Responsive Mobile / Tablet Navigation Drawer Button */}
+              {isAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen((prev) => !prev)}
+                  className="lg:hidden p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors cursor-pointer"
+                  aria-label={mobileNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                  title="Navigation Menu"
+                >
+                  {mobileNavOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                </button>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Mobile / Tablet Expanded Navigation Bar */}
+        {isAuthenticated && mobileNavOpen && (
+          <div className="lg:hidden border-t border-slate-800 py-2.5 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileNavOpen(false);
+                if (onNavigateToStories) onNavigateToStories();
+                else setCurrentTab('marketing');
+              }}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                currentTab === 'marketing' && marketingSubTab !== 'directory'
+                  ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30'
+                  : 'text-slate-300 hover:text-white bg-slate-800/70'
+              }`}
+            >
+              <Home className="w-3.5 h-3.5 text-blue-400" />
+              <span>Home</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMobileNavOpen(false);
+                if (!db.isModuleActive('mod_biz_listing')) return;
+                if (onNavigateToServiceScout) onNavigateToServiceScout();
+                else setCurrentTab('marketing');
+              }}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                currentTab === 'marketing' && marketingSubTab === 'directory'
+                  ? 'bg-sky-600/25 text-sky-300 border border-sky-500/50'
+                  : 'text-slate-300 hover:text-white bg-slate-800/70'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5 text-sky-400" />
+              <span>ServiceScout</span>
+            </button>
+
+            {onOpenCustomerCare && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileNavOpen(false);
+                  onOpenCustomerCare();
+                }}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/70 text-blue-300 hover:text-white cursor-pointer"
+              >
+                <Headphones className="w-3.5 h-3.5" />
+                <span>{isBusinessUser ? 'VIP Care' : 'Care'}</span>
+              </button>
+            )}
+
+            {currentTab === 'dashboard' && onOpenHelp && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileNavOpen(false);
+                  onOpenHelp();
+                }}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/70 text-amber-300 hover:text-white cursor-pointer"
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+                <span>Help</span>
+              </button>
+            )}
+
+            {isAdminSubdomain && isAdmin && onOpenTestSuite && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileNavOpen(false);
+                  onOpenTestSuite();
+                }}
+                className="sm:hidden flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40 cursor-pointer"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>Test Suite</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

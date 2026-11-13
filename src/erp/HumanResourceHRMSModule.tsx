@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { formatDateDDMMYYYY } from '../utils/dateFormat';
 import {
   Users,
   UserCheck,
@@ -1688,7 +1689,7 @@ export const HumanResourceHRMSModule: React.FC<HumanResourceHRMSModuleProps> = (
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[10px]">Joining Date:</span>
-                  <span className="text-white">{selectedEmployeeDossier.joining_date}</span>
+                  <span className="text-white">{formatDateDDMMYYYY(selectedEmployeeDossier.joining_date)}</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[10px]">Reporting To:</span>

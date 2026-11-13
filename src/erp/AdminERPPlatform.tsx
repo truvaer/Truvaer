@@ -183,6 +183,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
   const [corpStateFilter, setCorpStateFilter] = useState<'ALL' | 'ACTIVE' | 'DEACTIVATED'>('ALL');
   const [corpDebitFilter, setCorpDebitFilter] = useState<'ALL' | 'DEBIT_ENABLED' | 'DEBIT_DISABLED'>('ALL');
   const [openActionMenuBizId, setOpenActionMenuBizId] = useState<string | null>(null);
+  const [corpActionModalBiz, setCorpActionModalBiz] = useState<BusinessProfile | null>(null);
 
   // New Standard User creation modal state
   const [showAddStandardUserModal, setShowAddStandardUserModal] = useState(false);
@@ -926,18 +927,18 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
       {/* ========================================================================= */}
       {/* 1. TOP HEADER & ACTIVE ADMIN SIMULATION BAR                                */}
       {/* ========================================================================= */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-2xl w-full max-w-full">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 via-yellow-600 to-amber-400 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-amber-500/20 ring-1 ring-white/20">
+          <div className="flex items-center space-x-3.5 min-w-0">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-amber-600 via-yellow-600 to-amber-400 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-amber-500/20 ring-1 ring-white/20 shrink-0">
               <Crown className="w-6 h-6 text-slate-950" />
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-xl font-bold text-white tracking-tight font-mono">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight font-mono break-words">
                   TRUVAER OPERATIONS &amp; ERP
                 </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase shrink-0">
                   Operations &amp; Admin Platform
                 </span>
               </div>
@@ -947,7 +948,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
             {/* Quick Action: Open API Inspector Modal (Housed inside Ops & ERP) */}
             {onOpenApiInspector && (
               <button
@@ -964,20 +965,20 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
 
 
             {/* Active Admin Persona Picker (For testing authorization levels) */}
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-2.5 flex items-center space-x-3">
-              <div className="text-right">
+            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-2.5 flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto max-w-full">
+              <div className="sm:text-right min-w-0">
                 <div className="text-[10px] uppercase font-bold text-amber-400 tracking-wider">
                   Active Admin Operator
                 </div>
-                <div className="text-xs font-bold text-white leading-tight">
+                <div className="text-xs font-bold text-white leading-tight truncate">
                   {activeAdmin?.name || 'No Admin Selected'}
                 </div>
-                <div className="text-[11px] text-slate-400 font-mono">
+                <div className="text-[11px] text-slate-400 font-mono truncate">
                   {activeAdmin?.department || 'Operations'} • {activeAdmin?.level_title || `Level ${activeAdmin?.level}`}
                 </div>
               </div>
 
-              <div className="relative">
+              <div className="relative w-full sm:w-auto min-w-0">
                 <select
                   id="active-admin-selector"
                   value={activeAdmin?.admin_id || ''}
@@ -988,7 +989,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
                       showToast(`Switched active operator to ${found.name} (${found.level_title})`);
                     }
                   }}
-                  className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 cursor-pointer font-medium hover:bg-slate-750 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  className="w-full sm:max-w-[260px] bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 cursor-pointer font-medium hover:bg-slate-750 focus:outline-none focus:ring-1 focus:ring-amber-500 truncate"
                 >
                   {allAdmins.map((a) => (
                     <option key={a.admin_id} value={a.admin_id}>
@@ -1340,11 +1341,11 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
               </span>
             </button>
 
-            {/* Full Application Reset */}
+            {/* Reset (Renamed from Full Application Reset) */}
             <button
               id="erp-tab-system-reset"
               onClick={() => setActiveTab('system_reset')}
-              className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer ${
+              className={`w-full text-left px-3 py-2 rounded-xl font-bold flex items-center justify-between text-xs transition-colors cursor-pointer whitespace-normal break-words ${
                 activeTab === 'system_reset'
                   ? 'bg-rose-600 text-white shadow-md font-black'
                   : 'text-rose-400 hover:bg-rose-950/40 hover:text-white'
@@ -1352,10 +1353,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
             >
               <span className="flex items-center space-x-2">
                 <RotateCcw className="w-4 h-4 shrink-0" />
-                <span>Full Application Reset</span>
-              </span>
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-500/20 text-rose-300 font-mono font-bold">
-                Reset
+                <span>Reset</span>
               </span>
             </button>
 
@@ -2641,7 +2639,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
                   </span>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto min-h-[280px]">
                   <table className="w-full text-left text-xs text-slate-300">
                     <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-800">
                       <tr>
@@ -2804,15 +2802,16 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
                                     </button>
                                   )}
 
-                                  {/* Secondary Actions: Clean "More" (•••) Dropdown Menu */}
+                                  {/* Secondary Actions: Pop-up Modal Opener for All Corporate Actions */}
                                   <div className="relative">
                                     <button
+                                      type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setOpenActionMenuBizId(isMenuOpen ? null : biz.business_id);
+                                        setCorpActionModalBiz(biz);
                                       }}
-                                      className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-700"
-                                      title="More Actions"
+                                      className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-700 flex items-center space-x-1"
+                                      title="Open All Administrative Actions Pop-up"
                                     >
                                       <MoreVertical className="w-4 h-4" />
                                     </button>
@@ -2820,7 +2819,7 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
                                     {isMenuOpen && (
                                       <div
                                         onClick={(e) => e.stopPropagation()}
-                                        className="absolute right-0 top-full mt-1.5 w-48 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl py-1.5 z-40 text-left animate-in fade-in zoom-in-95"
+                                        className="absolute right-0 top-full mt-1.5 w-52 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl py-1.5 z-40 text-left animate-in fade-in zoom-in-95"
                                       >
                                         <button
                                           onClick={() => {
@@ -4275,7 +4274,6 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
               <input
                 type="number"
                 min="1"
-                max="1000"
                 value={globalSettings.phoneUnlockCreditCost}
                 onChange={(e) =>
                   setGlobalSettings((prev) => ({
@@ -4521,8 +4519,261 @@ export const AdminERPPlatform: React.FC<AdminERPPlatformProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: DEACTIVATE BUSINESS ACCOUNT & REFUND BALANCE TO BANK COORDINATES    */}
+      {/* MODAL: CORPORATE ACCOUNT ACTIONS POP-UP (IMAGE 1 FIX: ALL OPTIONS IN POP-UP)*/}
       {/* ========================================================================= */}
+      {corpActionModalBiz && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+          onClick={() => setCorpActionModalBiz(null)}
+        >
+          <div 
+            className="bg-slate-900 border border-slate-700/80 rounded-3xl p-6 max-w-xl w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-indigo-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <Building2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                    <span>{corpActionModalBiz.organization_name}</span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                      corpActionModalBiz.verification_status === 'VERIFIED' && !corpActionModalBiz.is_hard_locked_by_admin
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                    }`}>
+                      {corpActionModalBiz.is_hard_locked_by_admin ? 'HARD LOCKED' : corpActionModalBiz.verification_status}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    ID: <span className="text-slate-300 font-mono">{corpActionModalBiz.business_id}</span> • Owner: <span className="text-slate-300">{corpActionModalBiz.owner_name}</span> • Wallet: <span className="text-amber-300 font-mono font-bold">{(corpActionModalBiz.corporate_wallet?.credit_balance ?? 0).toLocaleString()} Cr</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCorpActionModalBiz(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Summary Pill Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Category</div>
+                <div className="font-bold text-slate-200 truncate">{corpActionModalBiz.category || 'General Aviation'}</div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Settlement Bank</div>
+                <div className="font-bold text-emerald-300 truncate">
+                  {corpActionModalBiz.finance_bank_verified ? '✓ Audited' : '⏳ Pending'} ({corpActionModalBiz.bank_name || 'Bank'})
+                </div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 col-span-2 sm:col-span-1">
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Account State</div>
+                <div className="font-bold text-slate-200">
+                  {corpActionModalBiz.account_status || 'ACTIVE'}
+                </div>
+              </div>
+            </div>
+
+            {/* Available Actions - Full Pop-up Options */}
+            <div className="space-y-2.5">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+                Corporate Account Actions
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Action 1: Edit Business Profile */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const b = corpActionModalBiz;
+                    setCorpActionModalBiz(null);
+                    setShowEditBusinessModal(b);
+                  }}
+                  className="p-3 rounded-2xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-blue-500/40 text-left transition-all cursor-pointer group flex items-start space-x-3"
+                >
+                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 group-hover:bg-blue-500 group-hover:text-white transition-all shrink-0">
+                    <Edit3 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-white group-hover:text-blue-300">Edit Business Profile</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">Modify registration, PAN, category, and PII</div>
+                  </div>
+                </button>
+
+                {/* Action 2: Initiate Debit Request */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const b = corpActionModalBiz;
+                    setDebitForm({ business_id: b.business_id, amount: 100, reason: '' });
+                    setCorpActionModalBiz(null);
+                    setShowInitiateDebitModal(true);
+                  }}
+                  className="p-3 rounded-2xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/40 text-left transition-all cursor-pointer group flex items-start space-x-3"
+                >
+                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all shrink-0">
+                    <Coins className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-white group-hover:text-amber-300">Initiate Debit Request</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">Deduct credits from wallet with operational reason</div>
+                  </div>
+                </button>
+
+                {/* Action 3: Bank Coordinates Audit */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const b = corpActionModalBiz;
+                    setCorpActionModalBiz(null);
+                    setBankAuditBiz(b);
+                  }}
+                  className="p-3 rounded-2xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-emerald-500/40 text-left transition-all cursor-pointer group flex items-start space-x-3"
+                >
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0">
+                    <Landmark className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-white group-hover:text-emerald-300">Bank Coordinates Audit</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">Certify IFSC/SWIFT coordinates &amp; remittance</div>
+                  </div>
+                </button>
+
+                {/* Action 4: Hard Lock / Unlock */}
+                {corpActionModalBiz.is_hard_locked_by_admin || corpActionModalBiz.verification_status !== 'VERIFIED' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const b = corpActionModalBiz;
+                      const res = db.adminApproveBusiness(b.business_id);
+                      if (res.success) {
+                        showToast(res.message, 'success');
+                        loadAllData();
+                        if (onRefreshAll) onRefreshAll();
+                      }
+                      setCorpActionModalBiz(null);
+                    }}
+                    className="p-3 rounded-2xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-emerald-500/40 text-left transition-all cursor-pointer group flex items-start space-x-3"
+                  >
+                    <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0">
+                      <Unlock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-white group-hover:text-emerald-300">Lift Hard Lock</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">Approve profile and restore verified directory state</div>
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const b = corpActionModalBiz;
+                      const res = db.adminHardLockBusiness(
+                        b.business_id,
+                        'Your account has been hardLocked / Suspended by admin. Please contact to the admin for further details.'
+                      );
+                      if (res.success) {
+                        showToast(res.message, 'error');
+                        loadAllData();
+                        if (onRefreshAll) onRefreshAll();
+                      }
+                      setCorpActionModalBiz(null);
+                    }}
+                    className="p-3 rounded-2xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-rose-500/40 text-left transition-all cursor-pointer group flex items-start space-x-3"
+                  >
+                    <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 group-hover:bg-rose-500 group-hover:text-white transition-all shrink-0">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-white group-hover:text-rose-300">Apply Hard Lock</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">Immediate security suspension across all portals</div>
+                    </div>
+                  </button>
+                )}
+
+                {/* Action 5: Deactivate / Reactivate */}
+                {corpActionModalBiz.account_status === 'DEACTIVATED' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      corpActionModalBiz.account_status = 'ACTIVE';
+                      showToast(`Reactivated corporate account for ${corpActionModalBiz.organization_name}`, 'success');
+                      loadAllData();
+                      if (onRefreshAll) onRefreshAll();
+                      setCorpActionModalBiz(null);
+                    }}
+                    className="p-3 rounded-2xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-emerald-500/40 text-left transition-all cursor-pointer group flex items-start space-x-3"
+                  >
+                    <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-white group-hover:text-emerald-300">Reactivate Account</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">Restore operational active status for this account</div>
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const b = corpActionModalBiz;
+                      setDeactivateReason('Account Deactivated by Administration - Treasury settlement processed');
+                      setDeactivateTargetBiz(b);
+                      setCorpActionModalBiz(null);
+                    }}
+                    className="p-3 rounded-2xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-purple-500/40 text-left transition-all cursor-pointer group flex items-start space-x-3"
+                  >
+                    <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 group-hover:bg-purple-500 group-hover:text-white transition-all shrink-0">
+                      <Ban className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-white group-hover:text-purple-300">Deactivate Account</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">Settle remaining wallet balance and deactivate</div>
+                    </div>
+                  </button>
+                )}
+
+                {/* Action 6: Delete Corporate Account */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const b = corpActionModalBiz;
+                    setCorpActionModalBiz(null);
+                    handleDeleteBusiness(b.business_id, b.organization_name);
+                  }}
+                  className="p-3 rounded-2xl bg-slate-950 hover:bg-rose-950/30 border border-slate-800 hover:border-rose-500/40 text-left transition-all cursor-pointer group flex items-start space-x-3"
+                >
+                  <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 group-hover:bg-rose-600 group-hover:text-white transition-all shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-rose-300 group-hover:text-rose-200">Delete Business Account</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">Permanently purge business entity from system registry</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setCorpActionModalBiz(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close Pop-up
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {deactivateTargetBiz && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-purple-500/40 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">

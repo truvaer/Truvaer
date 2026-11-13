@@ -137,9 +137,9 @@ export const CompleteUnifiedDashboard: React.FC<CompleteUnifiedDashboardProps> =
       {/* ========================================================================= */}
       {/* COCKPIT TOOLBAR: DASHBOARD, OPERATIONS, SALE, COMMUNICATION & CHAT        */}
       {/* ========================================================================= */}
-      <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-2xl flex flex-col xl:flex-row xl:items-center justify-between gap-3 shadow-lg">
+      <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-2xl flex flex-col xl:flex-row xl:items-center justify-between gap-3 shadow-lg w-full max-w-full">
         {/* Navigation & Action Cluster */}
-        <div className="flex items-center space-x-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 overflow-x-auto">
+        <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-950 rounded-xl border border-slate-800 max-w-full w-full xl:w-auto">
           {/* 1. Dashboard Overview Toggle */}
           <button
             id="dashboard-mode-toggle-btn"
@@ -315,7 +315,7 @@ export const CompleteUnifiedDashboard: React.FC<CompleteUnifiedDashboardProps> =
       {/* ========================================================================= */}
       {portalMode === 'WALLET' ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-2xl">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900 border border-slate-800 p-3 rounded-2xl">
             <button
               onClick={() => setPortalMode('DASHBOARD')}
               className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center space-x-1.5 cursor-pointer bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 transition-colors"
@@ -354,7 +354,7 @@ export const CompleteUnifiedDashboard: React.FC<CompleteUnifiedDashboardProps> =
         </div>
       ) : portalMode === 'COMMUNICATIONS' ? (
         <div className="space-y-3">
-          <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-2xl">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900 border border-slate-800 p-3 rounded-2xl">
             <button
               onClick={() => setPortalMode('DASHBOARD')}
               className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center space-x-1.5 cursor-pointer bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700"
@@ -378,7 +378,7 @@ export const CompleteUnifiedDashboard: React.FC<CompleteUnifiedDashboardProps> =
         </div>
       ) : portalMode === 'CHAT' ? (
         <div className="space-y-3">
-          <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-2xl">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900 border border-slate-800 p-3 rounded-2xl">
             <button
               onClick={() => setPortalMode('DASHBOARD')}
               className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center space-x-1.5 cursor-pointer bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700"
@@ -407,7 +407,7 @@ export const CompleteUnifiedDashboard: React.FC<CompleteUnifiedDashboardProps> =
         </div>
       ) : portalMode === 'SALE' ? (
         <div className="space-y-3">
-          <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-2xl">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900 border border-slate-800 p-3 rounded-2xl">
             <button
               onClick={() => setPortalMode('DASHBOARD')}
               className="text-xs font-bold text-sky-400 hover:text-sky-300 flex items-center space-x-1.5 cursor-pointer bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700"
@@ -441,7 +441,7 @@ export const CompleteUnifiedDashboard: React.FC<CompleteUnifiedDashboardProps> =
         />
       ) : portalMode === 'TREASURY' ? (
         <div className="space-y-3">
-          <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-2xl">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900 border border-slate-800 p-3 rounded-2xl">
             <button
               onClick={() => setPortalMode('DASHBOARD')}
               className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center space-x-1.5 cursor-pointer bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 transition-colors"

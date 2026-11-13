@@ -32,6 +32,7 @@ import {
   Calculator,
 } from 'lucide-react';
 import { db } from '../data/mockDatabase';
+import { formatDateDDMMYYYY } from '../utils/dateFormat';
 import { SalesDashboard } from './SalesDashboard';
 import { DirectServiceOfferModal } from '../marketing/DirectServiceOfferModal';
 import { ProfileViewsConversionChart } from './ProfileViewsConversionChart';
@@ -1035,7 +1036,7 @@ export const CRMPortal: React.FC<CRMPortalProps> = ({
 
                 <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
                   <div className="text-[10px] text-slate-400 font-mono">
-                    Valid until: {q.valid_until} • {q.territory}
+                    Valid until: {formatDateDDMMYYYY(q.valid_until)} • {q.territory}
                   </div>
 
                   <div className="flex items-center space-x-2">

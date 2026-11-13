@@ -1622,8 +1622,8 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
       {/* Top Breadcrumbs & Marketplace Header - Visible only when browsing ServiceScout directory */}
       {portalTab === 'directory' && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-          <div>
-            <div className="flex items-center space-x-2 text-xs font-mono tracking-wider text-slate-400">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-mono tracking-wider text-slate-400">
               <span className="font-bold text-white uppercase tracking-widest text-[13px]">
                 SERVICESCOUT SHOWCASE
               </span>
@@ -1699,9 +1699,9 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
         </div>
 
         {/* Right side: Action Buttons moved to upper bar for Business & Admin users (Image 2) */}
-        <div className="flex items-center space-x-2.5 w-full sm:w-auto justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
           {portalTab === 'linkedin_feed' && (
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Flashnews Publication Desk: Route to compose live blink text data (Max 200 Words) */}
               {(isAdmin || currentUser?.role === 'SUPER_ADMIN' || activeAdminUser?.role === 'SUPER_ADMIN' || (currentBusiness && currentBusiness.can_publish_flashnews !== false)) && (
                 <button
@@ -1833,8 +1833,8 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
                 >
                   <Lock className="w-5 h-5" />
                 </div>
-                <div>
-                  <div className="flex items-center space-x-2">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h4 className="font-black text-sm text-white uppercase tracking-wider">
                       {currentBusiness.is_hard_locked_by_admin || currentBusiness.verification_status === 'REJECTED'
                         ? 'ORGANIZATION HARD-LOCKED / SUSPENDED BY ADMIN'
@@ -1871,8 +1871,8 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
               <div className="w-9 h-9 rounded-xl bg-sky-600/20 text-sky-400 border border-sky-500/30 flex items-center justify-center font-bold shrink-0">
                 <Compass className="w-5 h-5" />
               </div>
-              <div>
-                <h2 className="text-sm font-bold text-white flex items-center space-x-2">
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold text-white flex flex-wrap items-center gap-2">
                   <span>ServiceScout</span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-bold border border-sky-500/30">
                     Verified Business Directory &amp; Search
@@ -2175,7 +2175,7 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
                   {/* ========================================================================= */}
                   {/* SECTION 1: BUSINESS IDENTITY, CONTACT RELAY & UNIFIED ACTION BUTTONS       */}
                   {/* ========================================================================= */}
-                  <div className="lg:col-span-4 flex flex-col justify-between space-y-3.5">
+                  <div className="lg:col-span-4 min-w-0 flex flex-col justify-between space-y-3.5">
                     <div>
                       {/* Top Row: Business Logo + Verified + Follow + Favorite + Report/Block */}
                       <div className="flex items-center justify-between gap-2">
@@ -2336,19 +2336,19 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
                       <div className="space-y-1.5 mt-3 pt-3 border-t border-slate-800 text-xs">
                         <div className="flex items-center space-x-2 text-slate-300">
                           <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="font-semibold select-text">
+                          <span className="font-semibold select-none">
                             {isLeadUnlocked ? item.phone : maskPhoneNumber(item.phone || '+914023456789').masked}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2 text-slate-300">
                           <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="font-medium truncate select-text">
+                          <span className="font-medium truncate select-none">
                             {isLeadUnlocked ? item.email : parseEmailForMasking(item.email || 'ops@rgoa-airport.in').displayHint}
                           </span>
                         </div>
                         <div className="flex items-start space-x-2 text-slate-400 text-[11px] leading-snug">
                           <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                          <span className="line-clamp-2 select-text">
+                          <span className="line-clamp-2 select-none">
                             {item.address
                               ? `${item.address}, ${item.city}`
                               : `${item.city || 'Aerospace Avenue'}, ${item.country || 'Global'}`}
@@ -2384,7 +2384,7 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
                   {/* ========================================================================= */}
                   {/* SECTION 2: SERVICES, CAPABILITIES & FACILITIES (NO $ ESTIMATED BUDGET COL)*/}
                   {/* ========================================================================= */}
-                  <div className="lg:col-span-4 flex flex-col justify-between space-y-3.5 lg:border-x lg:border-slate-800 lg:px-4">
+                  <div className="lg:col-span-4 min-w-0 flex flex-col justify-between space-y-3.5 lg:border-x lg:border-slate-800 lg:px-4">
                     <div>
                       {/* Section Title */}
                       <div className="flex items-center justify-between pb-2 border-b border-slate-800">
@@ -2505,7 +2505,7 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
                   {/* ========================================================================= */}
                   {/* SECTION 3: VIDEO / PHOTO MEDIA (RIGHT) WITH RATING & ACTIONS DIRECTLY BENEATH */}
                   {/* ========================================================================= */}
-                  <div className="lg:col-span-4 flex flex-col justify-between space-y-3">
+                  <div className="lg:col-span-4 min-w-0 flex flex-col justify-between space-y-3">
                     <div>
                       {/* Hero Photo / Video Media Container */}
                       <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-800 group shadow-md">
@@ -3575,7 +3575,7 @@ export const MarketingPortal: React.FC<MarketingPortalProps> = ({
                     />
                   </label>
                   {createForm.photos.length > 0 && (
-                    <div className="grid grid-cols-4 gap-2 mt-2 max-h-32 overflow-y-auto p-1 bg-slate-900 rounded-lg border border-slate-800">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 max-h-32 overflow-y-auto p-1 bg-slate-900 rounded-lg border border-slate-800">
                       {createForm.photos.map((p, idx) => (
                         <div key={idx} className="relative rounded overflow-hidden h-14 bg-slate-950 border border-slate-700">
                           <img src={p} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
